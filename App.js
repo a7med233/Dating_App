@@ -25,7 +25,6 @@ import {
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import StackNavigator from './navigation/StackNavigator';
 
-
 function Section({ children, title }) {
   const isDarkMode = useColorScheme() === 'dark';
   return (
@@ -65,7 +64,7 @@ function App() {
 
   return (
     <>
-    <StackNavigator/>
+      <StackNavigator/>
     </>
   );
 }
