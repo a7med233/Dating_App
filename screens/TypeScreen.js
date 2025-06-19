@@ -12,13 +12,30 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import {useNavigation} from '@react-navigation/native';
+import {
+  getRegistrationProgress,
+  saveRegistrationProgress,
+} from '../registrationUtils';
 
 const TypeScreen = () => {
   const [type, setType] = useState('');
+  const [error, setError] = useState('');
   const navigation = useNavigation();
+  useEffect(() => {
+    getRegistrationProgress('Type').then(progressData => {
+      if (progressData) {
+        setType(progressData.type || '');
+      }
+    });
+  }, []);
 
   const handleNext = () => {
-    // Navigate to the next screen
+    if (type.trim() === '') {
+      setError('Please select your sexuality.');
+      return;
+    }
+    setError('');
+    saveRegistrationProgress('Type', {type});
     navigation.navigate('Dating');
   };
   return (
@@ -147,6 +164,9 @@ const TypeScreen = () => {
             style={{alignSelf: 'center', marginTop: 20}}
           />
         </TouchableOpacity>
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );

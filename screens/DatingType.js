@@ -12,9 +12,14 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import {useNavigation} from '@react-navigation/native';
+import {
+  getRegistrationProgress,
+  saveRegistrationProgress,
+} from '../registrationUtils';
 
 const DatingType = () => {
   const [datingPreferences, setDatingPreferences] = useState([]);
+  const [error, setError] = useState('');
   const chooseOption = option => {
     if (datingPreferences.includes(option)) {
       setDatingPreferences(
@@ -25,11 +30,22 @@ const DatingType = () => {
     }
   };
   const navigation = useNavigation();
-
+  useEffect(() => {
+    // Fetch the registration progress data for the "Dating" screen
+    getRegistrationProgress('Dating').then(progressData => {
+      if (progressData) {
+        setDatingPreferences(progressData.datingPreferences || []);
+      }
+    });
+  }, []);
 
   const handleNext = () => {
-
-    // Navigate to the next screen
+    if (datingPreferences.length === 0) {
+      setError('Please select at least one option.');
+      return;
+    }
+    setError('');
+    saveRegistrationProgress('Dating', {datingPreferences});
     navigation.navigate('LookingFor');
   };
   return (
@@ -144,6 +160,9 @@ const DatingType = () => {
             style={{alignSelf: 'center', marginTop: 20}}
           />
         </TouchableOpacity>
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );

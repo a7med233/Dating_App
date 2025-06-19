@@ -73,3 +73,52 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Private and sensitive files
+.env
+*.env
+.env.*
+*.key
+*.pem
+*.crt
+*.p12
+*.jks
+*.keystore
+!debug.keystore
+*.pfx
+*.cert
+*.csr
+*.der
+*.srl
+*.pub
+
+# Uploads and temp folders
+uploads/
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VSCode
+.vscode/
+
+# Expo
+.expo/
+
+# macOS system files
+.AppleDouble
+.LSOverride
+
+# Android Studio/IntelliJ
+.idea/
+
+# Build artifacts
+**/build/
+
+# Coverage
+coverage/

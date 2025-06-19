@@ -12,13 +12,27 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import {useNavigation} from '@react-navigation/native';
+import { getRegistrationProgress, saveRegistrationProgress } from '../registrationUtils';
 
 const LookingFor = () => {
     const [lookingFor,setLookingFor] = useState([]);
     const navigation = useNavigation();
-
-    const handleNext = () => {
-        // Navigate to the next screen
+    const [error, setError] = useState('');
+    useEffect(() => {
+        getRegistrationProgress('LookingFor').then(progressData => {
+          if (progressData) {
+            setLookingFor(progressData.lookingFor || '');
+          }
+        });
+      }, []);
+    
+      const handleNext = () => {
+        if (!lookingFor || lookingFor.trim() === '') {
+          setError('Please select your dating intention.');
+          return;
+        }
+        setError('');
+        saveRegistrationProgress('LookingFor', {lookingFor});
         navigation.navigate('Hometown');
       };
       
@@ -171,6 +185,9 @@ const LookingFor = () => {
             style={{alignSelf: 'center', marginTop: 20}}
           />
         </TouchableOpacity>
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );

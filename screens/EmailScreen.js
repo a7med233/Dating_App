@@ -13,9 +13,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import {useNavigation} from '@react-navigation/native';
 import { getRegistrationProgress, saveRegistrationProgress } from '../registrationUtils';
+import { checkEmailExists } from '../services/api';
+import ErrorMessage from '../components/ErrorMessage';
 
 const EmailScreen = () => {
   const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
   const navigation = useNavigation();
   useEffect(() => {
     getRegistrationProgress('Email').then((progressData) => {
@@ -25,13 +28,33 @@ const EmailScreen = () => {
     });
   }, []);
 
-  const handleNext = () => {
-    if (email.trim() !== '') {
-        console.log("name",email)
-      // Save the current progress data including the name
-      saveRegistrationProgress('Email', { email });
+  const validateEmail = (email) => {
+    const re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const handleNext = async () => {
+    if (email.trim() === '') {
+      setError('Email is required.');
+      return;
     }
-    // Navigate to the next screen
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    // Check if email exists
+    try {
+      const exists = await checkEmailExists(email);
+      if (exists) {
+        setError('This email is already registered. Please use another.');
+        return;
+      }
+    } catch (err) {
+      setError('Error checking email. Please try again.');
+      return;
+    }
+    setError('');
+    saveRegistrationProgress('Email', { email });
     navigation.navigate('Password');
   };
   return (
@@ -74,7 +97,16 @@ const EmailScreen = () => {
         <TextInput
           autoFocus={true}
           value={email}
-          onChangeText={(text) => setEmail(text)}
+          onChangeText={text => {
+            setEmail(text);
+            if (text.trim() === '') {
+              setError('Email is required.');
+            } else if (!validateEmail(text)) {
+              setError('Please enter a valid email address.');
+            } else {
+              setError('');
+            }
+          }}
           style={{
             width: 340,
             marginVertical: 10,
@@ -88,6 +120,9 @@ const EmailScreen = () => {
           placeholder="Enter your email"
           placeholderTextColor={'#BEBEBE'}
         />
+        {error ? (
+          <ErrorMessage message={error} />
+        ) : null}
         <Text style={{color: 'gray', fontSize: 15, marginTop: 7}}>
           Note: You will be asked to verify your email
         </Text>

@@ -6,12 +6,11 @@ import {
   Pressable,
   TextInput,
   Button,
-  Modal,
-  TouchableOpacity,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import Entypo from 'react-native-vector-icons/Entypo';
-import {useNavigation} from '@react-navigation/native';
+import Modal from 'react-native-modal';
+import { useNavigation } from '@react-navigation/native';
 
 const ShowPromptsScreen = () => {
   const navigation = useNavigation();
@@ -90,39 +89,29 @@ const ShowPromptsScreen = () => {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
-  
   const openModal = item => {
-    setModalVisible(true);
+    setModalVisible(!isModalVisible);
+
     setQuestion(item?.question);
   };
 
-  const closeModal = () => {
-    setModalVisible(false);
+  const addPrompt = () => {
+    const newPrompt = { question, answer };
+    setPrompts([...prompts, newPrompt]);
     setQuestion('');
     setAnswer('');
-  };
-
-  const addPrompt = () => {
-    if (answer.trim()) {
-      const newPrompt = {question, answer};
-      setPrompts([...prompts, newPrompt]);
-      setQuestion('');
-      setAnswer('');
+    setModalVisible(false);
+    if (prompts.length === 3) {
       setModalVisible(false);
-      
-      if (prompts.length === 2) { // Changed from 3 to 2 since we're adding one more
-        navigation.navigate('Prompts', {
-          prompts: [...prompts, newPrompt],
-        });
-      }
+      navigation.navigate('Prompts', {
+        prompts: prompts,
+      }); // Navigate away from the screen when prompts reach three
     }
   };
-
   console.log('question', prompts);
-  
   return (
     <>
-      <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
         <View
           style={{
             padding: 10,
@@ -130,17 +119,15 @@ const ShowPromptsScreen = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <Text style={{fontSize: 15, fontWeight: '500', color: '#581845'}}>
+          <Text style={{ fontSize: 15, fontWeight: '500', color: '#581845' }}>
             View all
           </Text>
 
-          <Text style={{fontSize: 16, fontWeight: 'bold', color: '#581845'}}>
+          <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#581845' }}>
             Prompts
           </Text>
 
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Entypo name="cross" size={22} color="black" />
-          </TouchableOpacity>
+          <Entypo name="cross" size={22} color="black" />
         </View>
 
         <View
@@ -150,15 +137,13 @@ const ShowPromptsScreen = () => {
             flexDirection: 'row',
             gap: 10,
           }}>
-          {promptss?.map((item, index) => (
-            <View key={index}>
+          {promptss?.map((item) => (
+            <View key={item.id}>
               <Pressable
                 style={{
                   padding: 10,
                   borderRadius: 20,
                   backgroundColor: option == item?.name ? '#581845' : 'white',
-                  borderWidth: 1,
-                  borderColor: option == item?.name ? '#581845' : '#ddd',
                 }}
                 onPress={() => setOption(item?.name)}>
                 <Text
@@ -172,24 +157,17 @@ const ShowPromptsScreen = () => {
             </View>
           ))}
         </View>
-        
-        <View style={{marginTop: 20, marginHorizontal: 12}}>
-          {promptss?.map((item, index) => (
-            <View key={index}>
+        <View style={{ marginTop: 20, marginHorizontal: 12 }}>
+          {promptss?.map((item) => (
+            <View key={item.id}>
               {option === item?.name && (
                 <View>
-                  {item?.questions?.map((question, questionIndex) => (
+                  {item?.questions?.map((question) => (
                     <Pressable
+                      key={question.id}
                       onPress={() => openModal(question)}
-                      style={{
-                        marginVertical: 12,
-                        paddingVertical: 8,
-                        paddingHorizontal: 12,
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: 8,
-                      }}
-                      key={questionIndex}>
-                      <Text style={{fontSize: 15, fontWeight: '500'}}>
+                      style={{ marginVertical: 12 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '500' }}>
                         {question.question}
                       </Text>
                     </Pressable>
@@ -200,41 +178,39 @@ const ShowPromptsScreen = () => {
           ))}
         </View>
       </SafeAreaView>
-
-      {/* Custom Modal */}
       <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Answer your question</Text>
-              <TouchableOpacity onPress={closeModal}>
-                <Entypo name="cross" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.questionText}>{question}</Text>
-            
-            <View style={styles.inputContainer}>
-              <TextInput
-                value={answer}
-                onChangeText={text => setAnswer(text)}
-                style={styles.textInput}
-                placeholder="Enter Your Answer"
-                multiline={true}
-                numberOfLines={4}
-              />
-            </View>
-            
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={addPrompt}>
-              <Text style={styles.addButtonText}>Add</Text>
-            </TouchableOpacity>
+        isVisible={isModalVisible}
+        onBackdropPress={() => setModalVisible(!isModalVisible)}
+        onHardwareBackPress={() => setModalVisible(!isModalVisible)}
+        swipeDirection={['up', 'down']}
+        swipeThreshold={200}
+        onTouchOutside={() => setModalVisible(!isModalVisible)}>
+        <View style={{ marginVertical: 10 }}>
+          <Text
+            style={{ textAlign: 'center', fontWeight: '600', fontSize: 15 }}>
+            Answer your question
+          </Text>
+          <Text style={{ marginTop: 15, fontSize: 20, fontWeight: '600' }}>
+            {question}
+          </Text>
+          <View
+            style={{
+              borderColor: '#202020',
+              borderWidth: 1,
+              padding: 10,
+              borderRadius: 10,
+              height: 100,
+              marginVertical: 12,
+              borderStyle: 'dashed',
+            }}>
+            <TextInput
+              value={answer}
+              onChangeText={text => setAnswer(text)}
+              style={{ color: 'gray', width: 300, fontSize: answer ? 18 : 18 }}
+              placeholder="Enter Your Answer"
+            />
           </View>
+          <Button onPress={addPrompt} title="Add"></Button>
         </View>
       </Modal>
     </>
@@ -243,60 +219,4 @@ const ShowPromptsScreen = () => {
 
 export default ShowPromptsScreen;
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    minHeight: 300,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  questionText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 20,
-  },
-  inputContainer: {
-    borderColor: '#202020',
-    borderWidth: 1,
-    borderRadius: 10,
-    borderStyle: 'dashed',
-    marginBottom: 20,
-  },
-  textInput: {
-    padding: 15,
-    fontSize: 16,
-    color: '#333',
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  addButton: {
-    backgroundColor: '#581845',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const styles = StyleSheet.create({});

@@ -8,6 +8,7 @@ import { getRegistrationProgress, saveRegistrationProgress } from '../registrati
 
 const HomeTownScreen = () => {
     const [hometown,setHometown] = useState("");
+    const [error, setError] = useState('');
     const navigation = useNavigation();
     useEffect(() => {
         getRegistrationProgress('Hometown').then(progressData => {
@@ -18,11 +19,12 @@ const HomeTownScreen = () => {
       }, []);
     
       const handleNext = () => {
-        if (hometown.trim() !== '') {
-          // Save the current progress data including the name
-          saveRegistrationProgress('Hometown', {hometown});
+        if (hometown.trim() === '') {
+          setError('Please enter your hometown.');
+          return;
         }
-        // Navigate to the next screen
+        setError('');
+        saveRegistrationProgress('Hometown', {hometown});
         navigation.navigate('Photos');
       };
   return (
@@ -60,7 +62,14 @@ const HomeTownScreen = () => {
 
         <TextInput
           value={hometown}
-          onChangeText={(text) => setHometown(text)}
+          onChangeText={text => {
+            setHometown(text);
+            if (text.trim() === '') {
+              setError('Please enter your hometown.');
+            } else {
+              setError('');
+            }
+          }}
           autoFocus={true}
           style={{
             width: 340,
@@ -76,6 +85,9 @@ const HomeTownScreen = () => {
           placeholderTextColor={'#BEBEBE'}
         />
 
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
 
         <TouchableOpacity
           onPress={handleNext}

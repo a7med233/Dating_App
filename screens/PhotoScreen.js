@@ -18,11 +18,13 @@ import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
+import {launchImageLibrary} from 'react-native-image-picker';
 
 const PhotoScreen = () => {
   const navigation = useNavigation();
   const [imageUrls, setImageUrls] = useState(['', '', '', '', '', '']);
   const [imageUrl, setImageUrl] = useState('');
+  const [error, setError] = useState('');
 
   const handleAddImage = () => {
     // Find the first empty slot in the array
@@ -45,11 +47,37 @@ const PhotoScreen = () => {
   }, []);
 
   const handleNext = () => {
-    // Save the current progress data including the image URLs
+    // At least one image URL must be non-empty
+    if (!imageUrls.some(url => url && url.trim() !== '')) {
+      setError('Please add at least one photo.');
+      return;
+    }
+    setError('');
     saveRegistrationProgress('Photos', {imageUrls});
+    navigation.navigate('Prompts');
+  };
 
-    // Navigate to the next screen
-    navigation.navigate('Prompts'); // Navigate to the appropriate screen
+  // Add this function to pick images from device
+  const pickImage = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', selectionLimit: 6 },
+      (response) => {
+        if (response.didCancel) return;
+        if (response.errorCode) {
+          alert('Error: ' + response.errorMessage);
+          return;
+        }
+        if (response.assets) {
+          // Fill empty slots in imageUrls with selected images
+          const newUrls = [...imageUrls];
+          response.assets.forEach((asset) => {
+            const idx = newUrls.findIndex(url => !url);
+            if (idx !== -1) newUrls[idx] = asset.uri;
+          });
+          setImageUrls(newUrls);
+        }
+      }
+    );
   };
 
   return (
@@ -175,6 +203,9 @@ const PhotoScreen = () => {
 
         <View style={{marginTop: 25}}>
           <Text>Add a picture of yourself</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 10}}>
+            <Button title="Upload from device" onPress={pickImage} />
+          </View>
           <View
             style={{
               flexDirection: 'row',
@@ -206,7 +237,6 @@ const PhotoScreen = () => {
         </View>
 
         <TouchableOpacity
-        //   onPress={() => navigation.navigate('Prompts')}
           onPress={handleNext}
           activeOpacity={0.8}
           style={{marginTop: 30, marginLeft: 'auto'}}>
@@ -217,6 +247,9 @@ const PhotoScreen = () => {
             style={{alignSelf: 'center', marginTop: 20}}
           />
         </TouchableOpacity>
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );

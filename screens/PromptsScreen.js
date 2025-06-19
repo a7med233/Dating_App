@@ -13,7 +13,7 @@ import {useNavigation} from '@react-navigation/native';
 import {getRegistrationProgress, saveRegistrationProgress} from '../registrationUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
-import axios from 'axios';
+import {registerUser} from '../services/api';
 import {StackActions} from '@react-navigation/native';
 
 const PromptsScreen = () => {
@@ -22,6 +22,8 @@ const PromptsScreen = () => {
   console.log('he', route?.params?.PromptsScreen);
   const navigation = useNavigation();
   const [userData, setUserData] = useState();
+  const [error, setError] = useState('');
+
   const getAllUserData = async () => {
     try {
       // Define an array to store data for each screen
@@ -57,34 +59,32 @@ const PromptsScreen = () => {
     }
   };
 
-  const registerUser = async userData => {
+  const registerUserHandler = async userData => {
     try {
-      const response = await axios
-        .post('http://localhost:3000/register', userData)
-        .then(response => {
-          console.log(response);
-          const token = response.data.token;
-          AsyncStorage.setItem('token', token);
-        });
-      // Assuming the response contains the user data and token
-
-      // Store the token in AsyncStorage
-
+      const payload = {
+        ...userData,
+        prompts: userData.prompts || [],
+      };
+      const response = await registerUser(payload);
+      const token = response.data.token;
+      AsyncStorage.setItem('token', token);
       clearAllScreenData();
-
       navigation.replace('Main');
     } catch (error) {
       console.error('Error registering user:', error);
-      throw error; // Throw the error for handling in the component
+      throw error;
     }
   };
 
   const handleNext = () => {
-    // Save the current progress data including the image URLs
-    saveRegistrationProgress('Prompts', {prompts: route.params.prompts });
-
-    // Navigate to the next screen
-    navigation.navigate('PreFinal'); // Navigate to the appropriate screen
+    const prompts = route?.params?.prompts || [];
+    if (!Array.isArray(prompts) || prompts.length === 0) {
+      setError('Please answer at least one prompt.');
+      return;
+    }
+    setError('');
+    saveRegistrationProgress('Prompts', {prompts});
+    navigation.navigate('PreFinal');
   };
   return (
     <View>
@@ -362,6 +362,9 @@ const PromptsScreen = () => {
           />
         </TouchableOpacity>
       </View>
+      {error ? (
+        <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+      ) : null}
     </View>
   );
 };

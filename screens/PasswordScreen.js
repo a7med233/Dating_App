@@ -20,13 +20,19 @@ import {
 const PasswordScreen = () => {
   const navigation = useNavigation();
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   const handleNext = () => {
-    if (password.trim() !== '') {
-      // Save the current progress data including the name
-      saveRegistrationProgress('Password', {password});
+    if (password.trim() === '') {
+      setError('Password is required.');
+      return;
     }
-    // Navigate to the next screen
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    setError('');
+    saveRegistrationProgress('Password', {password});
     navigation.navigate('Birth');
   };
   return (
@@ -66,7 +72,16 @@ const PasswordScreen = () => {
           secureTextEntry={true}
           autoFocus={true}
           value={password}
-          onChangeText={text => setPassword(text)}
+          onChangeText={text => {
+            setPassword(text);
+            if (text.trim() === '') {
+              setError('Password is required.');
+            } else if (text.length < 6) {
+              setError('Password must be at least 6 characters.');
+            } else {
+              setError('');
+            }
+          }}
           style={{
             width: 340,
             marginVertical: 10,
@@ -80,6 +95,9 @@ const PasswordScreen = () => {
           placeholder="Enter your password"
           placeholderTextColor={'#BEBEBE'}
         />
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
         <Text style={{color: 'gray', fontSize: 15, marginTop: 7}}>
           Note: Your details will be safe with us.
         </Text>

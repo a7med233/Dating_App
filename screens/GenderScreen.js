@@ -16,6 +16,7 @@ import { getRegistrationProgress, saveRegistrationProgress } from '../registrati
 
 const GenderScreen = () => {
   const [gender, setGender] = useState('');
+  const [error, setError] = useState('');
   const navigation = useNavigation();
   useEffect(() => {
     getRegistrationProgress('Gender').then((progressData) => {
@@ -26,11 +27,12 @@ const GenderScreen = () => {
   }, []);
 
   const handleNext = () => {
-    if (gender.trim() !== '') {
-      // Save the current progress data including the name
-      saveRegistrationProgress('Gender', { gender });
+    if (gender.trim() === '') {
+      setError('Please select your gender.');
+      return;
     }
-    // Navigate to the next screen
+    setError('');
+    saveRegistrationProgress('Gender', { gender });
     navigation.navigate('Type');
   };
   return (
@@ -145,6 +147,9 @@ const GenderScreen = () => {
             style={{alignSelf: 'center', marginTop: 20}}
           />
         </TouchableOpacity>
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );

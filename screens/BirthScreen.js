@@ -23,6 +23,7 @@ const BirthScreen = () => {
   const [day, setDay] = useState('');
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
+  const [error, setError] = useState('');
 
   const handleDayChange = text => {
     setDay(text);
@@ -56,21 +57,47 @@ const BirthScreen = () => {
     });
   }, []);
 
-  const handleNext = () => {
-    // Check if all the date values are provided
-    if (day.trim() !== '' && month.trim() !== '' && year.trim() !== '') {
-      // Construct the date string in the desired format
-      const dateOfBirth = `${day}/${month}/${year}`;
+  const isValidDate = (d, m, y) => {
+    const day = parseInt(d, 10);
+    const month = parseInt(m, 10);
+    const year = parseInt(y, 10);
+    if (!day || !month || !year) return false;
+    if (month < 1 || month > 12) return false;
+    if (day < 1 || day > 31) return false;
+    if (year < 1900 || year > new Date().getFullYear()) return false;
+    // Check for valid day in month
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
+  };
 
-      // Save the current progress data including the date of birth
-      saveRegistrationProgress('Birth', {dateOfBirth});
-
-      // Navigate to the next screen
-      navigation.navigate('Location'); // Or navigate to the appropriate screen
-    } else {
-      // Handle the case where the user hasn't provided all the date values
-      // You can display a message or take appropriate action here
+  const isOldEnough = (y, m, d) => {
+    const today = new Date();
+    const birthDate = new Date(y, m - 1, d);
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const mDiff = today.getMonth() - birthDate.getMonth();
+    if (mDiff < 0 || (mDiff === 0 && today.getDate() < birthDate.getDate())) {
+      return age - 1 >= 18;
     }
+    return age >= 18;
+  };
+
+  const handleNext = () => {
+    if (day.trim() === '' || month.trim() === '' || year.trim() === '') {
+      setError('All fields are required.');
+      return;
+    }
+    if (!isValidDate(day, month, year)) {
+      setError('Please enter a valid date.');
+      return;
+    }
+    if (!isOldEnough(year, month, day)) {
+      setError('You must be at least 18 years old.');
+      return;
+    }
+    setError('');
+    const dateOfBirth = `${day}/${month}/${year}`;
+    saveRegistrationProgress('Birth', {dateOfBirth});
+    navigation.navigate('Location');
   };
 
   return (
@@ -181,6 +208,9 @@ const BirthScreen = () => {
             style={{alignSelf: 'center', marginTop: 20}}
           />
         </TouchableOpacity>
+        {error ? (
+          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );

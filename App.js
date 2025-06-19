@@ -14,6 +14,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 
 import {
   Colors,
@@ -24,6 +25,7 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import StackNavigator from './navigation/StackNavigator';
+import { AuthProvider } from './AuthContext';
 
 function Section({ children, title }) {
   const isDarkMode = useColorScheme() === 'dark';
@@ -63,9 +65,11 @@ function App() {
   const safePadding = '5%';
 
   return (
-    <>
-      <StackNavigator/>
-    </>
+    <AuthProvider>
+      <NavigationContainer>
+        <StackNavigator/>
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
 

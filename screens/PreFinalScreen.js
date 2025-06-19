@@ -1,27 +1,31 @@
-import {Pressable, SafeAreaView, StyleSheet, Text, View, Alert} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage/lib/commonjs/index.js';
-import React, {useEffect, useState} from 'react';
+import {Pressable, SafeAreaView, StyleSheet, Text, View, Modal, TouchableOpacity, ScrollView, ActivityIndicator} from 'react-native';
+import React, {useContext, useEffect, useState} from 'react';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import {useNavigation} from '@react-navigation/native';
 import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
+import axios from 'axios';
+import { AuthContext } from '../AuthContext';
+import ProfileCard from '../components/ProfileCard';
+import Toast from '../components/Toast';
 
 const PreFinalScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const [userData, setUserData] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [token, setToken] = useState(null);
+  const [userData, setUserData] = useState();
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+  const [userDataLoading, setUserDataLoading] = useState(true);
 
-  useEffect(() => {
-    getAllUserData();
-  }, []);
+  const { token, isLoading,setToken } = useContext(AuthContext);
 
-  console.log('Token:', token);
+  console.log(token)
 
   useEffect(() => {
     // Check if the token is set and not in loading state
@@ -30,6 +34,10 @@ const PreFinalScreen = () => {
       navigation.navigate('MainStack', { screen: 'Main' });
     }
   }, [token, navigation]);
+
+  useEffect(() => {
+    getAllUserData();
+  }, []);
 
   const getAllUserData = async () => {
     try {
@@ -62,12 +70,14 @@ const PreFinalScreen = () => {
 
       // Return the combined user data
       setUserData(userData);
+      setUserDataLoading(false);
     } catch (error) {
       console.error('Error retrieving user data:', error);
+      setUserData(undefined);
+      setUserDataLoading(false);
       return null;
     }
   };
-
   const clearAllScreenData = async () => {
     try {
       const screens = [
@@ -81,7 +91,6 @@ const PreFinalScreen = () => {
         'LookingFor',
         'Hometown',
         'Photos',
-        'Prompts',
       ];
       // Loop through each screen and remove its data from AsyncStorage
       for (const screenName of screens) {
@@ -93,36 +102,56 @@ const PreFinalScreen = () => {
       console.error('Error clearing screen data:', error);
     }
   };
-
   const registerUser = async () => {
     try {
-      setIsLoading(true);
-      
-      // For now, simulate a successful registration
-      // In a real app, you would make an actual API call here
-      console.log('Registering user with data:', userData);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate successful registration
-      const mockToken = 'mock_token_' + Date.now();
-      await AsyncStorage.setItem('token', mockToken);
-      setToken(mockToken);
-      
-      // Clear registration data
-      await clearAllScreenData();
-      
+      setLoading(true);
+      if (!userData) {
+        setToast({ visible: true, message: 'User data is missing', type: 'error' });
+        setLoading(false);
+        return;
+      }
+      const payload = {
+        firstName: userData.firstName,
+        lastName: userData.lastName || '',
+        email: userData.email,
+        password: userData.password,
+        gender: userData.gender,
+        dateOfBirth: userData.dateOfBirth,
+        type: userData.type,
+        location: userData.location,
+        hometown: userData.hometown,
+        datingPreferences: userData.datingPreferences || [],
+        lookingFor: userData.lookingFor,
+        imageUrls: userData.imageUrls || [],
+        prompts: userData.prompts || [],
+      };
+      const response = await axios
+        .post('http://10.0.2.2:3000/register', payload)
+        .then(response => {
+          const token = response.data.token;
+          AsyncStorage.setItem('token', token);
+          setToken(token)
+        });
+      setToast({ visible: true, message: 'Registration successful!', type: 'success' });
+      clearAllScreenData();
     } catch (error) {
+      setToast({ visible: true, message: 'Registration failed. Please try again.', type: 'error' });
       console.error('Error registering user:', error);
-      Alert.alert('Registration Error', 'Failed to register. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-
   console.log('user data', userData);
-  
+
+  if (userDataLoading) {
+    return (
+      <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'white'}}>
+        <ActivityIndicator size="large" color="#900C3F" />
+        <Text style={{marginTop:16}}>Loading your profile data...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
       <View style={{marginTop: 80}}>
@@ -165,16 +194,16 @@ const PreFinalScreen = () => {
       </View>
 
       <Pressable
-        onPress={registerUser}
-        disabled={isLoading}
-        style={{
-          backgroundColor: isLoading ? '#ccc' : '#900C3F', 
-          padding: 15, 
-          marginTop: 'auto',
-          marginHorizontal: 20,
-          marginBottom: 20,
-          borderRadius: 8,
-        }}>
+        onPress={() => userData ? setPreviewVisible(true) : null}
+        style={{backgroundColor: '#581845', padding: 15, marginTop: 20, marginHorizontal: 20, borderRadius: 8}}>
+        <Text style={{textAlign: 'center', color: 'white', fontWeight: '600', fontSize: 15}}>
+          Preview Profile
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={userData ? registerUser : undefined}
+        style={{backgroundColor: '#900C3F', padding: 15, marginTop: 'auto'}}>
         <Text
           style={{
             textAlign: 'center',
@@ -182,9 +211,54 @@ const PreFinalScreen = () => {
             fontWeight: '600',
             fontSize: 15,
           }}>
-          {isLoading ? 'Registering...' : 'Finish registering'}
+          Finish registering
         </Text>
       </Pressable>
+
+      <Modal
+        visible={previewVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPreviewVisible(false)}
+      >
+        <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.3)',justifyContent:'center',alignItems:'center'}} activeOpacity={1} onPressOut={() => setPreviewVisible(false)}>
+          <View style={{backgroundColor:'white',padding:24,borderRadius:12,alignItems:'center',maxWidth:350,maxHeight:'80%'}}>
+            <Text style={{fontWeight:'bold',fontSize:18,marginBottom:8}}>Profile Preview</Text>
+            <ScrollView style={{width: '100%'}} contentContainerStyle={{alignItems:'center'}}>
+              <ProfileCard profile={userData || {}} />
+              <Text style={{marginTop:10,fontWeight:'bold'}}>Prompts:</Text>
+              {userData?.prompts && userData.prompts.length > 0 ? userData.prompts.map((p, i) => (
+                <View key={i} style={{marginVertical:4}}>
+                  <Text style={{fontWeight:'600'}}>{p.question}</Text>
+                  <Text>{p.answer}</Text>
+                </View>
+              )) : <Text style={{color:'gray'}}>No prompts answered.</Text>}
+              <Text style={{marginTop:10,fontWeight:'bold'}}>Dating Preferences:</Text>
+              <Text>{userData?.datingPreferences?.join(', ') || 'None'}</Text>
+              <Text style={{marginTop:10,fontWeight:'bold'}}>Looking For:</Text>
+              <Text>{userData?.lookingFor || 'Not specified'}</Text>
+              <Text style={{marginTop:10,fontWeight:'bold'}}>Location:</Text>
+              <Text>{userData?.location || 'Not specified'}</Text>
+              <Text style={{marginTop:10,fontWeight:'bold'}}>Hometown:</Text>
+              <Text>{userData?.hometown || 'Not specified'}</Text>
+            </ScrollView>
+            <Pressable onPress={() => setPreviewVisible(false)} style={{backgroundColor:'#900C3F',padding:10,borderRadius:8,marginTop:16}}>
+              <Text style={{color:'white',fontWeight:'bold'}}>Close</Text>
+            </Pressable>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+      {loading && (
+        <View style={{position:'absolute',top:0,left:0,right:0,bottom:0,backgroundColor:'rgba(0,0,0,0.2)',justifyContent:'center',alignItems:'center',zIndex:10}}>
+          <ActivityIndicator size="large" color="#900C3F" />
+        </View>
+      )}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast({ ...toast, visible: false })}
+      />
     </SafeAreaView>
   );
 };
