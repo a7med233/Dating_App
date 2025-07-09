@@ -9,12 +9,11 @@ import {
   Image,
 } from 'react-native';
 import React, {useState, useLayoutEffect, useEffect} from 'react';
-import Entypo from 'react-native-vector-icons/Entypo';
-import Feather from 'react-native-vector-icons/Feather';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Entypo, Feather, Ionicons } from '@expo/vector-icons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {io} from 'socket.io-client';
 import { fetchMessages } from '../services/api';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 const ChatRoom = () => {
   const [message, setMessage] = useState('');
@@ -50,7 +49,7 @@ const ChatRoom = () => {
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
           <Ionicons name="arrow-back" size={24} color="black" />
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
-            <Text style={{fontSize: 16, fontWeight: 'bold'}}>
+            <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.bold}}>
               {route?.params?.name}
             </Text>
           </View>
@@ -83,7 +82,7 @@ const ChatRoom = () => {
     return new Date(time).toLocaleString('en-US', options);
   };
   return (
-    <KeyboardAvoidingView style={{flex: 1, backgroundColor: 'white'}}>
+    <KeyboardAvoidingView style={{flex: 1, backgroundColor: colors.textInverse}}>
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         {messages?.map((item, index) => (
           <Pressable
@@ -92,10 +91,10 @@ const ChatRoom = () => {
               item?.senderId === route?.params?.senderId
                 ? {
                     alignSelf: 'flex-end',
-                    backgroundColor: '#662d91',
+                    backgroundColor: colors.primary,
                     padding: 8,
                     maxWidth: '60%',
-                    borderRadius: 7,
+                    borderRadius: borderRadius.small,
                     margin: 10,
                   }
                 : {
@@ -103,25 +102,25 @@ const ChatRoom = () => {
                     backgroundColor: '#452c63',
                     padding: 8,
                     margin: 10,
-                    borderRadius: 7,
+                    borderRadius: borderRadius.small,
                     maxWidth: '60%',
                   },
             ]}>
             <Text
               style={{
-                fontSize: 15,
+                fontSize: typography.fontSize.md,
                 textAlign: 'left',
-                color: 'white',
-                fontWeight: '500',
+                color: colors.textInverse,
+                fontFamily: typography.fontFamily.medium,
               }}>
               {item?.message}
             </Text>
             <Text
               style={{
-                fontSize: 9,
+                fontSize: typography.fontSize.xs,
                 textAlign: 'right',
-                color: '#F0F0F0',
-                marginTop: 5,
+                color: colors.backgroundSecondary,
+                marginTop: spacing.sm,
               }}>
               {formatTime(item?.timestamp)}
             </Text>
@@ -132,11 +131,11 @@ const ChatRoom = () => {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 10,
+          paddingHorizontal: spacing.md,
           paddingVertical: 10,
           borderTopWidth: 1,
           borderTopColor: '#dddddd',
-          marginBottom: 30,
+          marginBottom: spacing.xl,
         }}>
         <Entypo
           style={{marginRight: 7}}
@@ -152,8 +151,8 @@ const ChatRoom = () => {
             height: 40,
             borderWidth: 1,
             borderColor: '#dddddd',
-            borderRadius: 20,
-            paddingHorizontal: 10,
+            borderRadius: borderRadius.xlarge,
+            paddingHorizontal: spacing.md,
           }}
           placeholder="Type your message..."
         />
@@ -175,12 +174,12 @@ const ChatRoom = () => {
             sendMessage(route?.params?.senderId, route?.params?.receiverId)
           }
           style={{
-            backgroundColor: '#662d91',
-            paddingHorizontal: 12,
+            backgroundColor: colors.primary,
+            paddingHorizontal: spacing.md,
             paddingVertical: 8,
-            borderRadius: 20,
+            borderRadius: borderRadius.xlarge,
           }}>
-          <Text style={{textAlign: 'center', color: 'white'}}>Send</Text>
+          <Text style={{textAlign: 'center', color: colors.textInverse}}>Send</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

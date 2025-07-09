@@ -1,17 +1,16 @@
-import {
-  StyleSheet,
+import {StyleSheet,
   Text,
   View,
-  SafeAreaView,
   Image,
   TextInput,
-  Pressable,
-} from 'react-native';
+  Pressable,} from 'react-native';
 import React, {useState} from 'react';
 import {useNavigation, useRoute} from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import PreFinalScreen from './PreFinalScreen';
 import { likeProfile } from '../services/api';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 const SendLikeScreen = () => {
   const route = useRoute();
@@ -36,10 +35,10 @@ const SendLikeScreen = () => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#FAF9F6'}}>
+    <SafeAreaWrapper backgroundColor={colors.background} style={{flex: 1, backgroundColor: '#FAF9F6'}}>
       <View
         style={{marginTop: 'auto', marginBottom: 'auto', marginHorizontal: 40}}>
-        <Text style={{fontSize: 22, fontWeight: 'bold'}}>
+        <Text style={{fontSize: typography.fontSize.xxl, fontFamily: typography.fontFamily.bold}}>
           {route?.params?.name}
         </Text>
         <Image
@@ -47,8 +46,8 @@ const SendLikeScreen = () => {
             width: '100%',
             height: 350,
             resizeMode: 'cover',
-            borderRadius: 10,
-            marginTop: 20,
+            borderRadius: borderRadius.medium,
+            marginTop: spacing.lg,
           }}
           source={{
             uri: route?.params?.image,
@@ -60,9 +59,9 @@ const SendLikeScreen = () => {
           placeholder="Add a comment"
           style={{
             padding: 15,
-            backgroundColor: 'white',
-            borderRadius: 8,
-            marginTop: 14,
+            backgroundColor: colors.textInverse,
+            borderRadius: borderRadius.small,
+            marginTop: spacing.md,
             fontSize: comment ? 17 : 17,
           }}
         />
@@ -79,10 +78,10 @@ const SendLikeScreen = () => {
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: '#FFC0CB',
-              paddingHorizontal: 14,
+              paddingHorizontal: spacing.md,
               paddingVertical: 10,
               gap: 4,
-              borderRadius: 22,
+              borderRadius: borderRadius.xlarge,
             }}>
             <Text>1</Text>
             <Ionicons name="rose-outline" size={22} color="black" />
@@ -91,17 +90,17 @@ const SendLikeScreen = () => {
             onPress={likeProfileHandler}
             style={{
               backgroundColor: '#FFFDD0',
-              borderRadius: 20,
+              borderRadius: borderRadius.xlarge,
               padding: 10,
               flex: 1,
             }}>
-            <Text style={{fontWeight: 'bold', textAlign: 'center'}}>
+            <Text style={{fontFamily: typography.fontFamily.bold, textAlign: 'center'}}>
               Send Like
             </Text>
           </Pressable>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

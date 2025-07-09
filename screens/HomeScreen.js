@@ -5,20 +5,23 @@ import {
   ScrollView,
   Pressable,
   Image,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import React, {useEffect, useState, useCallback} from 'react';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Entypo from 'react-native-vector-icons/Entypo';
-import Octicons from 'react-native-vector-icons/Octicons';
-import Feather from 'react-native-vector-icons/Feather';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Ionicons, Entypo, Octicons, Feather, AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {jwtDecode} from 'jwt-decode';
 import { fetchMatches } from '../services/api';
 import { atob, btoa } from 'base-64';
+import NotificationCenter from '../components/NotificationCenter';
+import NotificationBadge from '../components/NotificationBadge';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import GradientButton from '../components/GradientButton';
+import ThemedCard from '../components/ThemedCard';
 
 if (typeof global.atob === 'undefined') {
   global.atob = atob;
@@ -31,6 +34,7 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const [option, setOption] = useState('Compatible');
   const [profilesData, setProfilesData] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const profiles = [
     {
       id: '0',
@@ -426,89 +430,102 @@ const HomeScreen = () => {
   };
 
   return (
-    <>
-      <ScrollView style={{marginTop: 55}}>
-        <View
-          style={{
-            padding: 10,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-          }}>
+    <SafeAreaWrapper backgroundColor={colors.background}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <LinearGradient
+          colors={[colors.primaryLight, colors.primaryDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        >
           <View
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 19,
-              backgroundColor: '#D0D0D0',
-              justifyContent: 'center',
+              padding: 10,
+              flexDirection: 'row',
               alignItems: 'center',
+              gap: 10,
+              paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 10 : 10,
             }}>
-            <Ionicons name="sparkles-sharp" size={22} color="black" />
+            <View
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: borderRadius.xlarge,
+                backgroundColor: '#D0D0D0',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <Ionicons name="sparkles-sharp" size={22} color="black" />
+            </View>
+            <Pressable
+              onPress={() => setOption('Compatible')}
+              style={{
+                borderColor: option == 'Compatible' ? 'transparent' : '#808080',
+                borderWidth: 0.7,
+                padding: 10,
+                borderRadius: borderRadius.xlarge,
+                backgroundColor: option == 'Compatible' ? colors.textPrimary : 'transparent',
+              }}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: typography.fontSize.sm,
+                  fontFamily: typography.fontFamily.regular,
+                  color: option == 'Compatible' ? colors.textInverse : '#808080',
+                }}>
+                Compatible
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setOption('Active Today')}
+              style={{
+                borderColor: option == 'Active Today' ? 'transparent' : '#808080',
+                borderWidth: 0.7,
+                padding: 10,
+                borderRadius: borderRadius.xlarge,
+                backgroundColor:
+                  option == 'Active Today' ? colors.textPrimary : 'transparent',
+              }}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: typography.fontSize.sm,
+                  fontFamily: typography.fontFamily.regular,
+                  color: option == 'Active Today' ? colors.textInverse : '#808080',
+                }}>
+                Active Today
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setOption('New here')}
+              style={{
+                borderColor: option == 'New here' ? 'transparent' : '#808080',
+                borderWidth: 0.7,
+                padding: 10,
+                borderRadius: borderRadius.xlarge,
+                backgroundColor: option == 'New here' ? colors.textPrimary : 'transparent',
+              }}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: typography.fontSize.sm,
+                  fontFamily: typography.fontFamily.regular,
+                  color: option == 'New here' ? colors.textInverse : '#808080',
+                }}>
+                New here
+              </Text>
+            </Pressable>
           </View>
-          <Pressable
-            onPress={() => setOption('Compatible')}
-            style={{
-              borderColor: option == 'Compatible' ? 'transparent' : '#808080',
-              borderWidth: 0.7,
-              padding: 10,
-              borderRadius: 20,
-              backgroundColor: option == 'Compatible' ? 'black' : 'transparent',
-            }}>
-            <Text
-              style={{
-                textAlign: 'center',
-                fontSize: 14,
-                fontWeight: '400',
-                color: option == 'Compatible' ? 'white' : '#808080',
-              }}>
-              Compatible
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setOption('Active Today')}
-            style={{
-              borderColor: option == 'Active Today' ? 'transparent' : '#808080',
-              borderWidth: 0.7,
-              padding: 10,
-              borderRadius: 20,
-              backgroundColor:
-                option == 'Active Today' ? 'black' : 'transparent',
-            }}>
-            <Text
-              style={{
-                textAlign: 'center',
-                fontSize: 14,
-                fontWeight: '400',
-                color: option == 'Active Today' ? 'white' : '#808080',
-              }}>
-              Active Today
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setOption('New here')}
-            style={{
-              borderColor: option == 'New here' ? 'transparent' : '#808080',
-              borderWidth: 0.7,
-              padding: 10,
-              borderRadius: 20,
-              backgroundColor: option == 'New here' ? 'black' : 'transparent',
-            }}>
-            <Text
-              style={{
-                textAlign: 'center',
-                fontSize: 14,
-                fontWeight: '400',
-                color: option == 'New here' ? 'white' : '#808080',
-              }}>
-              New here
-            </Text>
-          </Pressable>
-        </View>
+        </LinearGradient>
         <View style={{marginHorizontal: 12, marginVertical: 12}}>
           {/* {profiles?.map((item, index) => ( */}
           {filteredProfiles.length === 0 ? (
-            <Text style={{textAlign:'center',marginTop:20}}>No profiles found for this filter.</Text>
+            <Text style={{textAlign:'center',marginTop: spacing.lg}}>No profiles found for this filter.</Text>
           ) : (
             <>
               {(() => {
@@ -518,12 +535,16 @@ const HomeScreen = () => {
                   <View>
                     <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
                       <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
-                        <Text style={{fontSize: 22, fontWeight: 'bold'}}>{profile?.firstName}</Text>
-                        <View style={{backgroundColor: '#452c63', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20}}>
-                          <Text style={{textAlign: 'center', color: 'white'}}>new here</Text>
+                        <Text style={{fontSize: typography.fontSize.xxl, fontFamily: typography.fontFamily.bold}}>{profile?.firstName}</Text>
+                        <View style={{backgroundColor: colors.primaryLight, paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: borderRadius.xlarge}}>
+                          <Text style={{textAlign: 'center', color: colors.textInverse}}>new here</Text>
                         </View>
                       </View>
                       <View style={{flexDirection: 'row', alignItems: 'center', gap: 15}}>
+                        <Pressable onPress={() => setShowNotifications(true)} style={{ position: 'relative' }}>
+                          <Ionicons name="notifications-outline" size={24} color="black" />
+                          <NotificationBadge userId={userId} />
+                        </Pressable>
                         <Entypo name="dots-three-horizontal" size={22} color="black" />
                       </View>
                     </View>
@@ -531,22 +552,22 @@ const HomeScreen = () => {
                       {profile?.imageUrls?.length > 0 && (
                         <View>
                           <Image
-                            style={{width: '100%', height: 350, resizeMode: 'cover', borderRadius: 10}}
+                            style={{width: '100%', height: 350, resizeMode: 'cover', borderRadius: borderRadius.medium}}
                             source={{uri: profile?.imageUrls[0]}}
                           />
                           <Pressable
                             onPress={() => navigation.navigate('SendLike', {image: profile?.imageUrls[0], name: profile?.firstName, userId: userId, likedUserId: profile?._id})}
-                            style={{position: 'absolute', bottom: 10, right: 10, backgroundColor: 'white', width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center'}}>
-                            <AntDesign name="hearto" size={25} color="#C5B358" />
+                            style={{position: 'absolute', bottom: 10, right: 10, backgroundColor: colors.textInverse, width: 42, height: 42, borderRadius: borderRadius.xlarge, justifyContent: 'center', alignItems: 'center'}}>
+                            <AntDesign name="hearto" size={25} color={colors.primary} />
                           </Pressable>
                         </View>
                       )}
                     </View>
                     <View style={{marginVertical: 15}}>
                       {profile?.prompts?.slice(0, 1).map(prompt => (
-                        <View key={prompt.id} style={{backgroundColor: 'white', padding: 12, borderRadius: 10, height: 150, justifyContent: 'center'}}>
-                          <Text style={{fontSize: 15, fontWeight: '500'}}>{prompt.question}</Text>
-                          <Text style={{fontSize: 20, fontWeight: '600', marginTop: 20}}>{prompt.answer}</Text>
+                        <View key={prompt.id} style={{backgroundColor: colors.textInverse, padding: 12, borderRadius: borderRadius.medium, height: 150, justifyContent: 'center'}}>
+                          <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>{prompt.question}</Text>
+                          <Text style={{fontSize: typography.fontSize.xl, fontFamily: typography.fontFamily.semiBold, marginTop: spacing.lg}}>{prompt.answer}</Text>
                         </View>
                       ))}
                     </View>
@@ -562,21 +583,44 @@ const HomeScreen = () => {
         onPress={handleCross}
         style={{
           position: 'absolute',
-          bottom: 15,
+          bottom: Platform.OS === 'android' ? 25 : 15,
           left: 12,
-          backgroundColor: 'white',
+          backgroundColor: colors.textInverse,
           width: 50,
           height: 50,
-          borderRadius: 25,
+          borderRadius: borderRadius.round,
           justifyContent: 'center',
           alignItems: 'center',
         }}>
-        <Entypo name="cross" size={25} color="#C5B358" />
+        <Entypo name="cross" size={25} color={colors.primary} />
       </Pressable>
-    </>
+      
+      <NotificationCenter 
+        isVisible={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        userId={userId}
+      />
+    </SafeAreaWrapper>
   );
 };
 
 export default HomeScreen;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.textInverse,
+  },
+    ...shadows.small,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'android' ? 100 : 50, // Extra padding for Android
+  },
+  headerGradient: {
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 10 : 10,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+});

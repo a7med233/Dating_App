@@ -1,26 +1,26 @@
-import {
-  StyleSheet,
+import {StyleSheet,
   Text,
   View,
-  SafeAreaView,
   Image,
   TouchableOpacity,
   Alert,
-  PermissionsAndroid,
   Platform,
   TextInput,
   FlatList,
   Modal,
-} from 'react-native';
+  StatusBar,} from 'react-native';
 import React, { useState, useEffect } from 'react';
 import MapView, { Marker } from 'react-native-maps';
-import Geolocation from '@react-native-community/geolocation';
+import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+
 
 const LocationScreen = () => {
   const navigation = useNavigation();
@@ -42,35 +42,22 @@ const LocationScreen = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
 
-  // Simple permission check for Android
+  // Simple permission check using Expo Location
   const checkPermission = async () => {
-    if (Platform.OS === 'ios') return true;
-
     try {
-      const granted = await PermissionsAndroid.check(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-      );
-      return granted;
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      return status === 'granted';
     } catch (error) {
       console.log('Permission check error:', error);
       return false;
     }
   };
 
-  // Simple permission request for Android
+  // Simple permission request using Expo Location
   const requestPermission = async () => {
-    if (Platform.OS === 'ios') return true;
-
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Location Permission',
-          message: 'This app needs location access.',
-          buttonPositive: 'OK',
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      return status === 'granted';
     } catch (error) {
       console.log('Permission request error:', error);
       return false;
@@ -133,61 +120,61 @@ const LocationScreen = () => {
   };
 
   // Get current location
-  const getCurrentLocation = () => {
+  const getCurrentLocation = async () => {
     setIsLoading(true);
 
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
+    try {
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
 
-        // Check if map is zoomed out (large delta values) and zoom back in
-        const isZoomedOut = region.latitudeDelta > 0.05 || region.longitudeDelta > 0.05;
+      const { latitude, longitude } = position.coords;
 
-        const newRegion = {
-          latitude,
-          longitude,
-          latitudeDelta: isZoomedOut ? 0.01 : region.latitudeDelta, // Zoom in if was zoomed out
-          longitudeDelta: isZoomedOut ? 0.01 : region.longitudeDelta,
-        };
+      // Check if map is zoomed out (large delta values) and zoom back in
+      const isZoomedOut = region.latitudeDelta > 0.05 || region.longitudeDelta > 0.05;
 
-        setRegion(newRegion);
-        setMarkerCoordinate({ latitude, longitude });
-        setIsLoading(false);
+      const newRegion = {
+        latitude,
+        longitude,
+        latitudeDelta: isZoomedOut ? 0.01 : region.latitudeDelta, // Zoom in if was zoomed out
+        longitudeDelta: isZoomedOut ? 0.01 : region.longitudeDelta,
+      };
 
-        // Get address
-        fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCxJnLEXSwG-fHAzwoEWZdrbxPgOMLkaBE`
-        )
-          .then(response => response.json())
-          .then(data => {
-            if (data.results && data.results.length > 0) {
-              setLocation(data.results[0].formatted_address);
-            }
-          })
-          .catch(error => {
-            console.log('Geocoding error:', error);
-            setLocation('Location found');
-          });
-      },
-      (error) => {
-        console.log('Location error:', error);
-        setIsLoading(false);
+      setRegion(newRegion);
+      setMarkerCoordinate({ latitude, longitude });
+      setIsLoading(false);
 
-        if (error.code === 1) {
-          Alert.alert(
-            'Permission Required',
-            'Please grant location permission to use this feature.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Grant Permission', onPress: requestPermission }
-            ]
-          );
-        } else {
-          Alert.alert('Error', 'Unable to get location. You can still drag the marker.');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-    );
+      // Get address
+      fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCxJnLEXSwG-fHAzwoEWZdrbxPgOMLkaBE`
+      )
+        .then(response => response.json())
+        .then(data => {
+          if (data.results && data.results.length > 0) {
+            setLocation(data.results[0].formatted_address);
+          }
+        })
+        .catch(error => {
+          console.log('Geocoding error:', error);
+          setLocation('Location found');
+        });
+    } catch (error) {
+      console.log('Location error:', error);
+      setIsLoading(false);
+
+      if (error.code === 'E_LOCATION_PERMISSION_DENIED') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant location permission to use this feature.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Grant Permission', onPress: requestPermission }
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Unable to get location. You can still drag the marker.');
+      }
+    }
   };
 
   // Initialize location on component mount
@@ -257,29 +244,30 @@ const LocationScreen = () => {
         padding: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
-        backgroundColor: 'white',
+        backgroundColor: colors.textInverse,
       }}
       onPress={() => selectSearchResult(item)}
     >
-      <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>
+              <Text style={{ fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium, color: colors.textPrimary }}>
         {item.name}
       </Text>
-      <Text style={{ fontSize: 14, color: '#666', marginTop: 2 }}>
+              <Text style={{ fontSize: typography.fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
         {item.formatted_address}
       </Text>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ marginTop: 90, marginHorizontal: 20 }}>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <View style={styles.content}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{
             width: 44,
             height: 44,
-            borderRadius: 22,
-            borderColor: 'black',
+            borderRadius: borderRadius.xlarge,
+            borderColor: colors.textPrimary,
             borderWidth: 2,
             justifyContent: 'center',
             alignItems: 'center',
@@ -299,10 +287,10 @@ const LocationScreen = () => {
         </View>
 
         <Text style={{
-          fontSize: 25,
-          fontWeight: 'bold',
+          fontSize: typography.fontSize.xxxl,
+          fontFamily: typography.fontFamily.bold,
           fontFamily: 'GeezaPro-Bold',
-          marginTop: 15,
+          marginTop: spacing.md,
         }}>
           Where do you live?
         </Text>
@@ -316,24 +304,24 @@ const LocationScreen = () => {
             backgroundColor: '#f8f9fa',
             borderWidth: 1,
             borderColor: '#dee2e6',
-            borderRadius: 25,
-            paddingHorizontal: 15,
+            borderRadius: borderRadius.round,
+            paddingHorizontal: spacing.md,
             paddingVertical: 12,
-            marginTop: 20,
+            marginTop: spacing.lg,
           }}
         >
           <MaterialCommunityIcons name="magnify" size={20} color="#6c757d" />
-          <Text style={{ marginLeft: 10, color: '#6c757d', fontSize: 16 }}>
+          <Text style={{ marginLeft: 10, color: '#6c757d', fontSize: typography.fontSize.md }}>
             Search for a location...
           </Text>
         </TouchableOpacity>
 
         {/* Map Container with GPS Button */}
-        <View style={{ position: 'relative', marginTop: 20 }}>
+        <View style={{ position: 'relative', marginTop: spacing.lg }}>
           <MapView
             key={`${region.latitude}-${region.longitude}`}
             region={region}
-            style={{ width: '100%', height: 350, borderRadius: 5 }}
+            style={{ width: '100%', height: 350, borderRadius: borderRadius.small }}
             showsUserLocation={true}
             showsMyLocationButton={false}
           >
@@ -343,7 +331,7 @@ const LocationScreen = () => {
               onDragEnd={onMarkerDragEnd}
               title="Your Location"
               description="Drag to set location"
-              pinColor="#581845"
+              pinColor="colors.primary"
             />
           </MapView>
 
@@ -355,8 +343,8 @@ const LocationScreen = () => {
               position: 'absolute',
               right: 15,
               bottom: 15,
-              backgroundColor: 'white',
-              borderRadius: 25,
+              backgroundColor: colors.textInverse,
+              borderRadius: borderRadius.round,
               padding: 10,
               elevation: 5,
               shadowColor: '#000',
@@ -368,7 +356,7 @@ const LocationScreen = () => {
             <MaterialCommunityIcons
               name="crosshairs-gps"
               size={24}
-              color={isLoading ? "#ccc" : "#581845"}
+              color={isLoading ? "#ccc" : colors.primary}
             />
           </TouchableOpacity>
         </View>
@@ -377,15 +365,15 @@ const LocationScreen = () => {
         <View style={{
           backgroundColor: '#f8f9fa',
           padding: 10,
-          borderRadius: 5,
-          marginTop: 10,
+          borderRadius: borderRadius.small,
+          marginTop: spacing.md,
           borderWidth: 1,
           borderColor: '#dee2e6',
         }}>
           <Text style={{
             textAlign: 'center',
             color: '#6c757d',
-            fontSize: 12,
+            fontSize: typography.fontSize.xs,
             fontStyle: 'italic',
           }}>
             💡 Search for a location or drag the red marker to set your location
@@ -394,18 +382,18 @@ const LocationScreen = () => {
 
         {/* Location Display */}
         <View style={{
-          backgroundColor: 'black',
+          backgroundColor: colors.textPrimary,
           padding: 12,
-          borderRadius: 20,
-          marginTop: 10,
+          borderRadius: borderRadius.xlarge,
+          marginTop: spacing.md,
           alignSelf: 'center',
-          marginBottom: 80, // Add bottom margin to make space for the next button
+          marginBottom: Platform.OS === 'android' ? 100 : 80, // Extra margin for Android
         }}>
           <Text style={{
             textAlign: 'center',
-            color: 'white',
-            fontSize: 14,
-            fontWeight: '500',
+            color: colors.textInverse,
+            fontSize: typography.fontSize.sm,
+            fontFamily: typography.fontFamily.medium,
           }}>
             {location || 'Drag marker to set location'}
           </Text>
@@ -417,9 +405,9 @@ const LocationScreen = () => {
           style={{
             position: 'absolute',
             right: 20,
-            bottom: 30,
-            backgroundColor: '#581845',
-            borderRadius: 30,
+            bottom: Platform.OS === 'android' ? 40 : 30,
+            backgroundColor: colors.primary,
+            borderRadius: borderRadius.round,
             padding: 15,
             elevation: 8,
             shadowColor: '#000',
@@ -436,7 +424,7 @@ const LocationScreen = () => {
         </TouchableOpacity>
 
         {error ? (
-          <Text style={{ color: 'red', marginTop: 10, textAlign: 'center' }}>{error}</Text>
+          <Text style={{ color: 'red', marginTop: spacing.md, textAlign: 'center' }}>{error}</Text>
         ) : null}
       </View>
 
@@ -446,7 +434,7 @@ const LocationScreen = () => {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+        <SafeAreaWrapper backgroundColor={colors.background} style={{ flex: 1, backgroundColor: colors.textInverse }}>
           {/* Modal Header */}
           <View style={{
             flexDirection: 'row',
@@ -463,9 +451,9 @@ const LocationScreen = () => {
               }}
               style={{ marginRight: 15 }}
             >
-              <MaterialCommunityIcons name="close" size={24} color="#333" />
+              <MaterialCommunityIcons name="close" size={24} color="colors.textPrimary" />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Search Location</Text>
+            <Text style={{ fontSize: typography.fontSize.lg, fontFamily: typography.fontFamily.bold }}>Search Location</Text>
           </View>
 
           {/* Search Input */}
@@ -478,10 +466,10 @@ const LocationScreen = () => {
               style={{
                 borderWidth: 1,
                 borderColor: '#dee2e6',
-                borderRadius: 25,
-                paddingHorizontal: 15,
+                borderRadius: borderRadius.round,
+                paddingHorizontal: spacing.md,
                 paddingVertical: 12,
-                fontSize: 16,
+                fontSize: typography.fontSize.md,
               }}
               placeholder="Enter location name..."
               value={searchQuery}
@@ -504,7 +492,7 @@ const LocationScreen = () => {
               ListEmptyComponent={
                 searchQuery.length > 2 ? (
                   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                    <Text style={{ color: '#666', textAlign: 'center' }}>
+                    <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
                       No locations found for "{searchQuery}"
                     </Text>
                   </View>
@@ -512,12 +500,18 @@ const LocationScreen = () => {
               }
             />
           )}
-        </SafeAreaView>
+        </SafeAreaWrapper>
       </Modal>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 
 export default LocationScreen;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  content: {
+    marginHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 20 : 20,
+    flex: 1,
+  },
+});

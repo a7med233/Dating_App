@@ -1,4 +1,8 @@
 import {StyleSheet, Text, View, ScrollView} from 'react-native';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import GradientButton from '../components/GradientButton';
+import ThemedCard from '../components/ThemedCard';
 import React, {useCallback, useEffect, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
@@ -51,9 +55,9 @@ const ChatScreen = () => {
   );
   console.log('matches', matches);
   return (
-    <ScrollView style={{marginTop: 55, padding: 12}}>
+    <ScrollView style={{marginTop: spacing.xxl, padding: 12}}>
       <View>
-        <Text style={{fontSize: 20, fontWeight: '500'}}>Your Matches</Text>
+        <Text style={{fontSize: typography.fontSize.xl, fontFamily: typography.fontFamily.medium}}>Your Matches</Text>
         <View style={{marginVertical:12}}>
           {matches?.map((item, index) => (
             <UserChat key={index} userId={userId} item={item} />

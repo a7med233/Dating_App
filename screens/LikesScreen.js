@@ -7,13 +7,13 @@ import {
   Image,
 } from 'react-native';
 import React, {useEffect, useState, useCallback} from 'react';
-import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import { atob, btoa } from 'base-64';
 import { fetchReceivedLikes } from '../services/api';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 if (typeof global.atob === 'undefined') {
   global.atob = atob;
@@ -65,7 +65,7 @@ const LikesScreen = () => {
   console.log('likes', likes.length);
   return (
     <ScrollView
-      style={{marginTop: 55, padding: 15, flex: 1, backgroundColor: '#FAF9F6'}}>
+      style={{marginTop: spacing.xxl, padding: 15, flex: 1, backgroundColor: '#FAF9F6'}}>
       <View
         style={{
           flexDirection: 'row',
@@ -74,10 +74,10 @@ const LikesScreen = () => {
         }}>
         <Text
           style={{
-            fontSize: 23,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.xxl,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
-            marginTop: 15,
+            marginTop: spacing.md,
           }}>
           Likes You
         </Text>
@@ -88,11 +88,11 @@ const LikesScreen = () => {
             gap: 5,
             backgroundColor: '#008B8B',
             padding: 10,
-            borderRadius: 30,
+            borderRadius: borderRadius.round,
           }}>
-          <SimpleLineIcons name="fire" size={24} color="white" />
+          <Ionicons name="flame" size={24} color="white" />
           <Text
-            style={{textAlign: 'center', fontWeight: 'bold', color: 'white'}}>
+            style={{textAlign: 'center', fontFamily: typography.fontFamily.bold, color: colors.textInverse}}>
             Boost
           </Text>
         </View>
@@ -109,7 +109,7 @@ const LikesScreen = () => {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 19,
+            borderRadius: borderRadius.xlarge,
             backgroundColor: '#D0D0D0',
             justifyContent: 'center',
             alignItems: 'center',
@@ -122,15 +122,15 @@ const LikesScreen = () => {
             borderColor: option == 'Recent' ? 'transparent' : '#808080',
             borderWidth: 0.7,
             padding: 10,
-            borderRadius: 20,
-            backgroundColor: option == 'Recent' ? 'black' : 'transparent',
+            borderRadius: borderRadius.xlarge,
+            backgroundColor: option == 'Recent' ? colors.textPrimary : 'transparent',
           }}>
           <Text
             style={{
               textAlign: 'center',
-              fontSize: 14,
-              fontWeight: '400',
-              color: option == 'Recent' ? 'white' : '#808080',
+              fontSize: typography.fontSize.sm,
+              fontFamily: typography.fontFamily.regular,
+              color: option == 'Recent' ? colors.textInverse : '#808080',
             }}>
             Recent
           </Text>
@@ -141,15 +141,15 @@ const LikesScreen = () => {
             borderColor: option == 'your type' ? 'transparent' : '#808080',
             borderWidth: 0.7,
             padding: 10,
-            borderRadius: 20,
-            backgroundColor: option == 'your type' ? 'black' : 'transparent',
+            borderRadius: borderRadius.xlarge,
+            backgroundColor: option == 'your type' ? colors.textPrimary : 'transparent',
           }}>
           <Text
             style={{
               textAlign: 'center',
-              fontSize: 14,
-              fontWeight: '400',
-              color: option == 'your type' ? 'white' : '#808080',
+              fontSize: typography.fontSize.sm,
+              fontFamily: typography.fontFamily.regular,
+              color: option == 'your type' ? colors.textInverse : '#808080',
             }}>
             your type
           </Text>
@@ -160,16 +160,16 @@ const LikesScreen = () => {
             borderColor: option == 'Last Active' ? 'transparent' : '#808080',
             borderWidth: 0.7,
             padding: 10,
-            borderRadius: 20,
-            backgroundColor: option == 'Last Active' ? 'black' : 'transparent',
+            borderRadius: borderRadius.xlarge,
+            backgroundColor: option == 'Last Active' ? colors.textPrimary : 'transparent',
             likes:likes?.length
           }}>
           <Text
             style={{
               textAlign: 'center',
-              fontSize: 14,
-              fontWeight: '400',
-              color: option == 'Last Active' ? 'white' : '#808080',
+              fontSize: typography.fontSize.sm,
+              fontFamily: typography.fontFamily.regular,
+              color: option == 'Last Active' ? colors.textInverse : '#808080',
             }}>
             Last Active
           </Text>
@@ -180,15 +180,15 @@ const LikesScreen = () => {
             borderColor: option == 'Nearby' ? 'transparent' : '#808080',
             borderWidth: 0.7,
             padding: 10,
-            borderRadius: 20,
-            backgroundColor: option == 'Nearby' ? 'black' : 'transparent',
+            borderRadius: borderRadius.xlarge,
+            backgroundColor: option == 'Nearby' ? colors.textPrimary : 'transparent',
           }}>
           <Text
             style={{
               textAlign: 'center',
-              fontSize: 14,
-              fontWeight: '400',
-              color: option == 'Nearby' ? 'white' : '#808080',
+              fontSize: typography.fontSize.sm,
+              fontFamily: typography.fontFamily.regular,
+              color: option == 'Nearby' ? colors.textInverse : '#808080',
             }}>
             Nearby
           </Text>
@@ -213,17 +213,17 @@ const LikesScreen = () => {
               padding: 20,
               borderColor: '#E0E0E0',
               borderWidth: 1,
-              borderRadius: 7,
+              borderRadius: borderRadius.small,
             }}>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'flex-start',
-                paddingHorizontal: 16,
+                paddingHorizontal: spacing.md,
                 paddingVertical: 12,
                 backgroundColor: '#f0f0f0',
-                borderRadius: 5,
-                marginBottom: 8,
+                borderRadius: borderRadius.small,
+                marginBottom: spacing.sm,
                 width: 145,
               }}>
               <View />
@@ -231,7 +231,7 @@ const LikesScreen = () => {
                 <Text>Liked your photo</Text>
               </View>
             </View>
-            <Text style={{fontSize: 22, fontWeight: 'bold'}}>
+            <Text style={{fontSize: typography.fontSize.xxl, fontFamily: typography.fontFamily.bold}}>
               {likes[0].userId?.firstName}
             </Text>
             <Image
@@ -240,8 +240,8 @@ const LikesScreen = () => {
                 width: '100%',
                 height: 350,
                 resizeMode: 'cover',
-                borderRadius: 10,
-                marginTop: 20,
+                borderRadius: borderRadius.medium,
+                marginTop: spacing.lg,
               }}
             />
           </Pressable>
@@ -250,10 +250,10 @@ const LikesScreen = () => {
 
       <Text
         style={{
-          fontSize: 20,
-          fontWeight: 'bold',
+          fontSize: typography.fontSize.xl,
+          fontFamily: typography.fontFamily.bold,
           fontFamily: 'GeezaPro-Bold',
-          marginTop: 20,
+          marginTop: spacing.lg,
         }}>
         Up Next
       </Text>
@@ -265,18 +265,18 @@ const LikesScreen = () => {
           gap: 20,
         }}>
         {likes.slice(1).map((like, index) => (
-          <View style={{marginVertical: 10, backgroundColor: 'white'}}>
+          <View style={{marginVertical: 10, backgroundColor: colors.textInverse}}>
             <View style={{padding: 12}}>
               {like.comment ? (
                 <View
                   style={{
                     flexDirection: 'row',
                     alignItems: 'flex-start',
-                    paddingHorizontal: 16,
+                    paddingHorizontal: spacing.md,
                     paddingVertical: 12,
                     backgroundColor: '#F5F3C6',
-                    borderRadius: 5,
-                    marginBottom: 8,
+                    borderRadius: borderRadius.small,
+                    marginBottom: spacing.sm,
                     width: 145,
                   }}>
                   <View />
@@ -289,11 +289,11 @@ const LikesScreen = () => {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'flex-start',
-                    paddingHorizontal: 16,
+                    paddingHorizontal: spacing.md,
                     paddingVertical: 12,
                     backgroundColor: '#f0f0f0',
-                    borderRadius: 5,
-                    marginBottom: 8,
+                    borderRadius: borderRadius.small,
+                    marginBottom: spacing.sm,
                     width: 145,
                   }}>
                   <View />
@@ -303,7 +303,7 @@ const LikesScreen = () => {
                 </View>
               )}
 
-              <Text style={{fontSize: 17, fontWeight: '500'}}>
+              <Text style={{fontSize: typography.fontSize.lg, fontFamily: typography.fontFamily.medium}}>
                 {like?.userId?.firstName}
               </Text>
             </View>
@@ -312,7 +312,7 @@ const LikesScreen = () => {
               <Image
                 key={index}
                 source={{uri: like.userId?.imageUrls[0]}}
-                style={{height: 220, width: 180, borderRadius: 4}}
+                style={{height: 220, width: 180, borderRadius: borderRadius.small}}
               />
             </View>
           </View>

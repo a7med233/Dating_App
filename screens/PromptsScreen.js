@@ -1,20 +1,20 @@
-import {
-  Image,
+import {Image,
   Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+  Platform,
+  StatusBar,} from 'react-native';
 import React, {useState, useEffect} from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import {useNavigation} from '@react-navigation/native';
+import { MaterialCommunityIcons, AntDesign } from '@expo/vector-icons';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import {getRegistrationProgress, saveRegistrationProgress} from '../registrationUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useRoute} from '@react-navigation/native';
 import {registerUser} from '../services/api';
 import {StackActions} from '@react-navigation/native';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 const PromptsScreen = () => {
   const route = useRoute();
@@ -23,41 +23,54 @@ const PromptsScreen = () => {
   const navigation = useNavigation();
   const [userData, setUserData] = useState();
   const [error, setError] = useState('');
+  const [prompts, setPrompts] = useState([]);
 
   const getAllUserData = async () => {
     try {
-      // Define an array to store data for each screen
-      const screens = [
-        'Name',
-        'Email',
-        'Birth',
-        'Location',
-        'Gender',
-        'Type',
-        'Dating',
-        'LookingFor',
-        'Hometown',
-        'Photos',
-      ]; // Add more screens as needed
+      const nameData = await getRegistrationProgress('Name');
+      const emailData = await getRegistrationProgress('Email');
+      const passwordData = await getRegistrationProgress('Password');
+      const birthData = await getRegistrationProgress('Birth');
+      const locationData = await getRegistrationProgress('Location');
+      const genderData = await getRegistrationProgress('Gender');
+      const hometownData = await getRegistrationProgress('Hometown');
+      const lookingForData = await getRegistrationProgress('LookingFor');
+      const typeData = await getRegistrationProgress('Type');
+      const promptsData = await getRegistrationProgress('Prompts');
+      const photoData = await getRegistrationProgress('Photo');
 
-      // Define an object to store user data
-      let userData = {};
+      const allData = {
+        name: nameData,
+        email: emailData,
+        password: passwordData,
+        birth: birthData,
+        location: locationData,
+        gender: genderData,
+        hometown: hometownData,
+        lookingFor: lookingForData,
+        type: typeData,
+        prompts: promptsData,
+        photo: photoData,
+      };
 
-      // Retrieve data for each screen and add it to the user data object
-      for (const screenName of screens) {
-        const screenData = await getRegistrationProgress(screenName);
-        if (screenData) {
-          userData = {...userData, ...screenData}; // Merge screen data into user data
-        }
+      console.log('All registration data:', allData);
+      setUserData(allData);
+      if (promptsData) {
+        setPrompts(promptsData.prompts || []);
       }
-
-      // Return the combined user data
-      setUserData(userData);
+      return allData;
     } catch (error) {
-      console.error('Error retrieving user data:', error);
+      console.error('Error getting all user data:', error);
       return null;
     }
   };
+
+  // Update local state when prompts are received from route params
+  useEffect(() => {
+    if (route?.params?.prompts) {
+      setPrompts(route.params.prompts);
+    }
+  }, [route?.params?.prompts]);
 
   const registerUserHandler = async userData => {
     try {
@@ -77,25 +90,26 @@ const PromptsScreen = () => {
   };
 
   const handleNext = () => {
-    const prompts = route?.params?.prompts || [];
-    if (!Array.isArray(prompts) || prompts.length === 0) {
-      setError('Please answer at least one prompt.');
+    const currentPrompts = route?.params?.prompts || prompts;
+    if (currentPrompts.length === 0) {
+      setError('Please add at least one prompt.');
       return;
     }
     setError('');
-    saveRegistrationProgress('Prompts', {prompts});
+    saveRegistrationProgress('Prompts', {prompts: currentPrompts});
     navigation.navigate('PreFinal');
   };
   return (
-    <View>
-      <View style={{marginTop: 90, marginHorizontal: 20}}>
+    <SafeAreaWrapper backgroundColor={colors.background} style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <View style={styles.content}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <View
             style={{
               width: 44,
               height: 44,
-              borderRadius: 22,
-              borderColor: 'black',
+              borderRadius: borderRadius.xlarge,
+              borderColor: colors.textPrimary,
               borderWidth: 2,
               justifyContent: 'center',
               alignItems: 'center',
@@ -111,264 +125,120 @@ const PromptsScreen = () => {
         </View>
         <Text
           style={{
-            fontSize: 25,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.xxxl,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
-            marginTop: 15,
+            marginTop: spacing.md,
           }}>
           Write your profile answers
         </Text>
 
-        <View style={{marginTop: 20, flexDirection: 'column', gap: 20}}>
-          {route?.params?.prompts ? (
-            route?.params?.prompts?.map((item, index) => (
+        <View style={{marginTop: spacing.lg, flexDirection: 'column', gap: 20}}>
+          {/* Show existing prompts */}
+          {route?.params?.prompts && route.params.prompts.length > 0 && (
+            route.params.prompts.map((item, index) => (
               <Pressable
-                onPress={() => navigation.navigate('ShowPrompts')}
+                key={`prompt-${index}-${item?.question}`}
+                onPress={() => navigation.navigate('ShowPrompts', { prompts: route.params.prompts })}
                 style={{
                   borderColor: '#707070',
                   borderWidth: 2,
                   justifyContent: 'center',
                   alignItems: 'center',
                   borderStyle: 'dashed',
-                  borderRadius: 10,
+                  borderRadius: borderRadius.medium,
                   height: 70,
                 }}>
                 <Text
                   style={{
-                    fontWeight: '600',
+                    fontFamily: typography.fontFamily.semiBold,
                     fontStyle: 'italic',
-                    fontSize: 15,
+                    fontSize: typography.fontSize.md,
                   }}>
                   {item?.question}
                 </Text>
                 <Text
                   style={{
-                    fontWeight: '600',
+                    fontFamily: typography.fontFamily.semiBold,
                     fontStyle: 'italic',
-                    fontSize: 15,
-                    marginTop: 3,
+                    fontSize: typography.fontSize.md,
+                    marginTop: spacing.xs,
                   }}>
                   {item?.answer}
                 </Text>
               </Pressable>
             ))
-          ) : (
+          )}
+          
+          {/* Show placeholder prompts for adding more (up to 3 total) */}
+          {(!route?.params?.prompts || route.params.prompts.length < 3) && (
             <View>
-              <Pressable
-                onPress={() => navigation.navigate('ShowPrompts')}
-                style={{
-                  borderColor: '#707070',
-                  borderWidth: 2,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderStyle: 'dashed',
-                  borderRadius: 10,
-                  height: 70,
-                
-                }}>
-                <Text
+              {Array.from({ length: 3 - (route?.params?.prompts?.length || 0) }).map((_, index) => (
+                <Pressable
+                  key={`prompt-placeholder-${index}`}
+                  onPress={() => navigation.navigate('ShowPrompts', { 
+                    prompts: route?.params?.prompts || [] 
+                  })}
                   style={{
-                    color: 'gray',
-                    fontWeight: '600',
-                    fontStyle: 'italic',
-                    fontSize: 15,
+                    borderColor: '#707070',
+                    borderWidth: 2,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderStyle: 'dashed',
+                    borderRadius: borderRadius.medium,
+                    height: 70,
+                    marginBottom: index < 2 ? 15 : 0,
                   }}>
-                  Select a Prompt
-                </Text>
-                <Text
-                  style={{
-                    color: 'gray',
-                    fontWeight: '600',
-                    fontStyle: 'italic',
-                    fontSize: 15,
-                    marginTop: 3,
-                  }}>
-                  And write your own answer
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => navigation.navigate('ShowPrompts')}
-                style={{
-                  borderColor: '#707070',
-                  borderWidth: 2,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderStyle: 'dashed',
-                  borderRadius: 10,
-                  height: 70,
-                  marginVertical: 15
-                }}>
-                <Text
-                  style={{
-                    color: 'gray',
-                    fontWeight: '600',
-                    fontStyle: 'italic',
-                    fontSize: 15,
-                  }}>
-                  Select a Prompt
-                </Text>
-                <Text
-                  style={{
-                    color: 'gray',
-                    fontWeight: '600',
-                    fontStyle: 'italic',
-                    fontSize: 15,
-                    marginTop: 3,
-                  }}>
-                  And write your own answer
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => navigation.navigate('ShowPrompts')}
-                style={{
-                  borderColor: '#707070',
-                  borderWidth: 2,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderStyle: 'dashed',
-                  borderRadius: 10,
-                  height: 70,
-                }}>
-                <Text
-                  style={{
-                    color: 'gray',
-                    fontWeight: '600',
-                    fontStyle: 'italic',
-                    fontSize: 15,
-                  }}>
-                  Select a Prompt
-                </Text>
-                <Text
-                  style={{
-                    color: 'gray',
-                    fontWeight: '600',
-                    fontStyle: 'italic',
-                    fontSize: 15,
-                    marginTop: 3,
-                  }}>
-                  And write your own answer
-                </Text>
-              </Pressable>
+                  <Text
+                    style={{
+                      color: 'gray',
+                      fontFamily: typography.fontFamily.semiBold,
+                      fontStyle: 'italic',
+                      fontSize: typography.fontSize.md,
+                    }}>
+                    Select a Prompt
+                  </Text>
+                  <Text
+                    style={{
+                      color: 'gray',
+                      fontFamily: typography.fontFamily.semiBold,
+                      fontStyle: 'italic',
+                      fontSize: typography.fontSize.md,
+                      marginTop: spacing.xs,
+                    }}>
+                    And write your own answer
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           )}
-          {/* {route?.params?.prompts?.map((item, index) => (
-            <Pressable
-              onPress={() => navigation.navigate('ShowPrompts')}
-              style={{
-                borderColor: '#707070',
-                borderWidth: 2,
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderStyle: 'dashed',
-                borderRadius: 10,
-                height: 70,
-              }}>
-              <Text
-                style={{
-                  fontWeight: '600',
-                  fontStyle: 'italic',
-                  fontSize: 15,
-                }}>
-                {item?.question}
-              </Text>
-              <Text
-                style={{
-                  fontWeight: '600',
-                  fontStyle: 'italic',
-                  fontSize: 15,
-                  marginTop: 3,
-                }}>
-                {item?.answer}
-              </Text>
-            </Pressable>
-          ))}
-
-          <Pressable
-            onPress={() => navigation.navigate('ShowPrompts')}
-            style={{
-              borderColor: '#707070',
-              borderWidth: 2,
-              justifyContent: 'center',
-              alignItems: 'center',
-              borderStyle: 'dashed',
-              borderRadius: 10,
-              height: 70,
-            }}>
-            <Text
-              style={{
-                color: 'gray',
-                fontWeight: '600',
-                fontStyle: 'italic',
-                fontSize: 15,
-              }}>
-              Select a Prompt
-            </Text>
-            <Text
-              style={{
-                color: 'gray',
-                fontWeight: '600',
-                fontStyle: 'italic',
-                fontSize: 15,
-                marginTop: 3,
-              }}>
-              And write your own answer
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => navigation.navigate('ShowPrompts')}
-            style={{
-              borderColor: '#707070',
-              borderWidth: 2,
-              justifyContent: 'center',
-              alignItems: 'center',
-              borderStyle: 'dashed',
-              borderRadius: 10,
-              height: 70,
-            }}>
-            <Text
-              style={{
-                color: 'gray',
-                fontWeight: '600',
-                fontStyle: 'italic',
-                fontSize: 15,
-              }}>
-              Select a Prompt
-            </Text>
-            <Text
-              style={{
-                color: 'gray',
-                fontWeight: '600',
-                fontStyle: 'italic',
-                fontSize: 15,
-                marginTop: 3,
-              }}>
-              And write your own answer
-            </Text>
-          </Pressable> */}
         </View>
 
         <TouchableOpacity
           onPress={handleNext}
           activeOpacity={0.8}
-          style={{marginTop: 30, marginLeft: 'auto'}}>
-          <MaterialCommunityIcons
+          style={{marginTop: spacing.xl, marginLeft: 'auto'}}>
+          <AntDesign
             name="arrow-right-circle"
             size={45}
-            color="#581845"
-            style={{alignSelf: 'center', marginTop: 20}}
+            color="colors.primary"
+            style={{alignSelf: 'center', marginTop: spacing.lg}}
           />
         </TouchableOpacity>
+        {error ? (
+          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
+        ) : null}
       </View>
-      {error ? (
-        <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
-      ) : null}
-    </View>
+    </SafeAreaWrapper>
   );
 };
 
 export default PromptsScreen;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  content: {
+    marginHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 20 : 20,
+    flex: 1,
+  },
+});

@@ -2,7 +2,6 @@ import {
   StyleSheet,
   Text,
   View,
-  SafeAreaView,
   Image,
   Pressable,
 } from 'react-native';
@@ -11,18 +10,20 @@ import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios"
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 
 const BasicInfo = () => {
     const navigation = useNavigation();
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
-      <View style={{marginTop: 80}}>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <View style={{marginTop: spacing.xxl}}>
         <Text
           style={{
-            fontSize: 35,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.display,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
             marginLeft: 20,
           }}>
@@ -30,11 +31,11 @@ const BasicInfo = () => {
         </Text>
         <Text
           style={{
-            fontSize: 33,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.display,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
             marginLeft: 20,
-            marginTop: 10,
+            marginTop: spacing.md,
           }}>
           You're profile should be too.
         </Text>
@@ -47,7 +48,7 @@ const BasicInfo = () => {
             height: 260,
             width: 300,
             alignSelf: 'center',
-            marginTop: 40,
+            marginTop: spacing.xxl,
             justifyContent: 'center',
           }}
           autoPlay
@@ -58,18 +59,18 @@ const BasicInfo = () => {
 
       <Pressable
       onPress={() => navigation.navigate("Name")}
-        style={{backgroundColor: '#900C3F', padding: 15, marginTop: 'auto'}}>
+        style={{backgroundColor: colors.primary, padding: 15, marginTop: 'auto'}}>
         <Text
           style={{
             textAlign: 'center',
-            color: 'white',
-            fontWeight: '600',
-            fontSize: 15,
+            color: colors.textInverse,
+            fontFamily: typography.fontFamily.semiBold,
+            fontSize: typography.fontSize.md,
           }}>
           Enter basic Info
         </Text>
       </Pressable>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

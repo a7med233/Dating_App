@@ -1,18 +1,15 @@
-import {
-  StyleSheet,
+import {StyleSheet,
   Text,
   View,
-  SafeAreaView,
   Image,
   TouchableOpacity,
-  Pressable
-} from 'react-native';
+  Pressable} from 'react-native';
 import React ,{useState,useEffect} from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import { MaterialCommunityIcons, FontAwesome, AntDesign } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import { getRegistrationProgress, saveRegistrationProgress } from '../registrationUtils';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 const LookingFor = () => {
     const [lookingFor,setLookingFor] = useState([]);
@@ -37,15 +34,15 @@ const LookingFor = () => {
       };
       
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
-      <View style={{marginTop: 90, marginHorizontal: 20}}>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <View style={{marginTop: spacing.xxl, marginHorizontal: 20}}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <View
             style={{
               width: 44,
               height: 44,
-              borderRadius: 22,
-              borderColor: 'black',
+              borderRadius: borderRadius.xlarge,
+              borderColor: colors.textPrimary,
               borderWidth: 2,
               justifyContent: 'center',
               alignItems: 'center',
@@ -61,29 +58,29 @@ const LookingFor = () => {
         </View>
         <Text
           style={{
-            fontSize: 25,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.xxxl,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
-            marginTop: 15,
+            marginTop: spacing.md,
           }}>
           What's your dating intention?
         </Text>
 
 
 
-        <View style={{marginTop: 30, flexDirection: 'column', gap: 12}}>
+        <View style={{marginTop: spacing.xl, flexDirection: 'column', gap: 12}}>
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Life Partner</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Life Partner</Text>
             <Pressable onPress={() => setLookingFor('Life Partner')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={lookingFor == "Life Partner" ? '#581845' : '#F0F0F0'}
+                color={lookingFor == "Life Partner"  ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -93,12 +90,12 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Long-term relationship</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Long-term relationship</Text>
             <Pressable onPress={() => setLookingFor('Long-term relationship')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={lookingFor == "Long-term relationship" ? '#581845' : '#F0F0F0'}
+                color={lookingFor == "Long-term relationship"  ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -108,12 +105,12 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Long-term relationship open to short</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Long-term relationship open to short</Text>
             <Pressable onPress={() => setLookingFor('Long-term relationship open to short')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={lookingFor == "Long-term relationship open to short" ? '#581845' : '#F0F0F0'}
+                color={lookingFor == "Long-term relationship open to short"  ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -123,12 +120,12 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Short-term relationship open to long</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Short-term relationship open to long</Text>
             <Pressable onPress={() => setLookingFor('Short-term relationship open to long')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={lookingFor == "Short-term relationship open to long" ? '#581845' : '#F0F0F0'}
+                color={lookingFor == "Short-term relationship open to long"  ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -138,12 +135,12 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Short-term relationship</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Short-term relationship</Text>
             <Pressable onPress={() => setLookingFor('Short-term relationship')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={lookingFor == "Short-term relationship" ? '#581845' : '#F0F0F0'}
+                color={lookingFor == "Short-term relationship"  ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -153,12 +150,12 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Figuring out my dating goals</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Figuring out my dating goals</Text>
             <Pressable onPress={() => setLookingFor('Figuring out my dating goals')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={lookingFor == "Figuring out my dating goals" ? '#581845' : '#F0F0F0'}
+                color={lookingFor == "Figuring out my dating goals"  ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -166,30 +163,30 @@ const LookingFor = () => {
 
         <View
           style={{
-            marginTop: 30,
+            marginTop: spacing.xl,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}>
-          <AntDesign name="checksquare" size={26} color="#581845" />
-          <Text style={{fontSize: 15}}>Visible on profile</Text>
+          <AntDesign name="checksquare" size={26} color="colors.primary" />
+          <Text style={{fontSize: typography.fontSize.md}}>Visible on profile</Text>
         </View>
         <TouchableOpacity
           onPress={handleNext}
           activeOpacity={0.8}
-          style={{marginTop: 30, marginLeft: 'auto'}}>
+          style={{marginTop: spacing.xl, marginLeft: 'auto'}}>
           <MaterialCommunityIcons
             name="arrow-right-circle"
             size={45}
-            color="#581845"
-            style={{alignSelf: 'center', marginTop: 20}}
+            color="colors.primary"
+            style={{alignSelf: 'center', marginTop: spacing.lg}}
           />
         </TouchableOpacity>
         {error ? (
-          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
         ) : null}
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

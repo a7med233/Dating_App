@@ -1,26 +1,39 @@
-import {
-  StyleSheet,
+import {StyleSheet,
   Text,
   View,
   Pressable,
   TextInput,
   Image,
   TouchableOpacity,
-  SafeAreaView
-} from 'react-native';
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,} from 'react-native';
 import React, {useState, useEffect} from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Fontisto from 'react-native-vector-icons/Fontisto';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+
+
+const { width, height } = Dimensions.get('window');
 
 const PasswordScreen = () => {
   const navigation = useNavigation();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    getRegistrationProgress('Password').then((progressData) => {
+      if (progressData) {
+        setPassword(progressData.password || '');
+      }
+    });
+  }, []);
 
   const handleNext = () => {
     if (password.trim() === '') {
@@ -35,88 +48,159 @@ const PasswordScreen = () => {
     saveRegistrationProgress('Password', {password});
     navigation.navigate('Birth');
   };
-  return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
-      <View style={{marginTop: 90, marginHorizontal: 20}}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              borderColor: 'black',
-              borderWidth: 2,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Fontisto name="email" size={26} color="black" />
-          </View>
-          <Image
-            style={{width: 100, height: 40}}
-            source={{
-              uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-            }}
-          />
-        </View>
-        <Text
-          style={{
-            fontSize: 25,
-            fontWeight: 'bold',
-            fontFamily: 'GeezaPro-Bold',
-            marginTop: 15,
-          }}>
-          Please choose your password
-        </Text>
 
-        <TextInput
-          secureTextEntry={true}
-          autoFocus={true}
-          value={password}
-          onChangeText={text => {
-            setPassword(text);
-            if (text.trim() === '') {
-              setError('Password is required.');
-            } else if (text.length < 6) {
-              setError('Password must be at least 6 characters.');
-            } else {
-              setError('');
-            }
-          }}
-          style={{
-            width: 340,
-            marginVertical: 10,
-            fontSize: password ? 22 : 22,
-            marginTop: 25,
-            borderBottomColor: 'black',
-            borderBottomWidth: 1,
-            paddingBottom: 10,
-            fontFamily: 'GeezaPro-Bold',
-          }}
-          placeholder="Enter your password"
-          placeholderTextColor={'#BEBEBE'}
-        />
-        {error ? (
-          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
-        ) : null}
-        <Text style={{color: 'gray', fontSize: 15, marginTop: 7}}>
-          Note: Your details will be safe with us.
-        </Text>
-        <TouchableOpacity
-          onPress={handleNext}
-          activeOpacity={0.8}
-          style={{marginTop: 30, marginLeft: 'auto'}}>
-          <MaterialCommunityIcons
-            name="arrow-right-circle"
-            size={45}
-            color="#581845"
-            style={{alignSelf: 'center', marginTop: 20}}
-          />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+  return (
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Header Section */}
+            <View style={styles.header}>
+              <View style={styles.iconContainer}>
+                <MaterialIcons name="lock" size={26} color="black" />
+              </View>
+              <Image
+                style={styles.logo}
+                source={{
+                  uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
+                }}
+                resizeMode="contain"
+              />
+            </View>
+
+            {/* Title */}
+            <Text style={styles.title}>
+              Please choose your password
+            </Text>
+
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                secureTextEntry={true}
+                autoFocus={true}
+                value={password}
+                onChangeText={text => {
+                  setPassword(text);
+                  if (text.trim() === '') {
+                    setError('Password is required.');
+                  } else if (text.length < 6) {
+                    setError('Password must be at least 6 characters.');
+                  } else {
+                    setError('');
+                  }
+                }}
+                style={styles.textInput}
+                placeholder="Enter your password"
+                placeholderTextColor={'#BEBEBE'}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Error Message */}
+            {error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : null}
+
+            {/* Note */}
+            <Text style={styles.note}>
+              Note: Your details will be safe with us.
+            </Text>
+
+            {/* Next Button */}
+            <Pressable
+              onPress={handleNext}
+              style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.lg, borderRadius: borderRadius.medium}}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  color: colors.textInverse,
+                  fontFamily: typography.fontFamily.semiBold,
+                  fontSize: typography.fontSize.md,
+                }}>
+                Continue
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
 
-export default PasswordScreen;
+const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 90 : 60,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.xlarge,
+    borderColor: colors.textPrimary,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  logo: {
+    width: 100,
+    height: 40,
+  },
+  title: {
+    fontSize: Math.min(width * 0.06, 25),
+    fontFamily: typography.fontFamily.bold,
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    marginBottom: spacing.md,
+    color: '#000',
+  },
+  inputContainer: {
+    marginBottom: spacing.md,
+  },
+  textInput: {
+    fontSize: Math.min(width * 0.055, 22),
+    borderBottomColor: colors.textPrimary,
+    borderBottomWidth: 1,
+    paddingBottom: 10,
+    paddingTop: 5,
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    color: '#000',
+  },
+  errorText: {
+    color: 'red',
+    marginTop: spacing.sm,
+    fontSize: Math.min(width * 0.035, 14),
+  },
+  note: {
+    color: 'gray',
+    fontSize: Math.min(width * 0.035, 15),
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  nextButton: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.lg,
+  },
+});
 
-const styles = StyleSheet.create({});
+export default PasswordScreen;

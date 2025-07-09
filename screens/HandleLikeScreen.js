@@ -9,11 +9,10 @@ import {
 } from 'react-native';
 import React from 'react';
 import {useRoute} from '@react-navigation/native';
-import Entypo from 'react-native-vector-icons/Entypo';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import { Entypo, AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createMatch } from '../services/api';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 const HandleLikeScreen = () => {
   const route = useRoute();
@@ -47,17 +46,17 @@ const HandleLikeScreen = () => {
   return (
     <>
       <ScrollView
-        style={{flex: 1, backgroundColor: 'white', marginTop: 55, padding: 12}}>
+        style={{flex: 1, backgroundColor: colors.textInverse, marginTop: spacing.xxl, padding: 12}}>
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <Text style={{textAlign: 'center', fontSize: 15, fontWeight: '500'}}>
+          <Text style={{textAlign: 'center', fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>
             All {route?.params?.likes}
           </Text>
-          <Text style={{fontSize: 15, fontWeight: '500'}}>Back</Text>
+          <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>Back</Text>
         </View>
 
         <View style={{marginVertical: 12}}>
@@ -65,7 +64,7 @@ const HandleLikeScreen = () => {
             style={{
               width: '100%',
               height: 100,
-              borderRadius: 7,
+              borderRadius: borderRadius.small,
               resizeMode: 'cover',
             }}
             source={{uri: route?.params.image}}
@@ -74,11 +73,11 @@ const HandleLikeScreen = () => {
             style={{
               flexDirection: 'row',
               alignItems: 'flex-start',
-              paddingHorizontal: 16,
+              paddingHorizontal: spacing.md,
               paddingVertical: 12,
               backgroundColor: '#f0f0f0',
-              borderRadius: 5,
-              marginBottom: 8,
+              borderRadius: borderRadius.small,
+              marginBottom: spacing.sm,
               width: 145,
               position: 'absolute',
               bottom: -22,
@@ -103,17 +102,17 @@ const HandleLikeScreen = () => {
                 alignItems: 'center',
                 gap: 10,
               }}>
-              <Text style={{fontSize: 22, fontWeight: 'bold'}}>
+              <Text style={{fontSize: typography.fontSize.xxl, fontFamily: typography.fontFamily.bold}}>
                 {route?.params?.name}
               </Text>
               <View
                 style={{
                   backgroundColor: '#452c63',
-                  paddingHorizontal: 12,
+                  paddingHorizontal: spacing.md,
                   paddingVertical: 4,
-                  borderRadius: 20,
+                  borderRadius: borderRadius.xlarge,
                 }}>
-                <Text style={{textAlign: 'center', color: 'white'}}>
+                <Text style={{textAlign: 'center', color: colors.textInverse}}>
                   new here
                 </Text>
               </View>
@@ -137,7 +136,7 @@ const HandleLikeScreen = () => {
                       width: '100%',
                       height: 350,
                       resizeMode: 'cover',
-                      borderRadius: 10,
+                      borderRadius: borderRadius.medium,
                     }}
                     source={{
                       uri: route?.params?.imageUrls[0],
@@ -148,10 +147,10 @@ const HandleLikeScreen = () => {
                       position: 'absolute',
                       bottom: 10,
                       right: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: borderRadius.xlarge,
                       justifyContent: 'center',
                       alignItems: 'center',
                     }}>
@@ -167,20 +166,20 @@ const HandleLikeScreen = () => {
                   <View
                     key={prompt.id}
                     style={{
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       padding: 12,
-                      borderRadius: 10,
+                      borderRadius: borderRadius.medium,
                       height: 150,
                       justifyContent: 'center',
                     }}>
-                    <Text style={{fontSize: 15, fontWeight: '500'}}>
+                    <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>
                       {prompt.question}
                     </Text>
                     <Text
                       style={{
-                        fontSize: 20,
-                        fontWeight: '600',
-                        marginTop: 20,
+                        fontSize: typography.fontSize.xl,
+                        fontFamily: typography.fontFamily.semiBold,
+                        marginTop: spacing.lg,
                       }}>
                       {prompt.answer}
                     </Text>
@@ -190,10 +189,10 @@ const HandleLikeScreen = () => {
                       position: 'absolute',
                       bottom: 10,
                       right: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: borderRadius.xlarge,
                       justifyContent: 'center',
                       alignItems: 'center',
                       shadowColor: '#000',
@@ -219,7 +218,7 @@ const HandleLikeScreen = () => {
                       width: '100%',
                       height: 350,
                       resizeMode: 'cover',
-                      borderRadius: 10,
+                      borderRadius: borderRadius.medium,
                     }}
                     source={{
                       uri: item,
@@ -231,10 +230,10 @@ const HandleLikeScreen = () => {
                       position: 'absolute',
                       bottom: 10,
                       right: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: borderRadius.xlarge,
                       justifyContent: 'center',
                       alignItems: 'center',
                     }}>
@@ -250,20 +249,20 @@ const HandleLikeScreen = () => {
                   <View
                     key={prompt.id}
                     style={{
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       padding: 12,
-                      borderRadius: 10,
+                      borderRadius: borderRadius.medium,
                       height: 150,
                       justifyContent: 'center',
                     }}>
-                    <Text style={{fontSize: 15, fontWeight: '500'}}>
+                    <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>
                       {prompt.question}
                     </Text>
                     <Text
                       style={{
-                        fontSize: 20,
-                        fontWeight: '600',
-                        marginTop: 20,
+                        fontSize: typography.fontSize.xl,
+                        fontFamily: typography.fontFamily.semiBold,
+                        marginTop: spacing.lg,
                       }}>
                       {prompt.answer}
                     </Text>
@@ -273,10 +272,10 @@ const HandleLikeScreen = () => {
                       position: 'absolute',
                       bottom: 10,
                       right: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: borderRadius.xlarge,
                       justifyContent: 'center',
                       alignItems: 'center',
                       shadowColor: '#000',
@@ -300,7 +299,7 @@ const HandleLikeScreen = () => {
                       width: '100%',
                       height: 350,
                       resizeMode: 'cover',
-                      borderRadius: 10,
+                      borderRadius: borderRadius.medium,
                     }}
                     source={{
                       uri: item,
@@ -311,10 +310,10 @@ const HandleLikeScreen = () => {
                       position: 'absolute',
                       bottom: 10,
                       right: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: borderRadius.xlarge,
                       justifyContent: 'center',
                       alignItems: 'center',
                     }}>
@@ -329,20 +328,20 @@ const HandleLikeScreen = () => {
                   <View
                     key={prompt.id}
                     style={{
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       padding: 12,
-                      borderRadius: 10,
+                      borderRadius: borderRadius.medium,
                       height: 150,
                       justifyContent: 'center',
                     }}>
-                    <Text style={{fontSize: 15, fontWeight: '500'}}>
+                    <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>
                       {prompt.question}
                     </Text>
                     <Text
                       style={{
-                        fontSize: 20,
-                        fontWeight: '600',
-                        marginTop: 20,
+                        fontSize: typography.fontSize.xl,
+                        fontFamily: typography.fontFamily.semiBold,
+                        marginTop: spacing.lg,
                       }}>
                       {prompt.answer}
                     </Text>
@@ -352,10 +351,10 @@ const HandleLikeScreen = () => {
                       position: 'absolute',
                       bottom: 10,
                       right: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: borderRadius.xlarge,
                       justifyContent: 'center',
                       alignItems: 'center',
                       shadowColor: '#000',
@@ -379,7 +378,7 @@ const HandleLikeScreen = () => {
                       width: '100%',
                       height: 350,
                       resizeMode: 'cover',
-                      borderRadius: 10,
+                      borderRadius: borderRadius.medium,
                     }}
                     source={{
                       uri: item,
@@ -390,10 +389,10 @@ const HandleLikeScreen = () => {
                       position: 'absolute',
                       bottom: 10,
                       right: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: colors.textInverse,
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: borderRadius.xlarge,
                       justifyContent: 'center',
                       alignItems: 'center',
                     }}>
@@ -409,10 +408,10 @@ const HandleLikeScreen = () => {
                 position:"absolute",
                 bottom: 10,
                 left: 10,
-                backgroundColor: 'white',
+                backgroundColor: colors.textInverse,
                 width: 42,
                 height: 42,
-                borderRadius: 21,
+                borderRadius: borderRadius.xlarge,
                 justifyContent: 'center',
                 alignItems: 'center',
               }}>
@@ -427,10 +426,10 @@ const HandleLikeScreen = () => {
           position: 'absolute',
           bottom: 45,
           right: 12,
-          backgroundColor: 'white',
+          backgroundColor: colors.textInverse,
           width: 50,
           height: 50,
-          borderRadius: 25,
+          borderRadius: borderRadius.round,
           justifyContent: 'center',
           alignItems: 'center',
         }}>

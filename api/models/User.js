@@ -135,4 +135,10 @@ const userSchema = new Schema({
 // Create the User model
 const User = mongoose.model('User', userSchema);
 
+// Add indexes for better query performance
+userSchema.index({ gender: 1, type: 1, visibility: 1 });
+userSchema.index({ _id: 1, gender: 1, type: 1 });
+userSchema.index({ matches: 1 });
+userSchema.index({ likedProfiles: 1 });
+
 module.exports = User;

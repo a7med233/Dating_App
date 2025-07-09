@@ -1,19 +1,53 @@
-import { ScrollView, StyleSheet, Text, View,Image } from 'react-native'
-import React, { Fragment } from 'react'
+import { ScrollView, StyleSheet, Text, View, Image,  Platform, StatusBar } from 'react-native'
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import GradientButton from '../components/GradientButton';
+import ThemedCard from '../components/ThemedCard';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import React, { Fragment, useState, useEffect } from 'react'
 import { useRoute } from '@react-navigation/native'
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Entypo from 'react-native-vector-icons/Entypo';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import { Ionicons, Entypo, AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { jwtDecode } from 'jwt-decode';
 
 const ProfileDetailsScreen = () => {
     const route = useRoute();
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [isOwnProfile, setIsOwnProfile] = useState(false);
+    
     console.log(route?.params)
+
+    useEffect(() => {
+        const getCurrentUserId = async () => {
+            try {
+                const token = await AsyncStorage.getItem('token');
+                if (token) {
+                    const decodedToken = jwtDecode(token);
+                    const userId = decodedToken.userId;
+                    setCurrentUserId(userId);
+                    
+                    // Check if this is the user's own profile
+                    const profileUserId = route?.params?.currentProfile?._id;
+                    setIsOwnProfile(userId === profileUserId);
+                }
+            } catch (error) {
+                console.error('Error getting current user ID:', error);
+            }
+        };
+        
+        getCurrentUserId();
+    }, [route?.params?.currentProfile?._id]);
+
   return (
-    <View style={{marginTop:55}}>
-      <ScrollView>
-        <View style={{marginHorizontal: 12, marginVertical: 12}}>
+    <SafeAreaWrapper backgroundColor={colors.background} style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
           {/* {profiles?.map((item, index) => ( */}
           <>
             <View>
@@ -29,17 +63,17 @@ const ProfileDetailsScreen = () => {
                     alignItems: 'center',
                     gap: 10,
                   }}>
-                  <Text style={{fontSize: 22, fontWeight: 'bold'}}>
+                  <Text style={{fontSize: typography.fontSize.xxl, fontFamily: typography.fontFamily.bold}}>
                     {route?.params?.currentProfile?.firstName}
                   </Text>
                   <View
                     style={{
                       backgroundColor: '#452c63',
-                      paddingHorizontal: 12,
+                      paddingHorizontal: spacing.md,
                       paddingVertical: 4,
-                      borderRadius: 20,
+                      borderRadius: borderRadius.xlarge,
                     }}>
-                    <Text style={{textAlign: 'center', color: 'white'}}>
+                    <Text style={{textAlign: 'center', color: colors.textInverse}}>
                       new here
                     </Text>
                   </View>
@@ -60,80 +94,85 @@ const ProfileDetailsScreen = () => {
 
               <View style={{marginVertical: 15}}>
                 <View>
-                  {route?.params?.currentProfile?.imageUrls.length > 0 && (
+                  {route?.params?.currentProfile?.imageUrls?.length > 0 && 
+                   route?.params?.currentProfile?.imageUrls[0] && (
                     <View>
                       <Image
                         style={{
                           width: '100%',
                           height: 350,
                           resizeMode: 'cover',
-                          borderRadius: 10,
+                          borderRadius: borderRadius.medium,
                         }}
                         source={{
                           uri: route?.params?.currentProfile?.imageUrls[0]
                         }}
                       />
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: 10,
-                          right: 10,
-                          backgroundColor: 'white',
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}>
-                        <AntDesign name="hearto" size={25} color="#C5B358" />
-                      </View>
+                      {!isOwnProfile && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            bottom: 10,
+                            right: 10,
+                            backgroundColor: colors.textInverse,
+                            width: 42,
+                            height: 42,
+                            borderRadius: borderRadius.xlarge,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <AntDesign name="hearto" size={25} color="#C5B358" />
+                        </View>
+                      )}
                     </View>
                   )}
                 </View>
 
                 <View style={{marginVertical: 15}}>
-                  {route?.params?.currentProfile?.prompts.slice(0, 1).map(prompt => (
-                    <Fragment key={prompt.id}>
+                  {route?.params?.currentProfile?.prompts?.slice(0, 1).map((prompt, index) => (
+                    <Fragment key={prompt.id || `prompt-${index}`}>
                       <View
                         style={{
-                          backgroundColor: 'white',
+                          backgroundColor: colors.textInverse,
                           padding: 12,
-                          borderRadius: 10,
+                          borderRadius: borderRadius.medium,
                           height: 150,
                           justifyContent: 'center',
                         }}>
-                        <Text style={{fontSize: 15, fontWeight: '500'}}>
+                        <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>
                           {prompt.question}
                         </Text>
                         <Text
                           style={{
-                            fontSize: 20,
-                            fontWeight: '600',
-                            marginTop: 20,
+                            fontSize: typography.fontSize.xl,
+                            fontFamily: typography.fontFamily.semiBold,
+                            marginTop: spacing.lg,
                           }}>
                           {prompt.answer}
                         </Text>
                       </View>
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: 10,
-                          right: 10,
-                          backgroundColor: 'white',
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          shadowColor: '#000',
-                          shadowOffset: {width: 0, height: 1},
-                          shadowOpacity: 0.25,
-                          shadowRadius: 3.84,
-                          // Shadow properties for Android
-                          elevation: 5,
-                        }}>
-                        <AntDesign name="hearto" size={25} color="#C5B358" />
-                      </View>
+                      {!isOwnProfile && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            bottom: 10,
+                            right: 10,
+                            backgroundColor: colors.textInverse,
+                            width: 42,
+                            height: 42,
+                            borderRadius: borderRadius.xlarge,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: {width: 0, height: 1},
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                            // Shadow properties for Android
+                            elevation: 5,
+                          }}>
+                          <AntDesign name="hearto" size={25} color="#C5B358" />
+                        </View>
+                      )}
                     </Fragment>
                   ))}
                 </View>
@@ -142,191 +181,207 @@ const ProfileDetailsScreen = () => {
 
                 <View>
                   {route?.params?.currentProfile?.imageUrls?.slice(1, 3).map((item, index) => (
-                    <View key={item || index} style={{marginVertical: 10}}>
-                      <Image
-                        style={{
-                          width: '100%',
-                          height: 350,
-                          resizeMode: 'cover',
-                          borderRadius: 10,
-                        }}
-                        source={{
-                          uri: item
-                        }}
-                      />
+                    item && (
+                      <View key={`image-${index}`} style={{marginVertical: 10}}>
+                        <Image
+                          style={{
+                            width: '100%',
+                            height: 350,
+                            resizeMode: 'cover',
+                            borderRadius: borderRadius.medium,
+                          }}
+                          source={{
+                            uri: item
+                          }}
+                        />
 
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: 10,
-                          right: 10,
-                          backgroundColor: 'white',
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}>
-                        <AntDesign name="hearto" size={25} color="#C5B358" />
+                        {!isOwnProfile && (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: 10,
+                              right: 10,
+                              backgroundColor: colors.textInverse,
+                              width: 42,
+                              height: 42,
+                              borderRadius: borderRadius.xlarge,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}>
+                            <AntDesign name="hearto" size={25} color="#C5B358" />
+                          </View>
+                        )}
                       </View>
-                    </View>
+                    )
                   ))}
                 </View>
 
                 <View style={{marginVertical: 15}}>
-                  {route?.params?.currentProfile?.prompts.slice(1, 2).map(prompt => (
-                    <Fragment key={prompt.id}>
+                  {route?.params?.currentProfile?.prompts?.slice(1, 2).map((prompt, index) => (
+                    <Fragment key={prompt.id || `prompt-${index + 1}`}>
                       <View
                         style={{
-                          backgroundColor: 'white',
+                          backgroundColor: colors.textInverse,
                           padding: 12,
-                          borderRadius: 10,
+                          borderRadius: borderRadius.medium,
                           height: 150,
                           justifyContent: 'center',
                         }}>
-                        <Text style={{fontSize: 15, fontWeight: '500'}}>
+                        <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>
                         {prompt.question}
                         </Text>
                         <Text
                           style={{
-                            fontSize: 20,
-                            fontWeight: '600',
-                            marginTop: 20,
+                            fontSize: typography.fontSize.xl,
+                            fontFamily: typography.fontFamily.semiBold,
+                            marginTop: spacing.lg,
                           }}>
                           {prompt.answer}
                         </Text>
                       </View>
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: 10,
-                          right: 10,
-                          backgroundColor: 'white',
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          shadowColor: '#000',
-                          shadowOffset: {width: 0, height: 1},
-                          shadowOpacity: 0.25,
-                          shadowRadius: 3.84,
-                          // Shadow properties for Android
-                          elevation: 5,
-                        }}>
-                        <AntDesign name="hearto" size={25} color="#C5B358" />
-                      </View>
+                      {!isOwnProfile && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            bottom: 10,
+                            right: 10,
+                            backgroundColor: colors.textInverse,
+                            width: 42,
+                            height: 42,
+                            borderRadius: borderRadius.xlarge,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: {width: 0, height: 1},
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                            // Shadow properties for Android
+                            elevation: 5,
+                          }}>
+                          <AntDesign name="hearto" size={25} color="#C5B358" />
+                        </View>
+                      )}
                     </Fragment>
                   ))}
                 </View>
 
                 <View>
                   {route?.params?.currentProfile?.imageUrls?.slice(3, 4).map((item, index) => (
-                    <View key={item || index} style={{marginVertical: 10}}>
-                      <Image
-                        style={{
-                          width: '100%',
-                          height: 350,
-                          resizeMode: 'cover',
-                          borderRadius: 10,
-                        }}
-                        source={{
-                          uri: item
-                        }}
-                      />
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: 10,
-                          right: 10,
-                          backgroundColor: 'white',
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}>
-                        <AntDesign name="hearto" size={25} color="#C5B358" />
+                    item && (
+                      <View key={`image-${index + 3}`} style={{marginVertical: 10}}>
+                        <Image
+                          style={{
+                            width: '100%',
+                            height: 350,
+                            resizeMode: 'cover',
+                            borderRadius: borderRadius.medium,
+                          }}
+                          source={{
+                            uri: item
+                          }}
+                        />
+                        {!isOwnProfile && (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: 10,
+                              right: 10,
+                              backgroundColor: colors.textInverse,
+                              width: 42,
+                              height: 42,
+                              borderRadius: borderRadius.xlarge,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}>
+                            <AntDesign name="hearto" size={25} color="#C5B358" />
+                          </View>
+                        )}
                       </View>
-                    </View>
+                    )
                   ))}
                 </View>
                 <View style={{marginVertical: 15}}>
-                  {route?.params?.currentProfile?.prompts.slice(2, 3).map(prompt => (
-                    <Fragment key={prompt.id}>
+                  {route?.params?.currentProfile?.prompts?.slice(2, 3).map((prompt, index) => (
+                    <Fragment key={prompt.id || `prompt-${index + 2}`}>
                       <View
                         style={{
-                          backgroundColor: 'white',
+                          backgroundColor: colors.textInverse,
                           padding: 12,
-                          borderRadius: 10,
+                          borderRadius: borderRadius.medium,
                           height: 150,
                           justifyContent: 'center',
                         }}>
-                        <Text style={{fontSize: 15, fontWeight: '500'}}>
+                        <Text style={{fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium}}>
                         {prompt.question}
                         </Text>
                         <Text
                           style={{
-                            fontSize: 20,
-                            fontWeight: '600',
-                            marginTop: 20,
+                            fontSize: typography.fontSize.xl,
+                            fontFamily: typography.fontFamily.semiBold,
+                            marginTop: spacing.lg,
                           }}>
                           {prompt.answer}
                         </Text>
                       </View>
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: 10,
-                          right: 10,
-                          backgroundColor: 'white',
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          shadowColor: '#000',
-                          shadowOffset: {width: 0, height: 1},
-                          shadowOpacity: 0.25,
-                          shadowRadius: 3.84,
-                          // Shadow properties for Android
-                          elevation: 5,
-                        }}>
-                        <AntDesign name="hearto" size={25} color="#C5B358" />
-                      </View>
+                      {!isOwnProfile && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            bottom: 10,
+                            right: 10,
+                            backgroundColor: colors.textInverse,
+                            width: 42,
+                            height: 42,
+                            borderRadius: borderRadius.xlarge,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: {width: 0, height: 1},
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                            // Shadow properties for Android
+                            elevation: 5,
+                          }}>
+                          <AntDesign name="hearto" size={25} color="#C5B358" />
+                        </View>
+                      )}
                     </Fragment>
                   ))}
                 </View>
 
                 <View>
                   {route?.params?.currentProfile?.imageUrls?.slice(4, 7).map((item, index) => (
-                    <View key={item || index} style={{marginVertical: 10}}>
-                      <Image
-                        style={{
-                          width: '100%',
-                          height: 350,
-                          resizeMode: 'cover',
-                          borderRadius: 10,
-                        }}
-                        source={{
-                          uri: item
-                        }}
-                      />
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: 10,
-                          right: 10,
-                          backgroundColor: 'white',
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}>
-                        <AntDesign name="hearto" size={25} color="#C5B358" />
+                    item && (
+                      <View key={`image-${index + 4}`} style={{marginVertical: 10}}>
+                        <Image
+                          style={{
+                            width: '100%',
+                            height: 350,
+                            resizeMode: 'cover',
+                            borderRadius: borderRadius.medium,
+                          }}
+                          source={{
+                            uri: item
+                          }}
+                        />
+                        {!isOwnProfile && (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: 10,
+                              right: 10,
+                              backgroundColor: colors.textInverse,
+                              width: 42,
+                              height: 42,
+                              borderRadius: borderRadius.xlarge,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}>
+                            <AntDesign name="hearto" size={25} color="#C5B358" />
+                          </View>
+                        )}
                       </View>
-                    </View>
+                    )
                   ))}
                 </View>
               </View>
@@ -336,10 +391,10 @@ const ProfileDetailsScreen = () => {
                 position:"absolute",
                 bottom: 10,
                 left: 10,
-                backgroundColor: 'white',
+                backgroundColor: colors.textInverse,
                 width: 42,
                 height: 42,
-                borderRadius: 21,
+                borderRadius: borderRadius.xlarge,
                 justifyContent: 'center',
                 alignItems: 'center',
               }}>
@@ -350,10 +405,22 @@ const ProfileDetailsScreen = () => {
           {/* ))} */}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaWrapper>
   )
 }
 
 export default ProfileDetailsScreen
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'android' ? 100 : 50, // Extra padding for Android
+  },
+  content: {
+    marginHorizontal: 12,
+    marginVertical: 12,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0,
+  },
+})

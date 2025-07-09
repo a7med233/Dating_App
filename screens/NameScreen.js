@@ -1,13 +1,15 @@
-import {
-  StyleSheet,
+import {StyleSheet,
   Text,
   View,
-  SafeAreaView,
   Image,
   TextInput,
   TouchableOpacity,
+  Pressable,
   Alert,
-} from 'react-native';
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
@@ -16,15 +18,23 @@ import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+
+
+const { width, height } = Dimensions.get('window');
 
 const NameScreen = () => {
   const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const navigation = useNavigation();
+  
   useEffect(() => {
     getRegistrationProgress('Name').then(progressData => {
       if (progressData) {
         setFirstName(progressData.firstName || '');
+        setLastName(progressData.lastName || '');
       }
     });
   }, []);
@@ -35,110 +45,186 @@ const NameScreen = () => {
       return;
     }
     setError('');
-    saveRegistrationProgress('Name', { firstName });
+    saveRegistrationProgress('Name', { firstName, lastName });
     navigation.navigate('Email');
   };
+  
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
-      <Text style={{marginTop: 50, textAlign: 'center', color: 'gray'}}>
-        NO BACKGROUND CHECKS ARE CONDUCTED
-      </Text>
-      <View style={{marginTop: 30, marginHorizontal: 20}}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              borderColor: 'black',
-              borderWidth: 2,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <MaterialCommunityIcons
-              name="newspaper-variant-outline"
-              size={26}
-              color="black"
-            />
-          </View>
-          <Image
-            style={{width: 100, height: 40}}
-            source={{
-              uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-            }}
-          />
-        </View>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Disclaimer */}
+            <Text style={styles.disclaimer}>
+              NO BACKGROUND CHECKS ARE CONDUCTED
+            </Text>
 
-        <View style={{marginTop: 30}}>
-          <Text
-            style={{
-              fontSize: 25,
-              fontWeight: 'bold',
-              fontFamily: 'GeezaPro-Bold',
-            }}>
-            What's your name?
-          </Text>
-          <TextInput
-            autoFocus={true}
-            value={firstName}
-            onChangeText={text => {
-              setFirstName(text);
-              if (text.trim() === '') {
-                setError('First name is required.');
-              } else {
-                setError('');
-              }
-            }}
-            style={{
-              width: 340,
-              marginVertical: 10,
-              fontSize: firstName ? 22 : 22,
-              marginTop: 25,
-              borderBottomColor: 'black',
-              borderBottomWidth: 1,
-              paddingBottom: 10,
-              fontFamily: 'GeezaPro-Bold',
-            }}
-            placeholder="First name (required)"
-            placeholderTextColor={'#BEBEBE'}
-          />
-          <TextInput
-            style={{
-              width: 340,
-              marginVertical: 10,
-              fontSize: firstName ? 22 : 22,
-              marginTop: 25,
-              borderBottomColor: 'black',
-              borderBottomWidth: 1,
-              paddingBottom: 10,
-              fontFamily: 'GeezaPro-Bold',
-            }}
-            placeholder="Last name"
-            placeholderTextColor={'#BEBEBE'}
-          />
-          <Text style={{fontSize: 15, color: 'gray', fontWeight: '500'}}>
-            Last match is optional.
-          </Text>
-        </View>
-        {error ? (
-          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
-        ) : null}
-        <TouchableOpacity
-          onPress={handleNext}
-          activeOpacity={0.8}
-          style={{marginTop: 30, marginLeft: 'auto'}}>
-          <MaterialCommunityIcons
-            name="arrow-right-circle"
-            size={45}
-            color="#581845"
-            style={{alignSelf: 'center', marginTop: 20}}
-          />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+            {/* Header Section */}
+            <View style={styles.header}>
+              <View style={styles.iconContainer}>
+                <MaterialCommunityIcons
+                  name="newspaper-variant-outline"
+                  size={26}
+                  color="black"
+                />
+              </View>
+              <Image
+                style={styles.logo}
+                source={{
+                  uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
+                }}
+                resizeMode="contain"
+              />
+            </View>
+
+            {/* Title */}
+            <Text style={styles.title}>
+              What's your name?
+            </Text>
+
+            {/* Input Fields */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                autoFocus={true}
+                value={firstName}
+                onChangeText={text => {
+                  setFirstName(text);
+                  if (text.trim() === '') {
+                    setError('First name is required.');
+                  } else {
+                    setError('');
+                  }
+                }}
+                style={styles.textInput}
+                placeholder="First name (required)"
+                placeholderTextColor={'#BEBEBE'}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+              
+              <TextInput
+                value={lastName}
+                onChangeText={setLastName}
+                style={styles.textInput}
+                placeholder="Last name"
+                placeholderTextColor={'#BEBEBE'}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+              
+              <Text style={styles.optionalText}>
+                Last name is optional.
+              </Text>
+            </View>
+
+            {/* Error Message */}
+            {error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : null}
+
+            {/* Next Button */}
+            <Pressable
+              onPress={handleNext}
+              style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.lg, borderRadius: borderRadius.medium}}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  color: colors.textInverse,
+                  fontFamily: typography.fontFamily.semiBold,
+                  fontSize: typography.fontSize.md,
+                }}>
+                Continue
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
 
-export default NameScreen;
+const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+  },
+  disclaimer: {
+    textAlign: 'center',
+    color: 'gray',
+    fontSize: Math.min(width * 0.035, 14),
+    marginBottom: spacing.lg,
+    fontFamily: typography.fontFamily.medium,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.xlarge,
+    borderColor: colors.textPrimary,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  logo: {
+    width: 100,
+    height: 40,
+  },
+  title: {
+    fontSize: Math.min(width * 0.06, 25),
+    fontFamily: typography.fontFamily.bold,
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    marginBottom: spacing.xl,
+    color: '#000',
+  },
+  inputContainer: {
+    marginBottom: spacing.md,
+  },
+  textInput: {
+    fontSize: Math.min(width * 0.055, 22),
+    borderBottomColor: colors.textPrimary,
+    borderBottomWidth: 1,
+    paddingBottom: 10,
+    paddingTop: 5,
+    marginBottom: spacing.lg,
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    color: '#000',
+  },
+  optionalText: {
+    fontSize: Math.min(width * 0.035, 15),
+    color: 'gray',
+    fontFamily: typography.fontFamily.medium,
+    marginTop: -10,
+    marginBottom: spacing.lg,
+  },
+  errorText: {
+    color: 'red',
+    marginTop: spacing.sm,
+    fontSize: Math.min(width * 0.035, 14),
+  },
+  nextButton: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.lg,
+  },
+});
 
-const styles = StyleSheet.create({});
+export default NameScreen;

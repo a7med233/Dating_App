@@ -5,7 +5,7 @@
  * @format
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   StatusBar,
@@ -15,6 +15,9 @@ import {
   View,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
   Colors,
@@ -23,9 +26,10 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
-import Fontisto from 'react-native-vector-icons/Fontisto';
+import { Ionicons } from '@expo/vector-icons';
 import StackNavigator from './navigation/StackNavigator';
 import { AuthProvider } from './AuthContext';
+import OnboardingTutorial from './components/OnboardingTutorial';
 
 function Section({ children, title }) {
   const isDarkMode = useColorScheme() === 'dark';
@@ -55,24 +59,57 @@ function Section({ children, title }) {
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
-  // Safe area padding for iOS and Android
+  // Check if user has completed onboarding
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, []);
 
+  const checkOnboardingStatus = async () => {
+    try {
+      const hasCompletedOnboarding = await AsyncStorage.getItem('hasCompletedOnboarding');
+      if (!hasCompletedOnboarding) {
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setShowOnboarding(true); // Show onboarding if there's an error
+    }
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+      setShowOnboarding(false);
+    }
+  };
+
+  // Safe area padding for iOS and Android
   const safePadding = '5%';
 
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <StackNavigator/>
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StackNavigator/>
+        </NavigationContainer>
+        <OnboardingTutorial 
+          visible={showOnboarding} 
+          onComplete={completeOnboarding} 
+        />
+        <ExpoStatusBar style="auto" />
+      </SafeAreaProvider>
     </AuthProvider>
   );
 }
-
 const styles = StyleSheet.create({
   sectionContainer: {
     marginTop: 32,
@@ -91,5 +128,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
 export default App;
+
+

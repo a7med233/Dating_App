@@ -3,11 +3,7 @@ import {ActivityIndicator,  View} from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {NavigationContainer} from '@react-navigation/native';
-import Entypo from 'react-native-vector-icons/Entypo';
-import Feather from 'react-native-vector-icons/Feather';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Entypo, Feather, Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import LikesScreen from '../screens/LikesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -38,6 +34,95 @@ import SendLikeScreen from '../screens/SendLikeScreen';
 import HandleLikeScreen from '../screens/HandleLikeScreen';
 import RegistrationProgressBar from '../components/RegistrationProgressBar';
 import SettingsScreen from '../screens/SettingsScreen';
+import SupportChatRoom from '../screens/SupportChatRoom';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, typography, shadows } from '../theme/colors';
+
+// Create wrapper components to avoid inline functions
+const NameScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={1} total={13} />
+    <NameScreen {...props} />
+  </>
+);
+
+const EmailScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={2} total={13} />
+    <EmailScreen {...props} />
+  </>
+);
+
+const PasswordScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={3} total={13} />
+    <PasswordScreen {...props} />
+  </>
+);
+
+const BirthScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={4} total={13} />
+    <BirthScreen {...props} />
+  </>
+);
+
+const LocationScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={5} total={13} />
+    <LocationScreen {...props} />
+  </>
+);
+
+const GenderScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={6} total={13} />
+    <GenderScreen {...props} />
+  </>
+);
+
+const TypeScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={7} total={13} />
+    <TypeScreen {...props} />
+  </>
+);
+
+const DatingTypeWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={8} total={13} />
+    <DatingType {...props} />
+  </>
+);
+
+const LookingForWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={9} total={13} />
+    <LookingFor {...props} />
+  </>
+);
+
+const HomeTownScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={10} total={13} />
+    <HomeTownScreen {...props} />
+  </>
+);
+
+const PhotoScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={11} total={13} />
+    <PhotoScreen {...props} />
+  </>
+);
+
+const PromptsScreenWrapper = (props) => (
+  <>
+    <RegistrationProgressBar step={12} total={13} />
+    <PromptsScreen {...props} />
+  </>
+);
 
 const StackNavigator = () => {
   const Stack = createNativeStackNavigator();
@@ -58,26 +143,35 @@ const StackNavigator = () => {
   console.log('Is token null or empty?', token === null || token === '');
 
   function BottomTabs() {
+    const insets = useSafeAreaInsets();
+    
     return (
       <Tab.Navigator
         screenOptions={() => ({
           tabBarShowLabel: false,
+          tabBarStyle: {
+            backgroundColor: colors.navBackground,
+            height: 60 + insets.bottom,
+            paddingBottom: insets.bottom,
+            paddingTop: 10,
+            borderTopWidth: 0,
+            ...shadows.medium,
+          },
         })}>
         <Tab.Screen
           name="Home"
           component={HomeScreen}
           options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
+            tabBarLabelStyle: {color: colors.navActive},
             headerShown: false,
             tabBarIcon: ({focused}) =>
               focused ? (
-                <MaterialCommunityIcons name="alpha" size={35} color="white" />
+                <MaterialCommunityIcons name="alpha" size={35} color={colors.primary} />
               ) : (
                 <MaterialCommunityIcons
                   name="alpha"
                   size={35}
-                  color="#989898"
+                  color={colors.navInactive}
                 />
               ),
           }}
@@ -87,14 +181,13 @@ const StackNavigator = () => {
           name="Likes"
           component={LikesScreen}
           options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
+            tabBarLabelStyle: {color: colors.navActive},
             headerShown:false,
             tabBarIcon: ({focused}) =>
               focused ? (
-                <Entypo name="heart" size={30} color="white" />
+                <Entypo name="heart" size={30} color={colors.accent} />
               ) : (
-                <Entypo name="heart" size={30} color="#989898" />
+                <Entypo name="heart" size={30} color={colors.navInactive} />
               ),
           }}
         />
@@ -102,21 +195,43 @@ const StackNavigator = () => {
           name="Chat"
           component={ChatScreen}
           options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
+            tabBarLabelStyle: {color: colors.navActive},
             headerShown:false,
             tabBarIcon: ({focused}) =>
               focused ? (
                 <MaterialIcons
                   name="chat-bubble-outline"
                   size={30}
-                  color="white"
+                  color={colors.primary}
                 />
               ) : (
                 <MaterialIcons
                   name="chat-bubble-outline"
                   size={30}
-                  color="#989898"
+                  color={colors.navInactive}
+                />
+              ),
+          }}
+        />
+
+        <Tab.Screen
+          name="Notifications"
+          component={NotificationsScreen}
+          options={{
+            tabBarLabelStyle: {color: colors.navActive},
+            headerShown:false,
+            tabBarIcon: ({focused}) =>
+              focused ? (
+                <Ionicons
+                  name="notifications"
+                  size={30}
+                  color={colors.warmOrange}
+                />
+              ) : (
+                <Ionicons
+                  name="notifications-outline"
+                  size={30}
+                  color={colors.navInactive}
                 />
               ),
           }}
@@ -126,26 +241,35 @@ const StackNavigator = () => {
           name="Profile"
           component={ProfileScreen}
           options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
+            tabBarLabelStyle: {color: colors.navActive},
             headerShown:false,
             tabBarIcon: ({focused}) =>
               focused ? (
                 <Ionicons
                   name="person-circle-outline"
                   size={30}
-                  color="white"
+                  color={colors.primary}
                 />
               ) : (
                 <Ionicons
                   name="person-circle-outline"
                   size={30}
-                  color="#989898"
+                  color={colors.navInactive}
                 />
               ),
           }}
         />
       </Tab.Navigator>
+    );
+  }
+
+  // New: Stack for tabs + settings
+  function TabsWithSettingsStack() {
+    return (
+      <Stack.Navigator>
+        <Stack.Screen name="MainTabs" component={BottomTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+      </Stack.Navigator>
     );
   }
 
@@ -163,62 +287,62 @@ const StackNavigator = () => {
       />
       <Stack.Screen
         name="Name"
-        component={props => <><RegistrationProgressBar step={1} total={13} /><NameScreen {...props} /></>}
+        component={NameScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Email"
-        component={props => <><RegistrationProgressBar step={2} total={13} /><EmailScreen {...props} /></>}
+        component={EmailScreenWrapper}
         options={{headerShown: false}}
       />
         <Stack.Screen
         name="Password"
-        component={props => <><RegistrationProgressBar step={3} total={13} /><PasswordScreen {...props} /></>}
+        component={PasswordScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Birth"
-        component={props => <><RegistrationProgressBar step={4} total={13} /><BirthScreen {...props} /></>}
+        component={BirthScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Location"
-        component={props => <><RegistrationProgressBar step={5} total={13} /><LocationScreen {...props} /></>}
+        component={LocationScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Gender"
-        component={props => <><RegistrationProgressBar step={6} total={13} /><GenderScreen {...props} /></>}
+        component={GenderScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Type"
-        component={props => <><RegistrationProgressBar step={7} total={13} /><TypeScreen {...props} /></>}
+        component={TypeScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Dating"
-        component={props => <><RegistrationProgressBar step={8} total={13} /><DatingType {...props} /></>}
+        component={DatingTypeWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="LookingFor"
-        component={props => <><RegistrationProgressBar step={9} total={13} /><LookingFor {...props} /></>}
+        component={LookingForWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Hometown"
-        component={props => <><RegistrationProgressBar step={10} total={13} /><HomeTownScreen {...props} /></>}
+        component={HomeTownScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Photos"
-        component={props => <><RegistrationProgressBar step={11} total={13} /><PhotoScreen {...props} /></>}
+        component={PhotoScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
         name="Prompts"
-        component={props => <><RegistrationProgressBar step={12} total={13} /><PromptsScreen {...props} /></>}
+        component={PromptsScreenWrapper}
         options={{headerShown: false}}
       />
       <Stack.Screen
@@ -232,9 +356,9 @@ const StackNavigator = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{headerShown: false}}
+        name="SupportChatRoom"
+        component={SupportChatRoom}
+        options={{ title: 'Support Chat' }}
       />
       {/* <Stack.Screen
         name="Main"
@@ -249,8 +373,8 @@ const StackNavigator = () => {
     return (
       <Stack.Navigator>
         <Stack.Screen
-          name="Main"
-          component={BottomTabs}
+          name="TabsWithSettings"
+          component={TabsWithSettingsStack}
           options={{headerShown: false}}
         />
         <Stack.Screen
@@ -276,6 +400,11 @@ const StackNavigator = () => {
           <Stack.Screen
           name="ChatRoom"
           component={ChatRoom}
+        />
+        <Stack.Screen
+          name="SupportChatRoom"
+          component={SupportChatRoom}
+          options={{ title: 'Support Chat' }}
         />
       </Stack.Navigator>
     );

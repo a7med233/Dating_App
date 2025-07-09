@@ -2,19 +2,27 @@ import {
   StyleSheet,
   Text,
   View,
-  SafeAreaView,
   Image,
   TextInput,
   TouchableOpacity,
+  Pressable,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import React, {useRef, useState, useEffect} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+
+const { width, height } = Dimensions.get('window');
 
 const BirthScreen = () => {
   const navigation = useNavigation();
@@ -42,6 +50,7 @@ const BirthScreen = () => {
   const handleYearChange = text => {
     setYear(text);
   };
+  
   useEffect(() => {
     // Fetch the registration progress data for the "Birth" screen
     getRegistrationProgress('Birth').then(progressData => {
@@ -101,121 +110,188 @@ const BirthScreen = () => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
-      <View style={{marginTop: 90, marginHorizontal: 20}}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              borderColor: 'black',
-              borderWidth: 2,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <MaterialCommunityIcons
-              name="cake-variant-outline"
-              size={26}
-              color="black"
-            />
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Header Section */}
+            <View style={styles.header}>
+              <View style={styles.iconContainer}>
+                <MaterialCommunityIcons
+                  name="cake-variant-outline"
+                  size={26}
+                  color="black"
+                />
+              </View>
+              <Image
+                style={styles.logo}
+                source={{
+                  uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
+                }}
+                resizeMode="contain"
+              />
+            </View>
+
+            {/* Title */}
+            <Text style={styles.title}>
+              What's your date of birth?
+            </Text>
+
+            {/* Date Input Fields */}
+            <View style={styles.dateInputContainer}>
+              {/* Day Input Field */}
+              <TextInput
+                autoFocus={true}
+                style={styles.dayInput}
+                placeholder="DD"
+                keyboardType="numeric"
+                maxLength={2}
+                onChangeText={handleDayChange}
+                value={day}
+              />
+
+              {/* Month Input Field */}
+              <TextInput
+                ref={monthRef}
+                style={styles.monthInput}
+                placeholder="MM"
+                keyboardType="numeric"
+                maxLength={2}
+                onChangeText={handleMonthChange}
+                value={month}
+              />
+
+              {/* Year Input Field */}
+              <TextInput
+                ref={yearRef}
+                style={styles.yearInput}
+                placeholder="YYYY"
+                keyboardType="numeric"
+                maxLength={4}
+                onChangeText={handleYearChange}
+                value={year}
+              />
+            </View>
+
+            {/* Error Message */}
+            {error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : null}
+
+            {/* Next Button */}
+            <Pressable
+              onPress={handleNext}
+              style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.lg, borderRadius: borderRadius.medium}}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  color: colors.textInverse,
+                  fontFamily: typography.fontFamily.semiBold,
+                  fontSize: typography.fontSize.md,
+                }}>
+                Continue
+              </Text>
+            </Pressable>
           </View>
-          <Image
-            style={{width: 100, height: 40}}
-            source={{
-              uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-            }}
-          />
-        </View>
-        <Text
-          style={{
-            fontSize: 25,
-            fontWeight: 'bold',
-            fontFamily: 'GeezaPro-Bold',
-            marginTop: 15,
-          }}>
-          What's your date of birth?
-        </Text>
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 10,
-            marginTop: 80,
-            justifyContent: 'center',
-          }}>
-          {/* Day Input Field */}
-          <TextInput
-            autoFocus={true}
-            style={{
-              borderBottomWidth: 1,
-              borderColor: 'black',
-              padding: 10,
-              width: 50,
-              fontSize: day ? 20 : 20,
-              fontFamily: 'GeezaPro-Bold',
-            }}
-            placeholder="DD"
-            keyboardType="numeric"
-            maxLength={2}
-            onChangeText={handleDayChange}
-            value={day}
-          />
-
-          {/* Month Input Field */}
-          <TextInput
-            ref={monthRef}
-            style={{
-              borderBottomWidth: 1,
-              borderColor: 'black',
-              padding: 10,
-              width: 60,
-              fontSize: month ? 20 : 20,
-              fontFamily: 'GeezaPro-Bold',
-            }}
-            placeholder="MM"
-            keyboardType="numeric"
-            maxLength={2}
-            onChangeText={handleMonthChange}
-            value={month}
-          />
-
-          {/* Year Input Field */}
-          <TextInput
-            ref={yearRef}
-            style={{
-              borderBottomWidth: 1,
-              borderColor: 'black',
-              padding: 10,
-              width: 75,
-              fontSize: year ? 20 : 20,
-              fontFamily: 'GeezaPro-Bold',
-            }}
-            placeholder="YYYY"
-            keyboardType="numeric"
-            maxLength={4}
-            onChangeText={handleYearChange}
-            value={year}
-          />
-        </View>
-        <TouchableOpacity
-          onPress={handleNext}
-          activeOpacity={0.8}
-          style={{marginTop: 30, marginLeft: 'auto'}}>
-          <MaterialCommunityIcons
-            name="arrow-right-circle"
-            size={45}
-            color="#581845"
-            style={{alignSelf: 'center', marginTop: 20}}
-          />
-        </TouchableOpacity>
-        {error ? (
-          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
-        ) : null}
-      </View>
-    </SafeAreaView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
 
-export default BirthScreen;
+const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 90 : 60,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.xlarge,
+    borderColor: colors.textPrimary,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  logo: {
+    width: 100,
+    height: 40,
+  },
+  title: {
+    fontSize: Math.min(width * 0.06, 25),
+    fontFamily: typography.fontFamily.bold,
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    marginBottom: spacing.xxl,
+    color: '#000',
+  },
+  dateInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 15,
+    marginBottom: spacing.xl,
+  },
+  dayInput: {
+    borderBottomWidth: 1,
+    borderColor: colors.textPrimary,
+    padding: 10,
+    width: Math.min(width * 0.15, 60),
+    fontSize: Math.min(width * 0.05, 20),
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    textAlign: 'center',
+    color: '#000',
+  },
+  monthInput: {
+    borderBottomWidth: 1,
+    borderColor: colors.textPrimary,
+    padding: 10,
+    width: Math.min(width * 0.15, 60),
+    fontSize: Math.min(width * 0.05, 20),
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    textAlign: 'center',
+    color: '#000',
+  },
+  yearInput: {
+    borderBottomWidth: 1,
+    borderColor: colors.textPrimary,
+    padding: 10,
+    width: Math.min(width * 0.2, 80),
+    fontSize: Math.min(width * 0.05, 20),
+    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    textAlign: 'center',
+    color: '#000',
+  },
+  errorText: {
+    color: 'red',
+    marginTop: spacing.sm,
+    fontSize: Math.min(width * 0.035, 14),
+    textAlign: 'center',
+  },
+  nextButton: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.lg,
+  },
+});
 
-const styles = StyleSheet.create({});
+export default BirthScreen;

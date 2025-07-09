@@ -1,4 +1,9 @@
-import {Pressable, SafeAreaView, StyleSheet, Text, View, Modal, TouchableOpacity, ScrollView, ActivityIndicator} from 'react-native';
+import {Pressable,  StyleSheet, Text, View, Modal, TouchableOpacity, ScrollView, ActivityIndicator} from 'react-native';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import GradientButton from '../components/GradientButton';
+import ThemedCard from '../components/ThemedCard';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import React, {useContext, useEffect, useState} from 'react';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import {useNavigation} from '@react-navigation/native';
@@ -9,10 +14,10 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
-import axios from 'axios';
 import { AuthContext } from '../AuthContext';
 import ProfileCard from '../components/ProfileCard';
 import Toast from '../components/Toast';
+import { registerUser as registerUserAPI } from '../services/api';
 
 const PreFinalScreen = () => {
   const navigation = useNavigation();
@@ -125,18 +130,34 @@ const PreFinalScreen = () => {
         imageUrls: userData.imageUrls || [],
         prompts: userData.prompts || [],
       };
-      const response = await axios
-        .post('http://10.0.2.2:3000/register', payload)
-        .then(response => {
-          const token = response.data.token;
-          AsyncStorage.setItem('token', token);
-          setToken(token)
-        });
+      
+      const response = await registerUserAPI(payload);
+      const token = response.data.token;
+      await AsyncStorage.setItem('token', token);
+      setToken(token);
       setToast({ visible: true, message: 'Registration successful!', type: 'success' });
       clearAllScreenData();
     } catch (error) {
-      setToast({ visible: true, message: 'Registration failed. Please try again.', type: 'error' });
       console.error('Error registering user:', error);
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.response) {
+        if (error.response.status === 409) {
+          errorMessage = 'Email already exists. Please use a different email.';
+        } else if (error.response.status === 400) {
+          errorMessage = 'Invalid data. Please check your information.';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      } else if (error.message) {
+        if (error.message.includes('Network error')) {
+          errorMessage = 'Network error. Please check your internet connection.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Request timeout. Please try again.';
+        }
+      }
+      
+      setToast({ visible: true, message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -145,20 +166,20 @@ const PreFinalScreen = () => {
 
   if (userDataLoading) {
     return (
-      <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'white'}}>
-        <ActivityIndicator size="large" color="#900C3F" />
-        <Text style={{marginTop:16}}>Loading your profile data...</Text>
-      </SafeAreaView>
+      <SafeAreaWrapper backgroundColor={colors.background} style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:colors.textInverse}}>
+        <ActivityIndicator size="large" color="colors.primary" />
+        <Text style={{marginTop: spacing.md}}>Loading your profile data...</Text>
+      </SafeAreaWrapper>
     );
   }
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
-      <View style={{marginTop: 80}}>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <View style={{marginTop: spacing.xxl}}>
         <Text
           style={{
-            fontSize: 35,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.display,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
             marginLeft: 20,
           }}>
@@ -166,12 +187,12 @@ const PreFinalScreen = () => {
         </Text>
         <Text
           style={{
-            fontSize: 33,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.display,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
             marginLeft: 20,
             marginRight: 10,
-            marginTop: 10,
+            marginTop: spacing.md,
           }}>
           Setting up your profile for you
         </Text>
@@ -184,7 +205,7 @@ const PreFinalScreen = () => {
             height: 260,
             width: 300,
             alignSelf: 'center',
-            marginTop: 40,
+            marginTop: spacing.xxl,
             justifyContent: 'center',
           }}
           autoPlay
@@ -195,21 +216,21 @@ const PreFinalScreen = () => {
 
       <Pressable
         onPress={() => userData ? setPreviewVisible(true) : null}
-        style={{backgroundColor: '#581845', padding: 15, marginTop: 20, marginHorizontal: 20, borderRadius: 8}}>
-        <Text style={{textAlign: 'center', color: 'white', fontWeight: '600', fontSize: 15}}>
+                  style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.lg, marginHorizontal: 20, borderRadius: borderRadius.small}}>
+        <Text style={{textAlign: 'center', color: colors.textInverse, fontFamily: typography.fontFamily.semiBold, fontSize: typography.fontSize.md}}>
           Preview Profile
         </Text>
       </Pressable>
 
       <Pressable
         onPress={userData ? registerUser : undefined}
-        style={{backgroundColor: '#900C3F', padding: 15, marginTop: 'auto'}}>
+                  style={{backgroundColor: colors.primary, padding: 15, marginTop: 'auto'}}>
         <Text
           style={{
             textAlign: 'center',
-            color: 'white',
-            fontWeight: '600',
-            fontSize: 15,
+            color: colors.textInverse,
+            fontFamily: typography.fontFamily.semiBold,
+            fontSize: typography.fontSize.md,
           }}>
           Finish registering
         </Text>
@@ -222,35 +243,35 @@ const PreFinalScreen = () => {
         onRequestClose={() => setPreviewVisible(false)}
       >
         <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.3)',justifyContent:'center',alignItems:'center'}} activeOpacity={1} onPressOut={() => setPreviewVisible(false)}>
-          <View style={{backgroundColor:'white',padding:24,borderRadius:12,alignItems:'center',maxWidth:350,maxHeight:'80%'}}>
-            <Text style={{fontWeight:'bold',fontSize:18,marginBottom:8}}>Profile Preview</Text>
+          <View style={{backgroundColor:'#fff',padding:24,borderRadius: borderRadius.medium,alignItems:'center',maxWidth:350,maxHeight:'80%'}}>
+            <Text style={{fontFamily: typography.fontFamily.bold,fontSize: typography.fontSize.lg,marginBottom: spacing.sm}}>Profile Preview</Text>
             <ScrollView style={{width: '100%'}} contentContainerStyle={{alignItems:'center'}}>
               <ProfileCard profile={userData || {}} />
-              <Text style={{marginTop:10,fontWeight:'bold'}}>Prompts:</Text>
+              <Text style={{marginTop: spacing.md,fontFamily: typography.fontFamily.bold}}>Prompts:</Text>
               {userData?.prompts && userData.prompts.length > 0 ? userData.prompts.map((p, i) => (
                 <View key={i} style={{marginVertical:4}}>
-                  <Text style={{fontWeight:'600'}}>{p.question}</Text>
+                  <Text style={{fontFamily: typography.fontFamily.semiBold}}>{p.question}</Text>
                   <Text>{p.answer}</Text>
                 </View>
               )) : <Text style={{color:'gray'}}>No prompts answered.</Text>}
-              <Text style={{marginTop:10,fontWeight:'bold'}}>Dating Preferences:</Text>
+              <Text style={{marginTop: spacing.md,fontFamily: typography.fontFamily.bold}}>Dating Preferences:</Text>
               <Text>{userData?.datingPreferences?.join(', ') || 'None'}</Text>
-              <Text style={{marginTop:10,fontWeight:'bold'}}>Looking For:</Text>
+              <Text style={{marginTop: spacing.md,fontFamily: typography.fontFamily.bold}}>Looking For:</Text>
               <Text>{userData?.lookingFor || 'Not specified'}</Text>
-              <Text style={{marginTop:10,fontWeight:'bold'}}>Location:</Text>
+              <Text style={{marginTop: spacing.md,fontFamily: typography.fontFamily.bold}}>Location:</Text>
               <Text>{userData?.location || 'Not specified'}</Text>
-              <Text style={{marginTop:10,fontWeight:'bold'}}>Hometown:</Text>
+              <Text style={{marginTop: spacing.md,fontFamily: typography.fontFamily.bold}}>Hometown:</Text>
               <Text>{userData?.hometown || 'Not specified'}</Text>
             </ScrollView>
-            <Pressable onPress={() => setPreviewVisible(false)} style={{backgroundColor:'#900C3F',padding:10,borderRadius:8,marginTop:16}}>
-              <Text style={{color:'white',fontWeight:'bold'}}>Close</Text>
+            <Pressable onPress={() => setPreviewVisible(false)} style={{backgroundColor:colors.primary,padding:10,borderRadius: borderRadius.small,marginTop: spacing.md}}>
+              <Text style={{color:colors.textInverse,fontFamily: typography.fontFamily.bold}}>Close</Text>
             </Pressable>
           </View>
         </TouchableOpacity>
       </Modal>
       {loading && (
         <View style={{position:'absolute',top:0,left:0,right:0,bottom:0,backgroundColor:'rgba(0,0,0,0.2)',justifyContent:'center',alignItems:'center',zIndex:10}}>
-          <ActivityIndicator size="large" color="#900C3F" />
+          <ActivityIndicator size="large" color="colors.primary" />
         </View>
       )}
       <Toast
@@ -259,7 +280,7 @@ const PreFinalScreen = () => {
         type={toast.type}
         onHide={() => setToast({ ...toast, visible: false })}
       />
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

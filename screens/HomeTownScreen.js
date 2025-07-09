@@ -1,8 +1,11 @@
-import { StyleSheet, Text, View,SafeAreaView,Pressable,TouchableOpacity,Image, TextInput } from 'react-native'
+import { StyleSheet, Text, View,Pressable,TouchableOpacity,Image, TextInput } from 'react-native'
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import GradientButton from '../components/GradientButton';
+import ThemedCard from '../components/ThemedCard';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import React ,{useState,useEffect} from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import { MaterialCommunityIcons, FontAwesome, AntDesign } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import { getRegistrationProgress, saveRegistrationProgress } from '../registrationUtils';
 
@@ -28,15 +31,15 @@ const HomeTownScreen = () => {
         navigation.navigate('Photos');
       };
   return (
-    <SafeAreaView style={{flex:1,backgroundColor:"white"}}>
-      <View style={{marginTop: 90, marginHorizontal: 20}}>
+    <SafeAreaWrapper backgroundColor={colors.background} style={{flex:1,backgroundColor:"white"}}>
+      <View style={{marginTop: spacing.xxl, marginHorizontal: 20}}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <View
             style={{
               width: 44,
               height: 44,
-              borderRadius: 22,
-              borderColor: 'black',
+              borderRadius: borderRadius.xlarge,
+              borderColor: colors.textPrimary,
               borderWidth: 2,
               justifyContent: 'center',
               alignItems: 'center',
@@ -52,10 +55,10 @@ const HomeTownScreen = () => {
         </View>
         <Text
           style={{
-            fontSize: 25,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.xxxl,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
-            marginTop: 15,
+            marginTop: spacing.md,
           }}>
           Where's your home Town?
         </Text>
@@ -75,8 +78,8 @@ const HomeTownScreen = () => {
             width: 340,
             marginVertical: 10,
             fontSize: hometown ? 22 : 22,
-            marginTop: 45,
-            borderBottomColor: 'black',
+            marginTop: spacing.xxl,
+            borderBottomColor: colors.textPrimary,
             borderBottomWidth: 1,
             paddingBottom: 10,
             fontFamily: 'GeezaPro-Bold',
@@ -86,22 +89,22 @@ const HomeTownScreen = () => {
         />
 
         {error ? (
-          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
         ) : null}
 
         <TouchableOpacity
           onPress={handleNext}
           activeOpacity={0.8}
-          style={{marginTop: 30, marginLeft: 'auto'}}>
+          style={{marginTop: spacing.xl, marginLeft: 'auto'}}>
           <MaterialCommunityIcons
             name="arrow-right-circle"
             size={45}
-            color="#581845"
-            style={{alignSelf: 'center', marginTop: 20}}
+            color="colors.primary"
+            style={{alignSelf: 'center', marginTop: spacing.lg}}
           />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   )
 }
 

@@ -1,18 +1,17 @@
-import {
-  StyleSheet,
+import {StyleSheet,
   Text,
   View,
-  SafeAreaView,
   Image,
   Pressable,
-  TouchableOpacity,
-} from 'react-native';
+  TouchableOpacity,} from 'react-native';
 import React, {useState,useEffect} from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import {useNavigation} from '@react-navigation/native';
 import { getRegistrationProgress, saveRegistrationProgress } from '../registrationUtils';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 const GenderScreen = () => {
   const [gender, setGender] = useState('');
@@ -36,15 +35,15 @@ const GenderScreen = () => {
     navigation.navigate('Type');
   };
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
-      <View style={{marginTop: 90, marginHorizontal: 20}}>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+      <View style={{marginTop: spacing.xxl, marginHorizontal: 20}}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <View
             style={{
               width: 44,
               height: 44,
-              borderRadius: 22,
-              borderColor: 'black',
+              borderRadius: borderRadius.xlarge,
+              borderColor: colors.textPrimary,
               borderWidth: 2,
               justifyContent: 'center',
               alignItems: 'center',
@@ -64,32 +63,32 @@ const GenderScreen = () => {
         </View>
         <Text
           style={{
-            fontSize: 25,
-            fontWeight: 'bold',
+            fontSize: typography.fontSize.xxxl,
+            fontFamily: typography.fontFamily.bold,
             fontFamily: 'GeezaPro-Bold',
-            marginTop: 15,
+            marginTop: spacing.md,
           }}>
           Which gender descibes you the best?
         </Text>
 
-        <Text style={{marginTop: 30, fontSize: 15, color: 'gray'}}>
-          Hinge users are matched based on these three gender groups. You can
+        <Text style={{marginTop: spacing.xl, fontSize: typography.fontSize.md, color: 'gray'}}>
+          lashwa users are matched based on these three gender groups. You can
           add more about gender after
         </Text>
 
-        <View style={{marginTop: 30}}>
+        <View style={{marginTop: spacing.xl}}>
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Men</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Men</Text>
             <Pressable onPress={() => setGender('Men')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={gender == 'Men' ? '#581845' : '#F0F0F0'}
+                color={gender == 'Men' ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -100,12 +99,12 @@ const GenderScreen = () => {
               justifyContent: 'space-between',
               marginVertical: 12,
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Women</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Women</Text>
             <Pressable onPress={() => setGender('Women')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={gender == 'Women' ? '#581845' : '#F0F0F0'}
+                color={gender == 'Women' ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -115,12 +114,12 @@ const GenderScreen = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontWeight: '500', fontSize: 15}}>Non-binary</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Non-binary</Text>
             <Pressable onPress={() => setGender('Non-binary')}>
               <FontAwesome
                 name="circle"
                 size={26}
-                color={gender == 'Non-binary' ? '#581845' : '#F0F0F0'}
+                color={gender == 'Non-binary' ? colors.primary : colors.backgroundSecondary}
               />
             </Pressable>
           </View>
@@ -128,30 +127,32 @@ const GenderScreen = () => {
 
         <View
           style={{
-            marginTop: 30,
+            marginTop: spacing.xl,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}>
-          <AntDesign name="checksquare" size={26} color="#581845" />
-          <Text style={{fontSize: 15}}>Visible on profile</Text>
+          <AntDesign name="checksquare" size={26} color={colors.primary} />
+          <Text style={{fontSize: typography.fontSize.md}}>Visible on profile</Text>
         </View>
-        <TouchableOpacity
-        onPress={handleNext}
-          activeOpacity={0.8}
-          style={{marginTop: 30, marginLeft: 'auto'}}>
-          <MaterialCommunityIcons
-            name="arrow-right-circle"
-            size={45}
-            color="#581845"
-            style={{alignSelf: 'center', marginTop: 20}}
-          />
-        </TouchableOpacity>
+        <Pressable
+          onPress={handleNext}
+          style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.xl, borderRadius: borderRadius.medium}}>
+          <Text
+            style={{
+              textAlign: 'center',
+              color: colors.textInverse,
+              fontFamily: typography.fontFamily.semiBold,
+              fontSize: typography.fontSize.md,
+            }}>
+            Continue
+          </Text>
+        </Pressable>
         {error ? (
-          <Text style={{ color: 'red', marginTop: 5 }}>{error}</Text>
+          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
         ) : null}
       </View>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 
