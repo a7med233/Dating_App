@@ -8,8 +8,9 @@ import {StyleSheet,
   TextInput,
   FlatList,
   Modal,
-  StatusBar,} from 'react-native';
-import React, { useState, useEffect } from 'react';
+  StatusBar,
+  Animated,} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
@@ -36,11 +37,39 @@ const LocationScreen = () => {
     longitude: 77.6269,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true); // New state for initial GPS attempt
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
+
+  // Animation for GPS indicator
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Start pulsing animation
+  const startPulseAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.2,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
+
+  // Stop pulsing animation
+  const stopPulseAnimation = () => {
+    pulseAnim.stopAnimation();
+    pulseAnim.setValue(1);
+  };
 
   // Simple permission check using Expo Location
   const checkPermission = async () => {
@@ -143,6 +172,8 @@ const LocationScreen = () => {
       setRegion(newRegion);
       setMarkerCoordinate({ latitude, longitude });
       setIsLoading(false);
+      setIsInitializing(false); // Stop initializing state
+      stopPulseAnimation(); // Stop the pulse animation
 
       // Get address
       fetch(
@@ -161,6 +192,8 @@ const LocationScreen = () => {
     } catch (error) {
       console.log('Location error:', error);
       setIsLoading(false);
+      setIsInitializing(false); // Stop initializing state
+      stopPulseAnimation(); // Stop the pulse animation
 
       if (error.code === 'E_LOCATION_PERMISSION_DENIED') {
         Alert.alert(
@@ -182,6 +215,7 @@ const LocationScreen = () => {
     const init = async () => {
       const hasPermission = await checkPermission();
       if (hasPermission) {
+        startPulseAnimation(); // Start the pulse animation
         getCurrentLocation();
       } else {
         // Set default region for initial load
@@ -191,6 +225,7 @@ const LocationScreen = () => {
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         });
+        setIsInitializing(false); // Stop initializing if no permission
       }
     };
     init();
@@ -334,6 +369,61 @@ const LocationScreen = () => {
               pinColor="colors.primary"
             />
           </MapView>
+
+          {/* GPS Location Indicator Overlay */}
+          {isInitializing && (
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: borderRadius.small,
+            }}>
+              <Animated.View style={{
+                transform: [{ scale: pulseAnim }],
+                alignItems: 'center',
+              }}>
+                <View style={{
+                  backgroundColor: colors.primary,
+                  borderRadius: borderRadius.round,
+                  padding: 20,
+                  marginBottom: spacing.md,
+                  elevation: 10,
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                }}>
+                  <MaterialCommunityIcons
+                    name="crosshairs-gps"
+                    size={40}
+                    color={colors.textInverse}
+                  />
+                </View>
+                <Text style={{
+                  color: colors.textInverse,
+                  fontSize: typography.fontSize.lg,
+                  fontFamily: typography.fontFamily.bold,
+                  textAlign: 'center',
+                  marginBottom: spacing.xs,
+                }}>
+                  Locating you...
+                </Text>
+                <Text style={{
+                  color: colors.textInverse,
+                  fontSize: typography.fontSize.sm,
+                  textAlign: 'center',
+                  opacity: 0.8,
+                }}>
+                  Please wait while we find your location
+                </Text>
+              </Animated.View>
+            </View>
+          )}
 
           {/* GPS Button - Inside map at bottom */}
           <TouchableOpacity

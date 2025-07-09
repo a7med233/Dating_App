@@ -10,7 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import React, {useRef, useState, useEffect} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -32,6 +34,8 @@ const BirthScreen = () => {
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
   const [error, setError] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const handleDayChange = text => {
     setDay(text);
@@ -49,6 +53,65 @@ const BirthScreen = () => {
 
   const handleYearChange = text => {
     setYear(text);
+  };
+
+  const handleDatePickerChange = (event, date) => {
+    setShowDatePicker(false);
+    if (date) {
+      setSelectedDate(date);
+      const dayValue = date.getDate().toString().padStart(2, '0');
+      const monthValue = (date.getMonth() + 1).toString().padStart(2, '0');
+      const yearValue = date.getFullYear().toString();
+      setDay(dayValue);
+      setMonth(monthValue);
+      setYear(yearValue);
+      setError('');
+    }
+  };
+
+  const openDatePicker = () => {
+    setShowDatePicker(true);
+  };
+
+  const confirmDateSelection = () => {
+    setShowDatePicker(false);
+    const dayValue = selectedDate.getDate().toString().padStart(2, '0');
+    const monthValue = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+    const yearValue = selectedDate.getFullYear().toString();
+    setDay(dayValue);
+    setMonth(monthValue);
+    setYear(yearValue);
+    setError('');
+  };
+
+  const cancelDateSelection = () => {
+    setShowDatePicker(false);
+  };
+
+  // Generate arrays for picker options
+  const generateDays = () => {
+    const days = [];
+    for (let i = 1; i <= 31; i++) {
+      days.push(i.toString().padStart(2, '0'));
+    }
+    return days;
+  };
+
+  const generateMonths = () => {
+    const months = [];
+    for (let i = 1; i <= 12; i++) {
+      months.push(i.toString().padStart(2, '0'));
+    }
+    return months;
+  };
+
+  const generateYears = () => {
+    const years = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear; i >= 1900; i--) {
+      years.push(i.toString());
+    }
+    return years;
   };
   
   useEffect(() => {
@@ -144,11 +207,32 @@ const BirthScreen = () => {
               What's your date of birth?
             </Text>
 
+            {/* Date Picker Button */}
+            <Pressable
+              onPress={openDatePicker}
+              style={styles.datePickerButton}>
+              <MaterialCommunityIcons
+                name="calendar"
+                size={24}
+                color={colors.primary}
+              />
+              <Text style={styles.datePickerText}>
+                {day && month && year ? `${day}/${month}/${year}` : 'Select your date of birth'}
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </Pressable>
+
+            {/* Manual Input Option */}
+            <Text style={styles.orText}>or enter manually:</Text>
+
             {/* Date Input Fields */}
             <View style={styles.dateInputContainer}>
               {/* Day Input Field */}
               <TextInput
-                autoFocus={true}
                 style={styles.dayInput}
                 placeholder="DD"
                 keyboardType="numeric"
@@ -202,6 +286,89 @@ const BirthScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Custom Date Picker Modal */}
+      <Modal
+        visible={showDatePicker}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Date of Birth</Text>
+            </View>
+            
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerColumn}>
+                <Text style={styles.pickerLabel}>Day</Text>
+                <Picker
+                  selectedValue={selectedDate.getDate().toString().padStart(2, '0')}
+                  onValueChange={(itemValue) => {
+                    const newDate = new Date(selectedDate);
+                    newDate.setDate(parseInt(itemValue));
+                    setSelectedDate(newDate);
+                  }}
+                  style={styles.picker}
+                >
+                  {generateDays().map((day) => (
+                    <Picker.Item key={day} label={day} value={day} />
+                  ))}
+                </Picker>
+              </View>
+
+              <View style={styles.pickerColumn}>
+                <Text style={styles.pickerLabel}>Month</Text>
+                <Picker
+                  selectedValue={(selectedDate.getMonth() + 1).toString().padStart(2, '0')}
+                  onValueChange={(itemValue) => {
+                    const newDate = new Date(selectedDate);
+                    newDate.setMonth(parseInt(itemValue) - 1);
+                    setSelectedDate(newDate);
+                  }}
+                  style={styles.picker}
+                >
+                  {generateMonths().map((month) => (
+                    <Picker.Item key={month} label={month} value={month} />
+                  ))}
+                </Picker>
+              </View>
+
+              <View style={styles.pickerColumn}>
+                <Text style={styles.pickerLabel}>Year</Text>
+                <Picker
+                  selectedValue={selectedDate.getFullYear().toString()}
+                  onValueChange={(itemValue) => {
+                    const newDate = new Date(selectedDate);
+                    newDate.setFullYear(parseInt(itemValue));
+                    setSelectedDate(newDate);
+                  }}
+                  style={styles.picker}
+                >
+                  {generateYears().map((year) => (
+                    <Picker.Item key={year} label={year} value={year} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <Pressable
+                onPress={cancelDateSelection}
+                style={styles.cancelButton}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmDateSelection}
+                style={styles.confirmButton}
+              >
+                <Text style={styles.confirmButtonText}>Confirm</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaWrapper>
   );
 };
@@ -287,6 +454,101 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: Math.min(width * 0.035, 14),
     textAlign: 'center',
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.backgroundSecondary,
+    padding: spacing.md,
+    borderRadius: borderRadius.medium,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  datePickerText: {
+    flex: 1,
+    fontSize: Math.min(width * 0.045, 18),
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textPrimary,
+    marginLeft: spacing.sm,
+  },
+  orText: {
+    textAlign: 'center',
+    color: colors.textSecondary,
+    fontSize: Math.min(width * 0.035, 14),
+    marginBottom: spacing.md,
+    fontFamily: typography.fontFamily.medium,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.textInverse,
+    borderRadius: borderRadius.large,
+    padding: spacing.lg,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textPrimary,
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  pickerColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pickerLabel: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  picker: {
+    width: '100%',
+    height: 150,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+    padding: spacing.md,
+    borderRadius: borderRadius.medium,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    padding: spacing.md,
+    borderRadius: borderRadius.medium,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: colors.textInverse,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
   },
   nextButton: {
     alignSelf: 'flex-end',
