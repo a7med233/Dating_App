@@ -70,6 +70,7 @@ export const fetchMessages = (params) => api.get('/messages', { params });
 export const likeProfile = (data) => api.post('/like-profile', data);
 export const createMatch = (data) => api.post('/create-match', data);
 export const getUserDetails = (userId) => api.get(`/users/${userId}`);
+export const updateProfileVisibility = (userId, visibilitySettings) => api.put(`/users/${userId}/visibility`, visibilitySettings);
 export const fetchMatches = (userId) => api.get(`/matches?userId=${userId}`);
 export const fetchReceivedLikes = (userId) => api.get(`/received-likes/${userId}`);
 export const getUserMatches = (userId) => api.get(`/get-matches/${userId}`);

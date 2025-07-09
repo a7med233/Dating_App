@@ -31,7 +31,7 @@ const HomeTownScreen = () => {
         navigation.navigate('Photos');
       };
   return (
-    <SafeAreaWrapper backgroundColor={colors.background} style={{flex:1,backgroundColor:"white"}}>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex:1,backgroundColor:"#fff"}}>
       <View style={{marginTop: spacing.xxl, marginHorizontal: 20}}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <View
@@ -44,7 +44,7 @@ const HomeTownScreen = () => {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-            <AntDesign name="hearto" size={22} color="black" />
+            <AntDesign name="hearto" size={22} color={colors.textPrimary} />
           </View>
           <Image
             style={{width: 100, height: 40}}
@@ -85,11 +85,11 @@ const HomeTownScreen = () => {
             fontFamily: 'GeezaPro-Bold',
           }}
           placeholder="HomeTown"
-          placeholderTextColor={'#BEBEBE'}
+          placeholderTextColor={colors.textSecondary}
         />
 
         {error ? (
-          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
+          <Text style={{ color: colors.error, marginTop: spacing.sm }}>{error}</Text>
         ) : null}
 
         <TouchableOpacity
@@ -99,7 +99,7 @@ const HomeTownScreen = () => {
           <MaterialCommunityIcons
             name="arrow-right-circle"
             size={45}
-            color="colors.primary"
+            color={colors.primary}
             style={{alignSelf: 'center', marginTop: spacing.lg}}
           />
         </TouchableOpacity>

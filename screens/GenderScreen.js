@@ -15,12 +15,14 @@ import { colors, typography, shadows, borderRadius, spacing } from '../theme/col
 
 const GenderScreen = () => {
   const [gender, setGender] = useState('');
+  const [genderVisible, setGenderVisible] = useState(true);
   const [error, setError] = useState('');
   const navigation = useNavigation();
   useEffect(() => {
     getRegistrationProgress('Gender').then((progressData) => {
       if (progressData) {
         setGender(progressData.gender || '');
+        setGenderVisible(progressData.genderVisible !== false); // Default to true if not set
       }
     });
   }, []);
@@ -31,7 +33,7 @@ const GenderScreen = () => {
       return;
     }
     setError('');
-    saveRegistrationProgress('Gender', { gender });
+    saveRegistrationProgress('Gender', { gender, genderVisible });
     navigation.navigate('Type');
   };
   return (
@@ -125,29 +127,37 @@ const GenderScreen = () => {
           </View>
         </View>
 
-        <View
+        <Pressable
+          onPress={() => setGenderVisible(!genderVisible)}
           style={{
             marginTop: spacing.xl,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}>
-          <AntDesign name="checksquare" size={26} color={colors.primary} />
-          <Text style={{fontSize: typography.fontSize.md}}>Visible on profile</Text>
-        </View>
-        <Pressable
-          onPress={handleNext}
-          style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.xl, borderRadius: borderRadius.medium}}>
-          <Text
-            style={{
-              textAlign: 'center',
-              color: colors.textInverse,
-              fontFamily: typography.fontFamily.semiBold,
-              fontSize: typography.fontSize.md,
-            }}>
-            Continue
+          <AntDesign 
+            name={genderVisible ? "checksquare" : "checksquareo"} 
+            size={26} 
+            color={genderVisible ? colors.primary : colors.textSecondary} 
+          />
+          <Text style={{
+            fontSize: typography.fontSize.md,
+            color: genderVisible ? colors.textPrimary : colors.textSecondary,
+          }}>
+            Visible on profile
           </Text>
         </Pressable>
+        <TouchableOpacity
+          onPress={handleNext}
+          activeOpacity={0.8}
+          style={{marginTop: spacing.xl, marginLeft: 'auto'}}>
+          <MaterialCommunityIcons
+            name="arrow-right-circle"
+            size={45}
+            color={colors.primary}
+            style={{alignSelf: 'center', marginTop: spacing.lg}}
+          />
+        </TouchableOpacity>
         {error ? (
           <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
         ) : null}

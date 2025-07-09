@@ -128,6 +128,128 @@ const ProfileDetailsScreen = () => {
                   )}
                 </View>
 
+                {/* Profile Information Section */}
+                <View style={{
+                  backgroundColor: colors.textInverse,
+                  padding: spacing.lg,
+                  borderRadius: borderRadius.medium,
+                  marginVertical: spacing.md,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}>
+                  <Text style={{
+                    fontSize: typography.fontSize.lg,
+                    fontFamily: typography.fontFamily.bold,
+                    color: colors.textPrimary,
+                    marginBottom: spacing.md,
+                  }}>
+                    About {route?.params?.currentProfile?.firstName}
+                  </Text>
+                  
+                  {route?.params?.currentProfile?.gender && route?.params?.currentProfile?.genderVisible !== false && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.medium,
+                        color: colors.textSecondary,
+                        width: 80,
+                      }}>
+                        Gender:
+                      </Text>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.semiBold,
+                        color: colors.textPrimary,
+                      }}>
+                        {route?.params?.currentProfile?.gender}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {route?.params?.currentProfile?.type && route?.params?.currentProfile?.typeVisible !== false && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.medium,
+                        color: colors.textSecondary,
+                        width: 80,
+                      }}>
+                        Sexuality:
+                      </Text>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.semiBold,
+                        color: colors.textPrimary,
+                      }}>
+                        {route?.params?.currentProfile?.type}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {route?.params?.currentProfile?.lookingFor && route?.params?.currentProfile?.lookingForVisible !== false && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.medium,
+                        color: colors.textSecondary,
+                        width: 80,
+                      }}>
+                        Looking for:
+                      </Text>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.semiBold,
+                        color: colors.textPrimary,
+                      }}>
+                        {route?.params?.currentProfile?.lookingFor}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {route?.params?.currentProfile?.location && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.medium,
+                        color: colors.textSecondary,
+                        width: 80,
+                      }}>
+                        Location:
+                      </Text>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.semiBold,
+                        color: colors.textPrimary,
+                      }}>
+                        {route?.params?.currentProfile?.location}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {route?.params?.currentProfile?.hometown && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.medium,
+                        color: colors.textSecondary,
+                        width: 80,
+                      }}>
+                        Hometown:
+                      </Text>
+                      <Text style={{
+                        fontSize: typography.fontSize.md,
+                        fontFamily: typography.fontFamily.semiBold,
+                        color: colors.textPrimary,
+                      }}>
+                        {route?.params?.currentProfile?.hometown}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
                 <View style={{marginVertical: 15}}>
                   {route?.params?.currentProfile?.prompts?.slice(0, 1).map((prompt, index) => (
                     <Fragment key={prompt.id || `prompt-${index}`}>

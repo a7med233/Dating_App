@@ -25,6 +25,7 @@ const { width, height } = Dimensions.get('window');
 const PasswordScreen = () => {
   const navigation = useNavigation();
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -82,26 +83,38 @@ const PasswordScreen = () => {
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
-              <TextInput
-                secureTextEntry={true}
-                autoFocus={true}
-                value={password}
-                onChangeText={text => {
-                  setPassword(text);
-                  if (text.trim() === '') {
-                    setError('Password is required.');
-                  } else if (text.length < 6) {
-                    setError('Password must be at least 6 characters.');
-                  } else {
-                    setError('');
-                  }
-                }}
-                style={styles.textInput}
-                placeholder="Enter your password"
-                placeholderTextColor={'#BEBEBE'}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  secureTextEntry={!showPassword}
+                  autoFocus={true}
+                  value={password}
+                  onChangeText={text => {
+                    setPassword(text);
+                    if (text.trim() === '') {
+                      setError('Password is required.');
+                    } else if (text.length < 6) {
+                      setError('Password must be at least 6 characters.');
+                    } else {
+                      setError('');
+                    }
+                  }}
+                  style={styles.textInput}
+                  placeholder="Enter your password"
+                  placeholderTextColor={'#BEBEBE'}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Pressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIcon}
+                >
+                  <MaterialIcons
+                    name={showPassword ? "visibility" : "visibility-off"}
+                    size={24}
+                    color={colors.textSecondary}
+                  />
+                </Pressable>
+              </View>
             </View>
 
             {/* Error Message */}
@@ -177,14 +190,27 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: spacing.md,
   },
-  textInput: {
-    fontSize: Math.min(width * 0.055, 22),
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderBottomColor: colors.textPrimary,
     borderBottomWidth: 1,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: Math.min(width * 0.055, 22),
     paddingBottom: 10,
     paddingTop: 5,
+    paddingRight: 40, // Space for the eye icon
     fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
     color: '#000',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 0,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     color: 'red',

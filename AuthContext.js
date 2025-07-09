@@ -4,23 +4,24 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState('');
-    const [isLoading, setIsLoading] = useState('');
+    const [token, setToken] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const isLoggedIn = async () => {
         try {
             setIsLoading(true);
             const userToken = await AsyncStorage.getItem('token');
             setToken(userToken);
-            setIsLoading(false);
         } catch (error) {
             console.log('Error checking login status:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     useEffect(() => {
         isLoggedIn();
-    }, [token]);
+    }, []); // Remove token dependency to avoid infinite re-renders
 
     return (
         <AuthContext.Provider value={{ token, setToken, isLoading }}>

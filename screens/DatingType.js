@@ -17,6 +17,7 @@ import { colors, typography, shadows, borderRadius, spacing } from '../theme/col
 const DatingType = () => {
   const [datingPreferences, setDatingPreferences] = useState([]);
   const [error, setError] = useState('');
+  const [typeVisible, setTypeVisible] = useState(true);
   const chooseOption = option => {
     if (datingPreferences.includes(option)) {
       setDatingPreferences(
@@ -32,6 +33,7 @@ const DatingType = () => {
     getRegistrationProgress('Dating').then(progressData => {
       if (progressData) {
         setDatingPreferences(progressData.datingPreferences || []);
+        setTypeVisible(progressData.typeVisible !== false); // Default to true if not set
       }
     });
   }, []);
@@ -42,7 +44,7 @@ const DatingType = () => {
       return;
     }
     setError('');
-    saveRegistrationProgress('Dating', {datingPreferences});
+    saveRegistrationProgress('Dating', {datingPreferences, typeVisible});
     navigation.navigate('LookingFor');
   };
   return (
@@ -59,7 +61,7 @@ const DatingType = () => {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-            <AntDesign name="hearto" size={22} color="black" />
+            <AntDesign name="hearto" size={22} color={colors.textPrimary} />
           </View>
           <Image
             style={{width: 100, height: 40}}
@@ -78,7 +80,7 @@ const DatingType = () => {
           Who do you want to date?
         </Text>
 
-        <Text style={{marginTop: spacing.xl, fontSize: typography.fontSize.md, color: 'gray'}}>
+        <Text style={{marginTop: spacing.xl, fontSize: typography.fontSize.md, color: colors.textSecondary}}>
           Select all the people you're open to meeting
         </Text>
 
@@ -136,16 +138,26 @@ const DatingType = () => {
           </View>
         </View>
 
-        <View
+        <Pressable
+          onPress={() => setTypeVisible(!typeVisible)}
           style={{
             marginTop: spacing.xl,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}>
-          <AntDesign name="checksquare" size={26} color="colors.primary" />
-          <Text style={{fontSize: typography.fontSize.md}}>Visible on profile</Text>
-        </View>
+          <AntDesign 
+            name={typeVisible ? "checksquare" : "checksquareo"} 
+            size={26} 
+            color={typeVisible ? colors.primary : colors.textSecondary} 
+          />
+          <Text style={{
+            fontSize: typography.fontSize.md,
+            color: typeVisible ? colors.textPrimary : colors.textSecondary,
+          }}>
+            Visible on profile
+          </Text>
+        </Pressable>
         <TouchableOpacity
           onPress={handleNext}
           activeOpacity={0.8}
@@ -153,12 +165,12 @@ const DatingType = () => {
           <MaterialCommunityIcons
             name="arrow-right-circle"
             size={45}
-            color="colors.primary"
+            color={colors.primary}
             style={{alignSelf: 'center', marginTop: spacing.lg}}
           />
         </TouchableOpacity>
         {error ? (
-          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
+          <Text style={{ color: colors.error, marginTop: spacing.sm }}>{error}</Text>
         ) : null}
       </View>
     </SafeAreaWrapper>

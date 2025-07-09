@@ -12,8 +12,14 @@ const ProfileCard = ({ profile, onPress, style }) => {
       <View style={styles.info}>
         <Text style={styles.name}>{profile.firstName} {profile.lastName}</Text>
         <Text style={styles.details}>{profile.age ? `${profile.age} yrs` : ''} {profile.location ? `• ${profile.location}` : ''}</Text>
-        {profile.lookingFor && (
+        {profile.lookingFor && profile.lookingForVisible !== false && (
           <Text style={styles.lookingFor}>{profile.lookingFor}</Text>
+        )}
+        {profile.gender && profile.genderVisible !== false && (
+          <Text style={styles.details}>{profile.gender}</Text>
+        )}
+        {profile.type && profile.typeVisible !== false && (
+          <Text style={styles.details}>{profile.type}</Text>
         )}
       </View>
     </TouchableOpacity>

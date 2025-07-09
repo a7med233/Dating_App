@@ -19,12 +19,14 @@ import { colors, typography, shadows, borderRadius, spacing } from '../theme/col
 
 const TypeScreen = () => {
   const [type, setType] = useState('');
+  const [typeVisible, setTypeVisible] = useState(true);
   const [error, setError] = useState('');
   const navigation = useNavigation();
   useEffect(() => {
     getRegistrationProgress('Type').then(progressData => {
       if (progressData) {
         setType(progressData.type || '');
+        setTypeVisible(progressData.typeVisible !== false); // Default to true if not set
       }
     });
   }, []);
@@ -35,11 +37,11 @@ const TypeScreen = () => {
       return;
     }
     setError('');
-    saveRegistrationProgress('Type', {type});
+    saveRegistrationProgress('Type', {type, typeVisible});
     navigation.navigate('Dating');
   };
   return (
-    <SafeAreaWrapper backgroundColor={colors.background} style={styles.container}>
+    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <View style={styles.content}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -56,7 +58,7 @@ const TypeScreen = () => {
             <MaterialCommunityIcons
               name="cake-variant-outline"
               size={26}
-              color="black"
+              color={colors.textPrimary}
             />
           </View>
           <Image
@@ -76,7 +78,7 @@ const TypeScreen = () => {
           What's your sexuality?
         </Text>
 
-        <Text style={{marginTop: spacing.xl, fontSize: typography.fontSize.md, color: 'gray'}}>
+        <Text style={{marginTop: spacing.xl, fontSize: typography.fontSize.md, color: colors.textSecondary}}>
           lashwa users are matched based on these three gender groups. You can
           add more about gender after
         </Text>
@@ -144,16 +146,26 @@ const TypeScreen = () => {
           </View>
         </View>
 
-        <View
+        <Pressable
+          onPress={() => setTypeVisible(!typeVisible)}
           style={{
             marginTop: spacing.xl,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}>
-          <AntDesign name="checksquare" size={26} color="colors.primary" />
-          <Text style={{fontSize: typography.fontSize.md}}>Visible on profile</Text>
-        </View>
+          <AntDesign 
+            name={typeVisible ? "checksquare" : "checksquareo"} 
+            size={26} 
+            color={typeVisible ? colors.primary : colors.textSecondary} 
+          />
+          <Text style={{
+            fontSize: typography.fontSize.md,
+            color: typeVisible ? colors.textPrimary : colors.textSecondary,
+          }}>
+            Visible on profile
+          </Text>
+        </Pressable>
         <TouchableOpacity
           onPress={handleNext}
           activeOpacity={0.8}
@@ -161,12 +173,12 @@ const TypeScreen = () => {
           <MaterialCommunityIcons
             name="arrow-right-circle"
             size={45}
-            color="colors.primary"
+            color={colors.primary}
             style={{alignSelf: 'center', marginTop: spacing.lg}}
           />
         </TouchableOpacity>
         {error ? (
-          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
+          <Text style={{ color: colors.error, marginTop: spacing.sm }}>{error}</Text>
         ) : null}
       </View>
     </SafeAreaWrapper>

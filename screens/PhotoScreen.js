@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import React, {useState,useEffect} from 'react';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -33,28 +34,10 @@ import ThemedCard from '../components/ThemedCard';
 const PhotoScreen = () => {
   const navigation = useNavigation();
   const [imageUrls, setImageUrls] = useState(Array(6).fill(''));
-  const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [showError, setShowError] = useState(false);
-
-  const handleAddImage = () => {
-    if (imageUrl.trim() === '') {
-      setError('Please enter an image URL.');
-      return;
-    }
-    const newUrls = [...imageUrls];
-    const idx = newUrls.findIndex(url => !url);
-    if (idx !== -1) {
-      newUrls[idx] = imageUrl;
-      setImageUrls(newUrls);
-      setImageUrl('');
-      setError('');
-    } else {
-      setError('Maximum 6 images allowed.');
-    }
-  };
 
   useEffect(() => {
     // Fetch the saved image URLs from AsyncStorage
@@ -77,7 +60,8 @@ const PhotoScreen = () => {
   const handleNext = () => {
     const validImages = imageUrls.filter(url => url.trim() !== '');
     if (validImages.length < 4) {
-      setError('Please add at least 4 photos.');
+      setError(`Please add at least 4 photos. You currently have ${validImages.length} photo${validImages.length !== 1 ? 's' : ''}.`);
+      setShowError(true);
       return;
     }
     setError('');
@@ -87,6 +71,7 @@ const PhotoScreen = () => {
     
     if (cloudUrls.length < 4) {
       setError('Please upload at least 4 photos from your device.');
+      setShowError(true);
       return;
     }
     
@@ -110,14 +95,13 @@ const PhotoScreen = () => {
       
       // Use the correct mediaTypes property based on what's available
       const mediaTypes = ImagePicker.MediaTypeOptions?.Images || "Images";
-      
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: mediaTypes,
         allowsMultipleSelection: false,
         quality: 0.6, // Reduced quality to decrease payload size
         base64: true,
+        allowsEditing: true, // Enable cropping
         aspect: [1, 1], // Force square aspect ratio
-        allowsEditing: false, // Disable editing to reduce processing
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -175,11 +159,6 @@ const PhotoScreen = () => {
     setSelectedImageIndex(null);
   };
 
-  // Handle photo reordering
-  const handlePhotosReorder = (newOrder) => {
-    setImageUrls(newOrder);
-  };
-
   // Add this function to pick images from device
   const pickImage = async () => {
     try {
@@ -188,15 +167,14 @@ const PhotoScreen = () => {
       
       // Use the correct mediaTypes property based on what's available
       const mediaTypes = ImagePicker.MediaTypeOptions?.Images || "Images";
-      
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: mediaTypes,
         allowsMultipleSelection: true,
         selectionLimit: 6,
         quality: 0.6, // Reduced quality to decrease payload size
         base64: true, // Enable base64 encoding
+        allowsEditing: true, // Enable cropping
         aspect: [1, 1], // Force square aspect ratio
-        allowsEditing: false, // Disable editing to reduce processing
       });
 
       if (!result.canceled && result.assets) {
@@ -272,7 +250,7 @@ const PhotoScreen = () => {
   return (
     <SafeAreaWrapper backgroundColor={colors.background}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <View style={styles.content}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header with Gradient */}
         <LinearGradient
           colors={colors.purpleToCoral}
@@ -293,79 +271,93 @@ const PhotoScreen = () => {
           </View>
         </LinearGradient>
 
-        <Text style={styles.title}>
-          Pick your videos and photos
-        </Text>
-        
-        <View style={styles.photoGridContainer}>
-          <DraggablePhotoGrid
-            key={`photo-grid-${imageUrls.filter(url => url).length}`}
-            photos={imageUrls}
-            onPhotosReorder={handlePhotosReorder}
-            onPhotoLongPress={handlePhotoLongPress}
-            onPhotoPress={pickImage}
-            onReplacePhoto={replacePhoto}
-            onDeletePhoto={deletePhoto}
-            selectedImageIndex={selectedImageIndex}
-            isUploading={isUploading}
-          />
-        </View>
-
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionText}>Long press to drag and reorder photos</Text>
-          <Text style={styles.photoCountText}>
-            Add four to six photos
+        <View style={styles.content}>
+          <Text style={styles.title}>
+            Pick your photos
           </Text>
+          
+          <Text style={styles.subtitle}>
+            Add four to six photos to showcase yourself
+          </Text>
+
+          {/* Photo Grid Section */}
+          <View style={styles.photoSection}>
+            <DraggablePhotoGrid
+              photos={imageUrls}
+              onPhotoLongPress={handlePhotoLongPress}
+              onPhotoPress={pickImage}
+              onReplacePhoto={replacePhoto}
+              onDeletePhoto={deletePhoto}
+              selectedImageIndex={selectedImageIndex}
+              isUploading={isUploading}
+            />
+            
+            {/* Photo Count Indicator */}
+            <View style={styles.photoCountContainer}>
+              <View style={styles.photoCountBar}>
+                <View 
+                  style={[
+                    styles.photoCountProgress, 
+                    { width: `${Math.min((imageUrls.filter(url => url.trim() !== '').length / 4) * 100, 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.photoCountText}>
+                {imageUrls.filter(url => url.trim() !== '').length} of 4 photos added
+              </Text>
+              {imageUrls.filter(url => url.trim() !== '').length < 4 && (
+                <Text style={styles.photoCountSubtext}>
+                  Add {4 - imageUrls.filter(url => url.trim() !== '').length} more photo{4 - imageUrls.filter(url => url.trim() !== '').length !== 1 ? 's' : ''} to continue
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {/* Upload Options Section */}
+          <ThemedCard variant="elevated" padding="medium" margin="small">
+            <Text style={styles.sectionTitle}>Add Photos</Text>
+            
+            <View style={styles.uploadSection}>
+              <GradientButton
+                title="Upload from device"
+                onPress={pickImage}
+                disabled={isUploading}
+                style={styles.uploadButton}
+                gradient="purpleToCoral"
+                size="small"
+              />
+              {isUploading && (
+                <View style={styles.loadingContainer}>
+                  <LoadingSpinner message="Uploading..." size="small" />
+                </View>
+              )}
+            </View>
+          </ThemedCard>
+
+          {/* Instructions */}
+          <View style={styles.instructionsContainer}>
+            <MaterialIcons name="info-outline" size={14} color={colors.textSecondary} />
+            <Text style={styles.instructionText}>
+              Long press on a photo to edit or delete
+            </Text>
+          </View>
+
+          {/* Next Button */}
+          <TouchableOpacity
+            onPress={handleNext}
+            activeOpacity={0.8}
+            disabled={imageUrls.filter(url => url.trim() !== '').length < 4}
+            style={[
+              styles.nextButton,
+              imageUrls.filter(url => url.trim() !== '').length < 4 && styles.nextButtonDisabled
+            ]}>
+            <MaterialCommunityIcons
+              name="arrow-right-circle"
+              size={50}
+              color={imageUrls.filter(url => url.trim() !== '').length < 4 ? colors.textTertiary : colors.primary}
+            />
+          </TouchableOpacity>
         </View>
-
-        <ThemedCard variant="elevated" padding="large" margin="medium">
-          <Text style={styles.sectionTitle}>Add a picture of yourself</Text>
-          
-          <View style={styles.uploadSection}>
-            <GradientButton
-              title="Upload from device"
-              onPress={pickImage}
-              disabled={isUploading}
-              style={styles.uploadButton}
-              gradient="purpleToCoral"
-            />
-            {isUploading && <LoadingSpinner message="Uploading photos..." size="small" />}
-          </View>
-          
-          <View style={styles.urlInputContainer}>
-            <MaterialIcons
-              style={styles.urlInputIcon}
-              name="image"
-              size={22}
-              color={colors.primary}
-            />
-            <TextInput
-              value={imageUrl}
-              onChangeText={text => setImageUrl(text)}
-              style={styles.urlInput}
-              placeholder="Enter your image URL"
-              placeholderTextColor={colors.textTertiary}
-            />
-          </View>
-          
-          <GradientButton
-            title="Add Image"
-            onPress={handleAddImage}
-            variant="outline"
-            style={styles.addImageButton}
-          />
-        </ThemedCard>
-
-        <TouchableOpacity
-          onPress={handleNext}
-          activeOpacity={0.8}
-          style={styles.nextButton}>
-          <MaterialCommunityIcons
-            name="arrow-right-circle"
-            size={45}
-            color={colors.primary}
-          />
-        </TouchableOpacity>
         
         <ErrorMessage
           error={error}
@@ -376,7 +368,7 @@ const PhotoScreen = () => {
             setError('');
           }}
         />
-      </View>
+      </ScrollView>
     </SafeAreaWrapper>
   );
 };
@@ -384,17 +376,21 @@ const PhotoScreen = () => {
 export default PhotoScreen;
 
 const styles = StyleSheet.create({
-  content: {
-    marginHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 20 : 20,
+  container: {
     flex: 1,
+    backgroundColor: "#fff",
+  },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    backgroundColor: "#fff",
   },
   headerGradient: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderBottomLeftRadius: borderRadius.large,
     borderBottomRightRadius: borderRadius.large,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
     ...shadows.medium,
   },
   header: {
@@ -421,27 +417,18 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xxl,
     fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
-    marginTop: spacing.md,
     textAlign: 'center',
+    marginBottom: spacing.xs,
   },
-  photoGridContainer: {
-    flex: 1,
-    marginTop: spacing.lg,
-  },
-  instructionsContainer: {
-    marginVertical: spacing.md,
-    alignItems: 'center',
-  },
-  instructionText: {
-    color: colors.textSecondary,
+  subtitle: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
-  photoCountText: {
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.medium,
-    color: colors.primary,
-    marginTop: spacing.xs,
+  photoSection: {
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
@@ -450,61 +437,67 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   uploadSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginVertical: spacing.md,
+    marginBottom: spacing.sm,
   },
   uploadButton: {
-    flex: 1,
+    marginBottom: spacing.sm,
   },
-  urlInputContainer: {
+  loadingContainer: {
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  instructionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.medium,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
-  urlInputIcon: {
-    marginRight: spacing.sm,
-  },
-  urlInput: {
+  instructionText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
     flex: 1,
-    color: colors.textPrimary,
-    paddingVertical: spacing.md,
-    fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.regular,
   },
-  addImageButton: {
-    marginTop: spacing.md,
-  },
   nextButton: {
-    marginTop: spacing.xl,
     alignSelf: 'center',
+    marginTop: spacing.md,
     marginBottom: spacing.lg,
   },
-  actionButtons: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    flexDirection: 'row',
-    gap: 5,
+  nextButtonDisabled: {
+    opacity: 0.5,
   },
-  actionButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
+  photoCountContainer: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
-    ...shadows.small,
   },
-  replaceButton: {
-    backgroundColor: colors.info,
+  photoCountBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: colors.cardBorder,
+    borderRadius: 4,
+    marginBottom: spacing.xs,
+    overflow: 'hidden',
   },
-  deleteButton: {
-    backgroundColor: colors.error,
+  photoCountProgress: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+  },
+  photoCountText: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  photoCountSubtext: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

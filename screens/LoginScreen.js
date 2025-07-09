@@ -101,7 +101,7 @@ const LoginScreen = () => {
   
   const createAccount = () => {
     setOption('Create account');
-    navigation.navigate('Basic');
+    navigation.navigate('BasicInfo');
   };
   
   const handleLogin = () => {
@@ -158,9 +158,7 @@ const LoginScreen = () => {
               <View style={styles.brandContainer}>
                 <Image
                   style={styles.brandLogo}
-                  source={{
-                    uri: 'https://branditechture.agency/brand-logos/wp-content/uploads/wpdm-cache/Hinge-App-900x0.png',
-                  }}
+                  source={require('../assets/icon.png')}
                 />
               </View>
             </ThemedCard>

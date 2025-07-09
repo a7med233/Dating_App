@@ -129,6 +129,10 @@ const PreFinalScreen = () => {
         lookingFor: userData.lookingFor,
         imageUrls: userData.imageUrls || [],
         prompts: userData.prompts || [],
+        // Visibility settings
+        genderVisible: userData.genderVisible !== false,
+        typeVisible: userData.typeVisible !== false,
+        lookingForVisible: userData.lookingForVisible !== false,
       };
       
       const response = await registerUserAPI(payload);

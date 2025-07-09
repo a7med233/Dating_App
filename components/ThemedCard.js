@@ -13,6 +13,7 @@ const ThemedCard = ({
   variant = 'default', // 'default', 'elevated', 'outlined'
   padding = 'medium', // 'small', 'medium', 'large'
   margin = 'none', // 'small', 'medium', 'large', 'none'
+  backgroundColor,
 }) => {
   const getCardStyle = () => {
     const baseStyle = [styles.card, styles[variant]];
@@ -52,17 +53,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.large,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    ...shadows.medium,
   },
   default: {
     ...shadows.small,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
   },
   elevated: {
-    ...shadows.medium,
+    ...shadows.large,
+    borderWidth: 2,
+    borderColor: 'rgba(161, 66, 244, 0.2)',
+    elevation: 8,
   },
   outlined: {
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderWidth: 2,
+    borderColor: colors.primary,
     backgroundColor: colors.backgroundSecondary,
+    ...shadows.small,
   },
   paddingSmall: {
     padding: spacing.sm,

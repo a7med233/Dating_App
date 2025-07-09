@@ -121,6 +121,19 @@ const userSchema = new Schema({
     enum: ['public', 'hidden'],
     default: 'public',
   },
+  // Profile section visibility settings
+  genderVisible: {
+    type: Boolean,
+    default: true,
+  },
+  typeVisible: {
+    type: Boolean,
+    default: true,
+  },
+  lookingForVisible: {
+    type: Boolean,
+    default: true,
+  },
   blockedUsers: [
     {
       type: Schema.Types.ObjectId,

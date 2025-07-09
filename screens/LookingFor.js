@@ -13,12 +13,14 @@ import { colors, typography, shadows, borderRadius, spacing } from '../theme/col
 
 const LookingFor = () => {
     const [lookingFor,setLookingFor] = useState([]);
+    const [lookingForVisible, setLookingForVisible] = useState(true);
     const navigation = useNavigation();
     const [error, setError] = useState('');
     useEffect(() => {
         getRegistrationProgress('LookingFor').then(progressData => {
           if (progressData) {
             setLookingFor(progressData.lookingFor || '');
+            setLookingForVisible(progressData.lookingForVisible !== false); // Default to true if not set
           }
         });
       }, []);
@@ -29,7 +31,7 @@ const LookingFor = () => {
           return;
         }
         setError('');
-        saveRegistrationProgress('LookingFor', {lookingFor});
+        saveRegistrationProgress('LookingFor', {lookingFor, lookingForVisible});
         navigation.navigate('Hometown');
       };
       
@@ -47,7 +49,7 @@ const LookingFor = () => {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-            <AntDesign name="hearto" size={22} color="black" />
+            <AntDesign name="hearto" size={22} color={colors.textPrimary} />
           </View>
           <Image
             style={{width: 100, height: 40}}
@@ -161,16 +163,26 @@ const LookingFor = () => {
           </View>
         </View>
 
-        <View
+        <Pressable
+          onPress={() => setLookingForVisible(!lookingForVisible)}
           style={{
             marginTop: spacing.xl,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}>
-          <AntDesign name="checksquare" size={26} color="colors.primary" />
-          <Text style={{fontSize: typography.fontSize.md}}>Visible on profile</Text>
-        </View>
+          <AntDesign 
+            name={lookingForVisible ? "checksquare" : "checksquareo"} 
+            size={26} 
+            color={lookingForVisible ? colors.primary : colors.textSecondary} 
+          />
+          <Text style={{
+            fontSize: typography.fontSize.md,
+            color: lookingForVisible ? colors.textPrimary : colors.textSecondary,
+          }}>
+            Visible on profile
+          </Text>
+        </Pressable>
         <TouchableOpacity
           onPress={handleNext}
           activeOpacity={0.8}
@@ -178,12 +190,12 @@ const LookingFor = () => {
           <MaterialCommunityIcons
             name="arrow-right-circle"
             size={45}
-            color="colors.primary"
+            color={colors.primary}
             style={{alignSelf: 'center', marginTop: spacing.lg}}
           />
         </TouchableOpacity>
         {error ? (
-          <Text style={{ color: 'red', marginTop: spacing.sm }}>{error}</Text>
+          <Text style={{ color: colors.error, marginTop: spacing.sm }}>{error}</Text>
         ) : null}
       </View>
     </SafeAreaWrapper>

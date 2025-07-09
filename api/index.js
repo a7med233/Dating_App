@@ -207,16 +207,89 @@ app.post('/register', async (req, res) => {
 app.get('/users/:userId', async (req, res) => {
   try {
     const {userId} = req.params;
+    const { requestingUserId } = req.query; // ID of the user requesting the profile
 
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(500).json({message: 'User not found'});
+      return res.status(404).json({message: 'User not found'});
     }
 
-    return res.status(200).json({user});
+    // If requesting user is the same as the profile owner, return full data
+    if (requestingUserId === userId) {
+      return res.status(200).json({user});
+    }
+
+    // For other users, filter based on visibility settings
+    const filteredUser = { ...user.toObject() };
+    
+    // Remove gender if not visible
+    if (!user.genderVisible) {
+      delete filteredUser.gender;
+    }
+    
+    // Remove type if not visible
+    if (!user.typeVisible) {
+      delete filteredUser.type;
+    }
+    
+    // Remove lookingFor if not visible
+    if (!user.lookingForVisible) {
+      delete filteredUser.lookingFor;
+    }
+    
+    // Remove visibility flags from response
+    delete filteredUser.genderVisible;
+    delete filteredUser.typeVisible;
+    delete filteredUser.lookingForVisible;
+
+    return res.status(200).json({user: filteredUser});
   } catch (error) {
+    console.error('Error fetching user details:', error);
     res.status(500).json({message: 'Error fetching the user details'});
+  }
+});
+
+// Endpoint to update profile visibility settings
+app.put('/users/:userId/visibility', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { genderVisible, typeVisible, lookingForVisible } = req.body;
+
+    // Validate that at least one visibility setting is provided
+    if (genderVisible === undefined && typeVisible === undefined && lookingForVisible === undefined) {
+      return res.status(400).json({ message: 'At least one visibility setting must be provided' });
+    }
+
+    const updateData = {};
+    if (genderVisible !== undefined) updateData.genderVisible = genderVisible;
+    if (typeVisible !== undefined) updateData.typeVisible = typeVisible;
+    if (lookingForVisible !== undefined) updateData.lookingForVisible = lookingForVisible;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Clear matches cache for this user since visibility changed
+    clearMatchesCache(userId);
+
+    res.status(200).json({ 
+      message: 'Visibility settings updated successfully',
+      user: {
+        genderVisible: updatedUser.genderVisible,
+        typeVisible: updatedUser.typeVisible,
+        lookingForVisible: updatedUser.lookingForVisible
+      }
+    });
+  } catch (error) {
+    console.error('Error updating visibility settings:', error);
+    res.status(500).json({ message: 'Error updating visibility settings' });
   }
 });
 
@@ -310,17 +383,44 @@ app.get('/matches', async (req, res) => {
 
     // Fetch matches with only necessary fields and limit results
     const matches = await User.find(filter)
-      .select('firstName imageUrls prompts gender type location hometown')
+      .select('firstName imageUrls prompts gender type location hometown genderVisible typeVisible lookingForVisible lookingFor')
       .limit(50) // Limit results to improve performance
       .lean(); // Use lean() for better performance
 
+    // Filter out non-visible fields
+    const filteredMatches = matches.map(match => {
+      const filteredMatch = { ...match };
+      
+      // Remove gender if not visible
+      if (!match.genderVisible) {
+        delete filteredMatch.gender;
+      }
+      
+      // Remove type if not visible
+      if (!match.typeVisible) {
+        delete filteredMatch.type;
+      }
+      
+      // Remove lookingFor if not visible
+      if (!match.lookingForVisible) {
+        delete filteredMatch.lookingFor;
+      }
+      
+      // Remove visibility flags from response
+      delete filteredMatch.genderVisible;
+      delete filteredMatch.typeVisible;
+      delete filteredMatch.lookingForVisible;
+      
+      return filteredMatch;
+    });
+
     // Cache the results
     matchesCache.set(cacheKey, {
-      matches,
+      matches: filteredMatches,
       timestamp: Date.now()
     });
 
-    return res.status(200).json({matches});
+    return res.status(200).json({matches: filteredMatches});
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({message: 'Internal server error'});
