@@ -324,7 +324,6 @@ const LocationScreen = () => {
         <Text style={{
           fontSize: typography.fontSize.xxxl,
           fontFamily: typography.fontFamily.bold,
-          fontFamily: 'GeezaPro-Bold',
           marginTop: spacing.md,
         }}>
           Where do you live?
@@ -356,7 +355,11 @@ const LocationScreen = () => {
           <MapView
             key={`${region.latitude}-${region.longitude}`}
             region={region}
-            style={{ width: '100%', height: 350, borderRadius: borderRadius.small }}
+            style={{ 
+              width: '100%', 
+              height: Platform.OS === 'android' ? 280 : 350, 
+              borderRadius: borderRadius.small 
+            }}
             showsUserLocation={true}
             showsMyLocationButton={false}
           >

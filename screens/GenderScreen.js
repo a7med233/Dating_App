@@ -67,7 +67,7 @@ const GenderScreen = () => {
           style={{
             fontSize: typography.fontSize.xxxl,
             fontFamily: typography.fontFamily.bold,
-            fontFamily: 'GeezaPro-Bold',
+            fontWeight: typography.fontWeight.bold,
             marginTop: spacing.md,
           }}>
           Which gender descibes you the best?
@@ -85,7 +85,7 @@ const GenderScreen = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Men</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Men</Text>
             <Pressable onPress={() => setGender('Men')}>
               <FontAwesome
                 name="circle"
@@ -101,7 +101,7 @@ const GenderScreen = () => {
               justifyContent: 'space-between',
               marginVertical: 12,
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Women</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Women</Text>
             <Pressable onPress={() => setGender('Women')}>
               <FontAwesome
                 name="circle"
@@ -116,7 +116,7 @@ const GenderScreen = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Non-binary</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Non-binary</Text>
             <Pressable onPress={() => setGender('Non-binary')}>
               <FontAwesome
                 name="circle"

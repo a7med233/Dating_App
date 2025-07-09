@@ -100,8 +100,8 @@ const PhotoScreen = () => {
         allowsMultipleSelection: false,
         quality: 0.6, // Reduced quality to decrease payload size
         base64: true,
-        allowsEditing: true, // Enable cropping
-        aspect: [1, 1], // Force square aspect ratio
+        allowsEditing: Platform.OS === 'ios', // Only enable editing on iOS for now
+        aspect: Platform.OS === 'ios' ? [1, 1] : undefined, // Force square aspect ratio only on iOS
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -173,8 +173,8 @@ const PhotoScreen = () => {
         selectionLimit: 6,
         quality: 0.6, // Reduced quality to decrease payload size
         base64: true, // Enable base64 encoding
-        allowsEditing: true, // Enable cropping
-        aspect: [1, 1], // Force square aspect ratio
+        allowsEditing: Platform.OS === 'ios', // Only enable editing on iOS for now
+        aspect: Platform.OS === 'ios' ? [1, 1] : undefined, // Force square aspect ratio only on iOS
       });
 
       if (!result.canceled && result.assets) {

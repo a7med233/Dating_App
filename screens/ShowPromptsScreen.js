@@ -5,13 +5,16 @@ import {StyleSheet,
   TextInput,
   Button,
   Platform,
-  StatusBar,} from 'react-native';
+  StatusBar,
+  ScrollView,
+  TouchableOpacity,} from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { Entypo } from '@expo/vector-icons';
+import { Entypo, MaterialIcons } from '@expo/vector-icons';
 import Modal from 'react-native-modal';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const ShowPromptsScreen = () => {
   const navigation = useNavigation();
@@ -21,6 +24,7 @@ const ShowPromptsScreen = () => {
     {
       id: '0',
       name: 'About me',
+      icon: 'person',
       questions: [
         {
           id: '10',
@@ -40,7 +44,7 @@ const ShowPromptsScreen = () => {
         },
         {
           id: '14',
-          question: 'My greatest strenght',
+          question: 'My greatest strength',
         },
         {
           id: '15',
@@ -50,11 +54,20 @@ const ShowPromptsScreen = () => {
           id: '16',
           question: 'A life goal of mine',
         },
+        {
+          id: '17',
+          question: 'My love language is',
+        },
+        {
+          id: '18',
+          question: 'I get way too excited about',
+        },
       ],
     },
     {
-      id: '2',
+      id: '1',
       name: 'Self Care',
+      icon: 'spa',
       questions: [
         {
           id: '20',
@@ -83,6 +96,127 @@ const ShowPromptsScreen = () => {
         {
           id: '26',
           question: 'My skin care routine',
+        },
+        {
+          id: '27',
+          question: 'My perfect self-care day',
+        },
+      ],
+    },
+    {
+      id: '2',
+      name: 'Dating',
+      icon: 'favorite',
+      questions: [
+        {
+          id: '30',
+          question: 'My ideal first date',
+        },
+        {
+          id: '31',
+          question: 'I\'m looking for someone who',
+        },
+        {
+          id: '32',
+          question: 'My biggest dating deal-breaker',
+        },
+        {
+          id: '33',
+          question: 'I know it\'s going to be a good date when',
+        },
+        {
+          id: '34',
+          question: 'My best date story',
+        },
+        {
+          id: '35',
+          question: 'I\'m a total romantic when it comes to',
+        },
+        {
+          id: '36',
+          question: 'My love language is',
+        },
+        {
+          id: '37',
+          question: 'I\'m attracted to people who',
+        },
+      ],
+    },
+    {
+      id: '3',
+      name: 'Lifestyle',
+      icon: 'local-cafe',
+      questions: [
+        {
+          id: '40',
+          question: 'My perfect weekend',
+        },
+        {
+          id: '41',
+          question: 'I spend way too much money on',
+        },
+        {
+          id: '42',
+          question: 'My most controversial opinion',
+        },
+        {
+          id: '43',
+          question: 'I\'m currently obsessed with',
+        },
+        {
+          id: '44',
+          question: 'My comfort food',
+        },
+        {
+          id: '45',
+          question: 'I\'m a total foodie when it comes to',
+        },
+        {
+          id: '46',
+          question: 'My travel style',
+        },
+        {
+          id: '47',
+          question: 'My guilty pleasure',
+        },
+      ],
+    },
+    {
+      id: '4',
+      name: 'Fun Facts',
+      icon: 'emoji-emotions',
+      questions: [
+        {
+          id: '50',
+          question: 'My most irrational fear',
+        },
+        {
+          id: '51',
+          question: 'I\'m the type of person who',
+        },
+        {
+          id: '52',
+          question: 'My most embarrassing moment',
+        },
+        {
+          id: '53',
+          question: 'I\'m weirdly good at',
+        },
+        {
+          id: '54',
+          question: 'My most controversial take',
+        },
+        {
+          id: '55',
+          question: 'I\'m a total nerd about',
+        },
+        {
+          id: '56',
+          question: 'My most useless talent',
+        },
+        {
+          id: '57',
+          question: 'I\'m the friend who always',
         },
       ],
     },
@@ -121,81 +255,85 @@ const ShowPromptsScreen = () => {
     });
   };
 
+  const handleClose = () => {
+    navigation.goBack();
+  };
+
   console.log('question', prompts);
   
   return (
     <SafeAreaWrapper backgroundColor={colors.background} style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <View style={{backgroundColor:'#fff', ...styles.content}}>
-        <View
-          style={{
-            padding: 10,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-          <Text style={{ fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium, color: colors.primary }}>
-            View all
-          </Text>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <View style={styles.content}>
+        {/* Header */}
+        <LinearGradient
+          colors={colors.purpleToCoral}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerButton} />
 
-          <Text style={{ fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.bold, color: colors.primary }}>
-            Prompts
-          </Text>
+            <Text style={styles.headerTitle}>Prompts</Text>
 
-          <Entypo name="cross" size={22} color="black" />
-        </View>
+            <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
+              <MaterialIcons name="close" size={24} color={colors.textInverse} />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
 
-        <View
-          style={{
-            marginHorizontal: 10,
-            marginTop: spacing.lg,
-            flexDirection: 'row',
-            gap: 10,
-          }}>
-          {promptss?.map((item) => (
-            <View key={item.id}>
-              <Pressable
-                style={{
-                  padding: 10,
-                  borderRadius: borderRadius.xlarge,
-                  backgroundColor: option == item?.name ? colors.primary : colors.textInverse,
-                  borderWidth: 1,
-                  borderColor: option == item?.name ? colors.primary : '#ddd',
-                }}
-                onPress={() => setOption(item?.name)}>
-                <Text
-                  style={{
-                    textAlign: 'center',
-                    color: option == item?.name ? colors.textInverse : colors.textPrimary,
-                    fontFamily: typography.fontFamily.medium,
-                  }}>
-                  {item?.name}
-                </Text>
-              </Pressable>
-            </View>
-          ))}
-        </View>
-        
-        <View style={{ marginTop: spacing.lg, marginHorizontal: 12 }}>
-          {promptss?.map((item) => (
-            <View key={item.id}>
-              {option === item?.name && (
-                <View>
-                  {item?.questions?.map((questionItem) => (
-                    <Pressable
-                      key={questionItem.id}
-                      onPress={() => openModal(questionItem)}
-                      style={styles.questionItem}>
-                      <Text style={styles.questionText}>
-                        {questionItem.question}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-            </View>
-          ))}
-        </View>
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Category Tabs */}
+          <View style={styles.categoryContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+              {promptss?.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.categoryTab,
+                    option === item?.name && styles.categoryTabActive
+                  ]}
+                  onPress={() => setOption(item?.name)}>
+                  <MaterialIcons 
+                    name={item.icon} 
+                    size={16} 
+                    color={option === item?.name ? colors.textInverse : colors.textSecondary} 
+                  />
+                  <Text style={[
+                    styles.categoryText,
+                    option === item?.name && styles.categoryTextActive
+                  ]}>
+                    {item?.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+          
+          {/* Questions List */}
+          <View style={styles.questionsContainer}>
+            {promptss?.map((item) => (
+              <View key={item.id}>
+                {option === item?.name && (
+                  <View>
+                    {item?.questions?.map((questionItem) => (
+                      <TouchableOpacity
+                        key={questionItem.id}
+                        onPress={() => openModal(questionItem)}
+                        style={styles.questionItem}>
+                        <Text style={styles.questionText}>
+                          {questionItem.question}
+                        </Text>
+                        <MaterialIcons name="chevron-right" size={20} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </View>
       
       <Modal
@@ -205,36 +343,45 @@ const ShowPromptsScreen = () => {
         swipeDirection={['up', 'down']}
         swipeThreshold={200}
         onTouchOutside={() => setModalVisible(false)}
-        style={styles.modal}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>
-            Answer your question
-          </Text>
-          <Text style={styles.questionTitle}>
-            {question}
-          </Text>
-          <View style={styles.textInputContainer}>
-            <TextInput
-              value={answer}
-              onChangeText={text => setAnswer(text)}
-              style={styles.textInput}
-              placeholder="Enter Your Answer"
-              placeholderTextColor="#999"
-              multiline={true}
-              textAlignVertical="top"
-              autoFocus={true}
-            />
+        style={styles.modal}
+        avoidKeyboard={true}>
+        <ScrollView 
+          contentContainerStyle={styles.modalScrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Answer your question</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.questionTitle}>
+              {question}
+            </Text>
+            <View style={styles.textInputContainer}>
+              <TextInput
+                value={answer}
+                onChangeText={text => setAnswer(text)}
+                style={styles.textInput}
+                placeholder="Enter Your Answer"
+                placeholderTextColor={colors.textTertiary}
+                multiline={true}
+                textAlignVertical="top"
+                autoFocus={true}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={addPrompt}
+              style={[
+                styles.addButton,
+                { opacity: answer.trim() ? 1 : 0.5 }
+              ]}
+              disabled={!answer.trim()}>
+              <Text style={styles.addButtonText}>Add Answer</Text>
+            </TouchableOpacity>
           </View>
-          <Pressable
-            onPress={addPrompt}
-            style={[
-              styles.addButton,
-              { opacity: answer.trim() ? 1 : 0.5 }
-            ]}
-            disabled={!answer.trim()}>
-            <Text style={styles.addButtonText}>Add Answer</Text>
-          </Pressable>
-        </View>
+        </ScrollView>
       </Modal>
     </SafeAreaWrapper>
   );
@@ -243,60 +390,133 @@ const ShowPromptsScreen = () => {
 export default ShowPromptsScreen;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   content: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0,
+  },
+  headerGradient: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomLeftRadius: borderRadius.large,
+    borderBottomRightRadius: borderRadius.large,
+    marginBottom: spacing.md,
+    ...shadows.medium,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerButton: {
+    padding: spacing.xs,
+  },
+  headerButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textInverse,
+  },
+  headerTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textInverse,
+  },
+  scrollContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+  },
+  categoryContainer: {
+    marginBottom: spacing.lg,
+  },
+  categoryScroll: {
+    flexGrow: 0,
+  },
+  categoryTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginRight: spacing.sm,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    gap: spacing.xs,
+  },
+  categoryTabActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  categoryText: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textSecondary,
+  },
+  categoryTextActive: {
+    color: colors.textInverse,
+  },
+  questionsContainer: {
+    marginBottom: spacing.xl,
   },
   questionItem: {
-    marginVertical: 12,
-    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: spacing.xs,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: '#f8f9fa',
-    borderRadius: borderRadius.small,
+    backgroundColor: colors.cardBackground,
+    borderRadius: borderRadius.medium,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    ...shadows.small,
   },
   questionText: {
+    flex: 1,
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.medium,
     color: colors.textPrimary,
+    marginRight: spacing.sm,
   },
   modal: {
-    margin: 20,
+    margin: spacing.lg,
+    justifyContent: 'center',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
   },
   modalContent: {
-    backgroundColor: colors.textInverse,
+    backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.large,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    padding: spacing.lg,
+    ...shadows.large,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
   modalTitle: {
-    textAlign: 'center',
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    marginBottom: spacing.md,
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
   },
   questionTitle: {
-    marginTop: spacing.md,
     fontSize: typography.fontSize.lg,
     fontFamily: typography.fontFamily.semiBold,
     color: colors.primary,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   textInputContainer: {
-    borderColor: '#ddd',
+    borderColor: colors.cardBorder,
     borderWidth: 1,
     borderRadius: borderRadius.medium,
-    padding: 15,
-    marginVertical: 12,
-    backgroundColor: '#f8f9fa',
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.backgroundSecondary,
     minHeight: 120,
   },
   textInput: {
@@ -305,14 +525,14 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlignVertical: 'top',
     flex: 1,
+    fontFamily: typography.fontFamily.regular,
   },
   addButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.round,
     alignItems: 'center',
-    marginTop: spacing.md,
   },
   addButtonText: {
     color: colors.textInverse,

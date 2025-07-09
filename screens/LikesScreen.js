@@ -76,7 +76,6 @@ const LikesScreen = () => {
           style={{
             fontSize: typography.fontSize.xxl,
             fontFamily: typography.fontFamily.bold,
-            fontFamily: 'GeezaPro-Bold',
             marginTop: spacing.md,
           }}>
           Likes You

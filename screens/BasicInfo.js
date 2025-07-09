@@ -19,38 +19,19 @@ const BasicInfo = () => {
 
   return (
     <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
-      <View style={{marginTop: spacing.xxl}}>
-        <Text
-          style={{
-            fontSize: typography.fontSize.display,
-            fontFamily: typography.fontFamily.bold,
-            fontFamily: 'GeezaPro-Bold',
-            marginLeft: 20,
-          }}>
+      <View style={styles.container}>
+        <Text style={styles.title}>
           You're one of a kind.
         </Text>
-        <Text
-          style={{
-            fontSize: typography.fontSize.display,
-            fontFamily: typography.fontFamily.bold,
-            fontFamily: 'GeezaPro-Bold',
-            marginLeft: 20,
-            marginTop: spacing.md,
-          }}>
+        <Text style={styles.subtitle}>
           You're profile should be too.
         </Text>
       </View>
 
-      <View>
+      <View style={styles.animationContainer}>
         <LottieView
           source={require('../assets/love.json')}
-          style={{
-            height: 260,
-            width: 300,
-            alignSelf: 'center',
-            marginTop: spacing.xxl,
-            justifyContent: 'center',
-          }}
+          style={styles.animation}
           autoPlay
           loop={true}
           speed={0.7}
@@ -59,14 +40,8 @@ const BasicInfo = () => {
 
       <Pressable
       onPress={() => navigation.navigate("Name")}
-        style={{backgroundColor: colors.primary, padding: 15, marginTop: 'auto'}}>
-        <Text
-          style={{
-            textAlign: 'center',
-            color: colors.textInverse,
-            fontFamily: typography.fontFamily.semiBold,
-            fontSize: typography.fontSize.md,
-          }}>
+        style={styles.button}>
+        <Text style={styles.buttonText}>
           Enter basic Info
         </Text>
       </Pressable>
@@ -76,4 +51,43 @@ const BasicInfo = () => {
 
 export default BasicInfo;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  container: {
+    marginTop: spacing.xxl,
+  },
+  title: {
+    fontSize: typography.fontSize.display,
+    fontFamily: typography.fontFamily.bold,
+    fontWeight: typography.fontWeight.bold,
+    marginLeft: 20,
+  },
+  subtitle: {
+    fontSize: typography.fontSize.display,
+    fontFamily: typography.fontFamily.bold,
+    fontWeight: typography.fontWeight.bold,
+    marginLeft: 20,
+    marginTop: spacing.md,
+  },
+  animationContainer: {
+    flex: 1,
+  },
+  animation: {
+    height: 260,
+    width: 300,
+    alignSelf: 'center',
+    marginTop: spacing.xxl,
+    justifyContent: 'center',
+  },
+  button: {
+    backgroundColor: colors.primary,
+    padding: 15,
+    marginTop: 'auto',
+  },
+  buttonText: {
+    textAlign: 'center',
+    color: colors.textInverse,
+    fontFamily: typography.fontFamily.semiBold,
+    fontWeight: typography.fontWeight.semiBold,
+    fontSize: typography.fontSize.md,
+  },
+});

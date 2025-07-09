@@ -8,4 +8,8 @@ const { getDefaultConfig } = require('expo/metro-config');
  */
 const config = getDefaultConfig(__dirname);
 
+// Add resolver configuration for picker package
+config.resolver.platforms = ['ios', 'android', 'native', 'web'];
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+
 module.exports = config;

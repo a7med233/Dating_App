@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 // Lashwa Dating App Theme Colors
 export const colors = {
   // Primary Colors
@@ -128,13 +130,44 @@ export const spacing = {
 };
 
 // Typography configurations
+const getFontFamily = (weight) => {
+  if (Platform.OS === 'ios') {
+    return 'Helvetica Neue';
+  } else {
+    return 'Open Sans';
+  }
+};
+
+// Helper function to get complete font style
+export const getFontStyle = (weight = 'regular') => {
+  const fontWeights = {
+    regular: '400',
+    medium: '500',
+    semiBold: '600',
+    bold: '700',
+    light: '300',
+  };
+  
+  return {
+    fontFamily: getFontFamily(weight),
+    fontWeight: fontWeights[weight] || '400',
+  };
+};
+
 export const typography = {
   fontFamily: {
-    regular: 'Poppins-Regular',
-    medium: 'Poppins-Medium',
-    semiBold: 'Poppins-SemiBold',
-    bold: 'Poppins-Bold',
-    light: 'Poppins-Light',
+    regular: getFontFamily('regular'),
+    medium: getFontFamily('medium'),
+    semiBold: getFontFamily('semiBold'),
+    bold: getFontFamily('bold'),
+    light: getFontFamily('light'),
+  },
+  fontWeight: {
+    regular: '400',
+    medium: '500',
+    semiBold: '600',
+    bold: '700',
+    light: '300',
   },
   fontSize: {
     xs: 12,

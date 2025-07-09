@@ -74,7 +74,7 @@ const DatingType = () => {
           style={{
             fontSize: typography.fontSize.xxxl,
             fontFamily: typography.fontFamily.bold,
-            fontFamily: 'GeezaPro-Bold',
+            fontWeight: typography.fontWeight.bold,
             marginTop: spacing.md,
           }}>
           Who do you want to date?
@@ -91,7 +91,7 @@ const DatingType = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Men</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Men</Text>
             <Pressable onPress={() => chooseOption('Men')}>
               <FontAwesome
                 name="circle"
@@ -108,7 +108,7 @@ const DatingType = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Women</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Women</Text>
             <Pressable onPress={() => chooseOption('Women')}>
               <FontAwesome
                 name="circle"
@@ -125,7 +125,7 @@ const DatingType = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Everyone</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Everyone</Text>
             <Pressable onPress={() => chooseOption('Everyone')}>
               <FontAwesome
                 name="circle"

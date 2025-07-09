@@ -72,7 +72,7 @@ const TypeScreen = () => {
           style={{
             fontSize: typography.fontSize.xxxl,
             fontFamily: typography.fontFamily.bold,
-            fontFamily: 'GeezaPro-Bold',
+            fontWeight: typography.fontWeight.bold,
             marginTop: spacing.md,
           }}>
           What's your sexuality?
@@ -90,7 +90,7 @@ const TypeScreen = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Straight</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Straight</Text>
             <Pressable onPress={() => setType('Straight')}>
               <FontAwesome
                 name="circle"
@@ -105,7 +105,7 @@ const TypeScreen = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Gay</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Gay</Text>
             <Pressable onPress={() => setType('Gay')}>
               <FontAwesome
                 name="circle"
@@ -120,7 +120,7 @@ const TypeScreen = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Lesbian</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Lesbian</Text>
             <Pressable onPress={() => setType('Lesbian')}>
               <FontAwesome
                 name="circle"
@@ -135,7 +135,7 @@ const TypeScreen = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Bisexual</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Bisexual</Text>
             <Pressable onPress={() => setType('Bisexual')}>
               <FontAwesome
                 name="circle"

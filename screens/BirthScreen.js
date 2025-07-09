@@ -12,7 +12,7 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import React, {useRef, useState, useEffect} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -71,47 +71,6 @@ const BirthScreen = () => {
 
   const openDatePicker = () => {
     setShowDatePicker(true);
-  };
-
-  const confirmDateSelection = () => {
-    setShowDatePicker(false);
-    const dayValue = selectedDate.getDate().toString().padStart(2, '0');
-    const monthValue = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-    const yearValue = selectedDate.getFullYear().toString();
-    setDay(dayValue);
-    setMonth(monthValue);
-    setYear(yearValue);
-    setError('');
-  };
-
-  const cancelDateSelection = () => {
-    setShowDatePicker(false);
-  };
-
-  // Generate arrays for picker options
-  const generateDays = () => {
-    const days = [];
-    for (let i = 1; i <= 31; i++) {
-      days.push(i.toString().padStart(2, '0'));
-    }
-    return days;
-  };
-
-  const generateMonths = () => {
-    const months = [];
-    for (let i = 1; i <= 12; i++) {
-      months.push(i.toString().padStart(2, '0'));
-    }
-    return months;
-  };
-
-  const generateYears = () => {
-    const years = [];
-    const currentYear = new Date().getFullYear();
-    for (let i = currentYear; i >= 1900; i--) {
-      years.push(i.toString());
-    }
-    return years;
   };
   
   useEffect(() => {
@@ -287,88 +246,17 @@ const BirthScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Custom Date Picker Modal */}
-      <Modal
-        visible={showDatePicker}
-        transparent={true}
-        animationType="slide"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date of Birth</Text>
-            </View>
-            
-            <View style={styles.pickerContainer}>
-              <View style={styles.pickerColumn}>
-                <Text style={styles.pickerLabel}>Day</Text>
-                <Picker
-                  selectedValue={selectedDate.getDate().toString().padStart(2, '0')}
-                  onValueChange={(itemValue) => {
-                    const newDate = new Date(selectedDate);
-                    newDate.setDate(parseInt(itemValue));
-                    setSelectedDate(newDate);
-                  }}
-                  style={styles.picker}
-                >
-                  {generateDays().map((day) => (
-                    <Picker.Item key={day} label={day} value={day} />
-                  ))}
-                </Picker>
-              </View>
-
-              <View style={styles.pickerColumn}>
-                <Text style={styles.pickerLabel}>Month</Text>
-                <Picker
-                  selectedValue={(selectedDate.getMonth() + 1).toString().padStart(2, '0')}
-                  onValueChange={(itemValue) => {
-                    const newDate = new Date(selectedDate);
-                    newDate.setMonth(parseInt(itemValue) - 1);
-                    setSelectedDate(newDate);
-                  }}
-                  style={styles.picker}
-                >
-                  {generateMonths().map((month) => (
-                    <Picker.Item key={month} label={month} value={month} />
-                  ))}
-                </Picker>
-              </View>
-
-              <View style={styles.pickerColumn}>
-                <Text style={styles.pickerLabel}>Year</Text>
-                <Picker
-                  selectedValue={selectedDate.getFullYear().toString()}
-                  onValueChange={(itemValue) => {
-                    const newDate = new Date(selectedDate);
-                    newDate.setFullYear(parseInt(itemValue));
-                    setSelectedDate(newDate);
-                  }}
-                  style={styles.picker}
-                >
-                  {generateYears().map((year) => (
-                    <Picker.Item key={year} label={year} value={year} />
-                  ))}
-                </Picker>
-              </View>
-            </View>
-
-            <View style={styles.modalButtons}>
-              <Pressable
-                onPress={cancelDateSelection}
-                style={styles.cancelButton}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={confirmDateSelection}
-                style={styles.confirmButton}
-              >
-                <Text style={styles.confirmButtonText}>Confirm</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Date Picker */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDatePickerChange}
+          maximumDate={new Date()}
+          minimumDate={new Date(1900, 0, 1)}
+        />
+      )}
     </SafeAreaWrapper>
   );
 };
@@ -408,7 +296,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Math.min(width * 0.06, 25),
     fontFamily: typography.fontFamily.bold,
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    fontWeight: typography.fontWeight.bold,
     marginBottom: spacing.xxl,
     color: '#000',
   },
@@ -425,7 +313,8 @@ const styles = StyleSheet.create({
     padding: 10,
     width: Math.min(width * 0.15, 60),
     fontSize: Math.min(width * 0.05, 20),
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    fontFamily: typography.fontFamily.bold,
+    fontWeight: typography.fontWeight.bold,
     textAlign: 'center',
     color: '#000',
   },
@@ -435,7 +324,8 @@ const styles = StyleSheet.create({
     padding: 10,
     width: Math.min(width * 0.15, 60),
     fontSize: Math.min(width * 0.05, 20),
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    fontFamily: typography.fontFamily.bold,
+    fontWeight: typography.fontWeight.bold,
     textAlign: 'center',
     color: '#000',
   },
@@ -445,7 +335,8 @@ const styles = StyleSheet.create({
     padding: 10,
     width: Math.min(width * 0.2, 80),
     fontSize: Math.min(width * 0.05, 20),
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    fontFamily: typography.fontFamily.bold,
+    fontWeight: typography.fontWeight.bold,
     textAlign: 'center',
     color: '#000',
   },
@@ -470,6 +361,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: Math.min(width * 0.045, 18),
     fontFamily: typography.fontFamily.medium,
+    fontWeight: typography.fontWeight.medium,
     color: colors.textPrimary,
     marginLeft: spacing.sm,
   },
@@ -479,77 +371,10 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.035, 14),
     marginBottom: spacing.md,
     fontFamily: typography.fontFamily.medium,
+    fontWeight: typography.fontWeight.medium,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.textInverse,
-    borderRadius: borderRadius.large,
-    padding: spacing.lg,
-    width: '90%',
-    maxWidth: 400,
-  },
-  modalHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  modalTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.textPrimary,
-  },
-  pickerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  pickerColumn: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  pickerLabel: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.medium,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  picker: {
-    width: '100%',
-    height: 150,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: colors.backgroundSecondary,
-    padding: spacing.md,
-    borderRadius: borderRadius.medium,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: colors.textSecondary,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.md,
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: borderRadius.medium,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: colors.textInverse,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.md,
-  },
+
+
   nextButton: {
     alignSelf: 'flex-end',
     marginTop: spacing.lg,

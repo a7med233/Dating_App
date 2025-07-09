@@ -138,6 +138,7 @@ const NameScreen = () => {
                   textAlign: 'center',
                   color: colors.textInverse,
                   fontFamily: typography.fontFamily.semiBold,
+                  fontWeight: typography.fontWeight.semiBold,
                   fontSize: typography.fontSize.md,
                 }}>
                 Continue
@@ -169,6 +170,7 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.035, 14),
     marginBottom: spacing.lg,
     fontFamily: typography.fontFamily.medium,
+    fontWeight: typography.fontWeight.medium,
   },
   header: {
     flexDirection: 'row',
@@ -192,7 +194,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Math.min(width * 0.06, 25),
     fontFamily: typography.fontFamily.bold,
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    fontWeight: typography.fontWeight.bold,
     marginBottom: spacing.xl,
     color: '#000',
   },
@@ -206,13 +208,15 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     paddingTop: 5,
     marginBottom: spacing.lg,
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
+    fontFamily: typography.fontFamily.bold,
+    fontWeight: typography.fontWeight.bold,
     color: '#000',
   },
   optionalText: {
     fontSize: Math.min(width * 0.035, 15),
     color: 'gray',
     fontFamily: typography.fontFamily.medium,
+    fontWeight: typography.fontWeight.medium,
     marginTop: -10,
     marginBottom: spacing.lg,
   },

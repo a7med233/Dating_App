@@ -62,7 +62,7 @@ const LookingFor = () => {
           style={{
             fontSize: typography.fontSize.xxxl,
             fontFamily: typography.fontFamily.bold,
-            fontFamily: 'GeezaPro-Bold',
+            fontWeight: typography.fontWeight.bold,
             marginTop: spacing.md,
           }}>
           What's your dating intention?
@@ -77,7 +77,7 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Life Partner</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Life Partner</Text>
             <Pressable onPress={() => setLookingFor('Life Partner')}>
               <FontAwesome
                 name="circle"
@@ -92,7 +92,7 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Long-term relationship</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Long-term relationship</Text>
             <Pressable onPress={() => setLookingFor('Long-term relationship')}>
               <FontAwesome
                 name="circle"
@@ -107,7 +107,7 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Long-term relationship open to short</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Long-term relationship open to short</Text>
             <Pressable onPress={() => setLookingFor('Long-term relationship open to short')}>
               <FontAwesome
                 name="circle"
@@ -122,7 +122,7 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Short-term relationship open to long</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Short-term relationship open to long</Text>
             <Pressable onPress={() => setLookingFor('Short-term relationship open to long')}>
               <FontAwesome
                 name="circle"
@@ -137,7 +137,7 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Short-term relationship</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Short-term relationship</Text>
             <Pressable onPress={() => setLookingFor('Short-term relationship')}>
               <FontAwesome
                 name="circle"
@@ -152,7 +152,7 @@ const LookingFor = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <Text style={{fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.md}}>Figuring out my dating goals</Text>
+            <Text style={{fontFamily: typography.fontFamily.medium, fontWeight: typography.fontWeight.medium, fontSize: typography.fontSize.md}}>Figuring out my dating goals</Text>
             <Pressable onPress={() => setLookingFor('Figuring out my dating goals')}>
               <FontAwesome
                 name="circle"

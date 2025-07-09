@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { colors, typography } from '../theme/colors';
 
 const InputField = ({
   label,
@@ -35,10 +36,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: typography.fontWeight.semiBold,
     marginBottom: 6,
     color: '#581845',
-    fontFamily: 'GeezaPro-Bold',
+    fontFamily: typography.fontFamily.semiBold,
   },
   input: {
     width: 340,
@@ -46,7 +47,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'black',
     borderBottomWidth: 1,
     paddingBottom: 10,
-    fontFamily: 'GeezaPro-Bold',
+    fontFamily: typography.fontFamily.medium,
+    fontWeight: typography.fontWeight.medium,
     color: 'black',
   },
   error: {
