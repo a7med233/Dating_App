@@ -2,17 +2,15 @@ import {
   StyleSheet,
   Text,
   View,
-  Image,
-  Pressable,
-  TextInput,
-  Button,
   TouchableOpacity,
+  Dimensions,
+  KeyboardAvoidingView,
   Platform,
-  StatusBar,
   ScrollView,
+  StatusBar,
 } from 'react-native';
-import React, {useState,useEffect} from 'react';
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, {useState, useEffect} from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import {
   getRegistrationProgress,
@@ -25,11 +23,11 @@ import { uriToBase64, isCloudUrl, compressBase64Image } from '../utils/imageUtil
 import DraggablePhotoGrid from '../components/DraggablePhotoGrid';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
-import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
-import GradientButton from '../components/GradientButton';
-import ThemedCard from '../components/ThemedCard';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width, height } = Dimensions.get('window');
 
 const PhotoScreen = () => {
   const navigation = useNavigation();
@@ -40,7 +38,6 @@ const PhotoScreen = () => {
   const [showError, setShowError] = useState(false);
 
   useEffect(() => {
-    // Fetch the saved image URLs from AsyncStorage
     getRegistrationProgress('Photos').then(progressData => {
       console.log('📸 Loading photos from AsyncStorage:', progressData);
       if (progressData && progressData.imageUrls) {
@@ -52,7 +49,6 @@ const PhotoScreen = () => {
     });
   }, []);
 
-  // Debug logging for imageUrls changes
   useEffect(() => {
     console.log('📸 imageUrls state changed:', imageUrls);
   }, [imageUrls]);
@@ -66,7 +62,6 @@ const PhotoScreen = () => {
     }
     setError('');
     
-    // Filter out local file URIs and keep only cloud URLs
     const cloudUrls = validImages.filter(url => isCloudUrl(url));
     
     if (cloudUrls.length < 4) {
@@ -79,7 +74,10 @@ const PhotoScreen = () => {
     navigation.navigate('Prompts');
   };
 
-  // Delete a specific photo
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   const deletePhoto = (index) => {
     const newUrls = [...imageUrls];
     newUrls[index] = '';
@@ -87,27 +85,24 @@ const PhotoScreen = () => {
     setSelectedImageIndex(null);
   };
 
-  // Replace a specific photo
   const replacePhoto = async (index) => {
     try {
       setIsUploading(true);
       setError('');
       
-      // Use the correct mediaTypes property based on what's available
       const mediaTypes = ImagePicker.MediaTypeOptions?.Images || "Images";
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: mediaTypes,
         allowsMultipleSelection: false,
-        quality: 0.6, // Reduced quality to decrease payload size
+        quality: 0.6,
         base64: true,
-        allowsEditing: Platform.OS === 'ios', // Only enable editing on iOS for now
-        aspect: Platform.OS === 'ios' ? [1, 1] : undefined, // Force square aspect ratio only on iOS
+        allowsEditing: Platform.OS === 'ios',
+        aspect: Platform.OS === 'ios' ? [1, 1] : undefined,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         
-        // Get user ID from AsyncStorage for Cloudinary upload
         const token = await AsyncStorage.getItem('token');
         let userId = 'temp';
         
@@ -120,15 +115,13 @@ const PhotoScreen = () => {
           }
         }
 
-        // Convert image to base64 and upload to Cloudinary
         let base64Data = asset.base64;
         if (!base64Data && asset.uri) {
           base64Data = await uriToBase64(asset.uri);
         }
 
         if (base64Data) {
-          // Compress the image to reduce payload size
-          const compressedData = compressBase64Image(base64Data, 300); // 300KB limit
+          const compressedData = compressBase64Image(base64Data, 300);
           
           const uploadResult = await uploadPhotos([compressedData], userId);
           if (uploadResult.data.successful && uploadResult.data.successful.length > 0) {
@@ -147,44 +140,38 @@ const PhotoScreen = () => {
     }
   };
 
-  // Handle long press on photo
   const handlePhotoLongPress = (index) => {
     if (imageUrls[index]) {
       setSelectedImageIndex(index);
     }
   };
 
-  // Close action buttons
   const closeActionButtons = () => {
     setSelectedImageIndex(null);
   };
 
-  // Add this function to pick images from device
   const pickImage = async () => {
     try {
       setIsUploading(true);
       setError('');
       
-      // Use the correct mediaTypes property based on what's available
       const mediaTypes = ImagePicker.MediaTypeOptions?.Images || "Images";
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: mediaTypes,
         allowsMultipleSelection: true,
         selectionLimit: 6,
-        quality: 0.6, // Reduced quality to decrease payload size
-        base64: true, // Enable base64 encoding
-        allowsEditing: Platform.OS === 'ios', // Only enable editing on iOS for now
-        aspect: Platform.OS === 'ios' ? [1, 1] : undefined, // Force square aspect ratio only on iOS
+        quality: 0.6,
+        base64: true,
+        allowsEditing: Platform.OS === 'ios',
+        aspect: Platform.OS === 'ios' ? [1, 1] : undefined,
       });
 
       if (!result.canceled && result.assets) {
-        // Get user ID from AsyncStorage for Cloudinary upload
         const token = await AsyncStorage.getItem('token');
-        let userId = 'temp'; // Default for new users
+        let userId = 'temp';
         
         if (token) {
           try {
-            // Decode JWT to get userId (you might need to adjust this based on your JWT structure)
             const payload = JSON.parse(atob(token.split('.')[1]));
             userId = payload.userId || 'temp';
           } catch (e) {
@@ -192,18 +179,15 @@ const PhotoScreen = () => {
           }
         }
 
-        // Convert images to base64 and upload to Cloudinary
         const uploadPromises = result.assets.map(async (asset) => {
           try {
-            // Use base64 data if available, otherwise convert URI to base64
             let base64Data = asset.base64;
             if (!base64Data && asset.uri) {
               base64Data = await uriToBase64(asset.uri);
             }
 
             if (base64Data) {
-              // Compress the image to reduce payload size
-              const compressedData = compressBase64Image(base64Data, 300); // 300KB limit
+              const compressedData = compressBase64Image(base64Data, 300);
               
               const uploadResult = await uploadPhotos([compressedData], userId);
               if (uploadResult.data.successful && uploadResult.data.successful.length > 0) {
@@ -224,7 +208,6 @@ const PhotoScreen = () => {
         const successfulUploads = uploadResults.filter(result => result.success);
         const failedUploads = uploadResults.filter(result => !result.success);
 
-        // Fill empty slots in imageUrls with uploaded cloud URLs
         const newUrls = [...imageUrls];
         successfulUploads.forEach((upload) => {
           const idx = newUrls.findIndex(existingUrl => !existingUrl);
@@ -232,7 +215,6 @@ const PhotoScreen = () => {
         });
         setImageUrls(newUrls);
         
-        // Show general upload failure message if any
         if (failedUploads.length > 0 && successfulUploads.length === 0) {
           setError('Failed to upload photos. Please try again.');
           setShowError(true);
@@ -247,38 +229,48 @@ const PhotoScreen = () => {
     }
   };
 
+  const photoCount = imageUrls.filter(url => url.trim() !== '').length;
+
   return (
-    <SafeAreaWrapper backgroundColor={colors.background}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header with Gradient */}
-        <LinearGradient
-          colors={colors.purpleToCoral}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerGradient}
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <MaterialIcons name="photo-camera-back" size={22} color={colors.textInverse} />
-            </View>
-            <Image
-              style={styles.logo}
-              source={{
-                uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-              }}
-            />
+          {/* Header Section with Gradient */}
+        <LinearGradient
+            colors={colors.primaryGradient}
+          start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerSection}
+        >
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={colors.textInverse} />
+              </TouchableOpacity>
+              
+              <View style={styles.logoContainer}>
+                <Ionicons name="camera" size={40} color={colors.textInverse} />
+                <Text style={styles.headerTitle}>Photos</Text>
+              </View>
           </View>
         </LinearGradient>
 
-        <View style={styles.content}>
-          <Text style={styles.title}>
-            Pick your photos
-          </Text>
-          
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>Pick your photos</Text>
           <Text style={styles.subtitle}>
-            Add four to six photos to showcase yourself
+                Add four to six photos to showcase yourself. Choose your best shots!
           </Text>
+            </View>
 
           {/* Photo Grid Section */}
           <View style={styles.photoSection}>
@@ -298,66 +290,113 @@ const PhotoScreen = () => {
                 <View 
                   style={[
                     styles.photoCountProgress, 
-                    { width: `${Math.min((imageUrls.filter(url => url.trim() !== '').length / 4) * 100, 100)}%` }
+                      { width: `${Math.min((photoCount / 6) * 100, 100)}%` }
                   ]} 
                 />
               </View>
               <Text style={styles.photoCountText}>
-                {imageUrls.filter(url => url.trim() !== '').length} of 4 photos added
+                  {photoCount} of 6 photos added
               </Text>
-              {imageUrls.filter(url => url.trim() !== '').length < 4 && (
+                {photoCount < 4 && (
                 <Text style={styles.photoCountSubtext}>
-                  Add {4 - imageUrls.filter(url => url.trim() !== '').length} more photo{4 - imageUrls.filter(url => url.trim() !== '').length !== 1 ? 's' : ''} to continue
+                    Add {4 - photoCount} more photo{4 - photoCount !== 1 ? 's' : ''} to continue
+                  </Text>
+                )}
+                {photoCount >= 4 && photoCount < 6 && (
+                  <Text style={styles.photoCountSubtext}>
+                    You can add {6 - photoCount} more photo{6 - photoCount !== 1 ? 's' : ''} (optional)
+                  </Text>
+                )}
+                {photoCount >= 6 && (
+                  <Text style={styles.photoCountSubtext}>
+                    Maximum photos reached! You can edit or replace existing photos.
                 </Text>
               )}
             </View>
           </View>
 
-          {/* Upload Options Section */}
-          <ThemedCard variant="elevated" padding="medium" margin="small">
-            <Text style={styles.sectionTitle}>Add Photos</Text>
-            
+            {/* Upload Section */}
             <View style={styles.uploadSection}>
-              <GradientButton
-                title="Upload from device"
-                onPress={pickImage}
-                disabled={isUploading}
-                style={styles.uploadButton}
-                gradient="purpleToCoral"
-                size="small"
-              />
-              {isUploading && (
-                <View style={styles.loadingContainer}>
-                  <LoadingSpinner message="Uploading..." size="small" />
+              <View style={styles.uploadContainer}>
+                <View style={styles.uploadIconContainer}>
+                  <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
                 </View>
+                <View style={styles.uploadTextContainer}>
+                  <Text style={styles.uploadTitle}>Add Photos</Text>
+                  <Text style={styles.uploadDescription}>
+                    Upload photos from your device to create your profile
+                  </Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity
+                onPress={pickImage}
+                disabled={isUploading || photoCount >= 6}
+                style={[
+                  styles.uploadButton,
+                  {
+                    opacity: (isUploading || photoCount >= 6) ? 0.6 : 1,
+                    backgroundColor: (isUploading || photoCount >= 6) ? colors.textTertiary : colors.primary
+                  }
+                ]}
+              >
+                {isUploading ? (
+                <View style={styles.loadingContainer}>
+                    <LoadingSpinner size="small" />
+                    <Text style={styles.uploadButtonText}>Uploading...</Text>
+                </View>
+                ) : (
+                  <Text style={styles.uploadButtonText}>
+                    {photoCount >= 6 ? 'Maximum Photos Reached' : 'Upload from Device'}
+                  </Text>
               )}
+              </TouchableOpacity>
             </View>
-          </ThemedCard>
 
-          {/* Instructions */}
-          <View style={styles.instructionsContainer}>
-            <MaterialIcons name="info-outline" size={14} color={colors.textSecondary} />
-            <Text style={styles.instructionText}>
-              Long press on a photo to edit or delete
+            {/* Info Section */}
+            <View style={styles.infoContainer}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.infoText}>
+                Long press on any photo to edit or delete it. Choose photos that show your personality and interests!
             </Text>
           </View>
 
-          {/* Next Button */}
+            {/* Tips Section */}
+            <View style={styles.tipsContainer}>
+              <Text style={styles.tipsTitle}>Photo Tips:</Text>
+              <View style={styles.tipsList}>
+                <View style={styles.tipItem}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                  <Text style={styles.tipText}>Use clear, well-lit photos</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                  <Text style={styles.tipText}>Show your face clearly in the first photo</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                  <Text style={styles.tipText}>Include photos of your hobbies and interests</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Continue Button */}
           <TouchableOpacity
             onPress={handleNext}
-            activeOpacity={0.8}
-            disabled={imageUrls.filter(url => url.trim() !== '').length < 4}
+              disabled={photoCount < 4}
             style={[
-              styles.nextButton,
-              imageUrls.filter(url => url.trim() !== '').length < 4 && styles.nextButtonDisabled
-            ]}>
-            <MaterialCommunityIcons
-              name="arrow-right-circle"
-              size={50}
-              color={imageUrls.filter(url => url.trim() !== '').length < 4 ? colors.textTertiary : colors.primary}
-            />
+                styles.continueButton,
+                {
+                  opacity: photoCount < 4 ? 0.6 : 1,
+                  backgroundColor: photoCount < 4 ? colors.textTertiary : colors.primary
+                }
+              ]}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
         </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
         
         <ErrorMessage
           error={error}
@@ -368,119 +407,97 @@ const PhotoScreen = () => {
             setError('');
           }}
         />
-      </ScrollView>
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
-
-export default PhotoScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
-  content: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    backgroundColor: "#fff",
+  keyboardAvoidingView: {
+    flex: 1,
   },
-  headerGradient: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomLeftRadius: borderRadius.large,
-    borderBottomRightRadius: borderRadius.large,
-    marginBottom: spacing.sm,
-    ...shadows.medium,
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: Platform.OS === 'android' ? 20 : 0,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderColor: colors.textInverse,
-    borderWidth: 2,
+  headerSection: {
+    height: 180,
+    width: '100%',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    ...shadows.large,
+    elevation: 8,
   },
-  logo: {
-    width: 100,
+  headerContent: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0),
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 20 : 10,
+    left: spacing.lg,
+    zIndex: 1,
+    width: 40,
     height: 40,
-    resizeMode: 'contain',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  headerTitle: {
+    marginTop: spacing.sm,
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textInverse,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: Platform.OS === 'android' ? 100 : 0,
+  },
+  titleSection: {
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: typography.fontSize.xxl,
+    fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
+    marginBottom: spacing.sm,
     textAlign: 'center',
-    marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    lineHeight: 22,
   },
   photoSection: {
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  uploadSection: {
-    marginBottom: spacing.sm,
-  },
-  uploadButton: {
-    marginBottom: spacing.sm,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  instructionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  instructionText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    flex: 1,
-    fontFamily: typography.fontFamily.regular,
-  },
-  nextButton: {
-    alignSelf: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  nextButtonDisabled: {
-    opacity: 0.5,
+    marginBottom: spacing.xl,
   },
   photoCountContainer: {
-    marginTop: spacing.sm,
+    marginTop: spacing.lg,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
   },
   photoCountBar: {
     width: '100%',
     height: 8,
-    backgroundColor: colors.cardBorder,
+    backgroundColor: colors.border,
     borderRadius: 4,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
     overflow: 'hidden',
   },
   photoCountProgress: {
@@ -489,15 +506,132 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   photoCountText: {
-    fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   photoCountSubtext: {
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
     textAlign: 'center',
   },
+  uploadSection: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.medium,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  uploadContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  uploadIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  uploadTextContainer: {
+    flex: 1,
+  },
+  uploadTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  uploadDescription: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  uploadButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.medium,
+  },
+  uploadButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textInverse,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.primary + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
+    marginBottom: spacing.xl,
+  },
+  infoText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
+  },
+  tipsContainer: {
+    marginBottom: spacing.xl,
+  },
+  tipsTitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  tipsList: {
+    gap: spacing.sm,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  tipText: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  continueButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    marginBottom: Platform.OS === 'android' ? 20 : 0,
+    ...shadows.medium,
+  },
+  continueButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textInverse,
+  },
 });
+
+export default PhotoScreen;

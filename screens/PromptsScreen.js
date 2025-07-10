@@ -1,30 +1,31 @@
-import {Image,
-  Pressable,
+import {
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-  Platform,
-  StatusBar,
-  ScrollView,
+  TouchableOpacity,
   TextInput,
   Modal,
-  KeyboardAvoidingView,} from 'react-native';
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
-import { MaterialCommunityIcons, AntDesign, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {getRegistrationProgress, saveRegistrationProgress} from '../registrationUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {registerUser} from '../services/api';
 import {StackActions} from '@react-navigation/native';
-import SafeAreaWrapper from '../components/SafeAreaWrapper';
-import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width, height } = Dimensions.get('window');
 
 const PromptsScreen = () => {
   const route = useRoute();
-
-  console.log('he', route?.params?.PromptsScreen);
   const navigation = useNavigation();
   const [userData, setUserData] = useState();
   const [error, setError] = useState('');
@@ -73,14 +74,12 @@ const PromptsScreen = () => {
     }
   };
 
-  // Update local state when prompts are received from route params
   useEffect(() => {
     if (route?.params?.prompts) {
       setPrompts(route.params.prompts);
     }
   }, [route?.params?.prompts]);
 
-  // Close modal if editingPrompt becomes null
   useEffect(() => {
     if (!editingPrompt && isEditModalVisible) {
       setEditModalVisible(false);
@@ -88,7 +87,6 @@ const PromptsScreen = () => {
     }
   }, [editingPrompt, isEditModalVisible]);
 
-  // Set editAnswer when editingPrompt changes
   useEffect(() => {
     if (editingPrompt && editingPrompt.answer) {
       console.log('Setting editAnswer to:', editingPrompt.answer);
@@ -124,11 +122,14 @@ const PromptsScreen = () => {
     navigation.navigate('PreFinal');
   };
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   const handleDeletePrompt = (indexToDelete) => {
     const currentPrompts = route?.params?.prompts || prompts;
     const updatedPrompts = currentPrompts.filter((_, index) => index !== indexToDelete);
     setPrompts(updatedPrompts);
-    // Update the route params to reflect the change
     navigation.setParams({ prompts: updatedPrompts });
   };
 
@@ -171,35 +172,47 @@ const PromptsScreen = () => {
   const currentPrompts = route?.params?.prompts || prompts;
   
   return (
-    <SafeAreaWrapper backgroundColor={colors.background} style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <View style={styles.content}>
-        {/* Header */}
-        <LinearGradient
-          colors={colors.purpleToCoral}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerGradient}
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
+          {/* Header Section with Gradient */}
+        <LinearGradient
+            colors={colors.primaryGradient}
+          start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerSection}
+        >
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={colors.textInverse} />
+              </TouchableOpacity>
+              
             <View style={styles.logoContainer}>
-              <View style={styles.iconContainer}>
-                <MaterialIcons name="edit" size={24} color={colors.textInverse} />
-              </View>
-              <Text style={styles.logoText}>Prompts</Text>
+                <Ionicons name="chatbubble-ellipses" size={40} color={colors.textInverse} />
+                <Text style={styles.headerTitle}>Profile Prompts</Text>
             </View>
           </View>
         </LinearGradient>
 
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <Text style={styles.title}>
-            Write your profile answers
-          </Text>
-
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>Write your profile answers</Text>
           <Text style={styles.subtitle}>
-            Add up to 3 prompts to help others get to know you better
+                Add up to 3 prompts to help others get to know you better. Choose questions that showcase your personality!
           </Text>
+            </View>
 
+            {/* Prompts Container */}
           <View style={styles.promptsContainer}>
             {/* Show existing prompts */}
                          {currentPrompts && currentPrompts.length > 0 && (
@@ -207,7 +220,7 @@ const PromptsScreen = () => {
                  <View key={`prompt-${index}-${item?.question}`} style={styles.promptCard}>
                    <View style={styles.promptContent}>
                      <View style={styles.promptHeader}>
-                       <MaterialIcons name="format-quote" size={16} color={colors.primary} />
+                        <Ionicons name="chatbubble-outline" size={16} color={colors.primary} />
                        <Text style={styles.promptQuestion}>
                          {item?.question}
                        </Text>
@@ -215,18 +228,21 @@ const PromptsScreen = () => {
                      <Text style={styles.promptAnswer}>
                        {item?.answer}
                      </Text>
+                      <View style={styles.promptActions}>
                      <TouchableOpacity
                        onPress={() => handleEditPrompt(item, index)}
                        style={styles.editButton}>
-                       <MaterialIcons name="edit" size={16} color={colors.textSecondary} />
+                          <Ionicons name="create-outline" size={16} color={colors.primary} />
                        <Text style={styles.editText}>Edit</Text>
                      </TouchableOpacity>
-                   </View>
                    <TouchableOpacity
                      onPress={() => handleDeletePrompt(index)}
                      style={styles.deleteButton}>
-                     <MaterialIcons name="delete-outline" size={20} color={colors.error} />
+                          <Ionicons name="trash-outline" size={16} color={colors.error} />
+                          <Text style={styles.deleteText}>Delete</Text>
                    </TouchableOpacity>
+                      </View>
+                    </View>
                  </View>
                ))
              )}
@@ -241,7 +257,9 @@ const PromptsScreen = () => {
                       prompts: currentPrompts || [] 
                     })}
                     style={styles.placeholderCard}>
-                    <MaterialIcons name="add-circle-outline" size={32} color={colors.textSecondary} />
+                      <View style={styles.placeholderIcon}>
+                        <Ionicons name="add-circle-outline" size={32} color={colors.primary} />
+                      </View>
                     <Text style={styles.placeholderTitle}>
                       Select a Prompt
                     </Text>
@@ -254,28 +272,39 @@ const PromptsScreen = () => {
             )}
           </View>
 
+            {/* Error Message */}
           {error ? (
             <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color={colors.error} />
+                <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
-        </ScrollView>
 
-        {/* Next Button */}
-        <View style={styles.bottomContainer}>
+            {/* Info Section */}
+            <View style={styles.infoContainer}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.infoText}>
+                Prompts help others understand your personality and interests. Choose questions that let your true self shine through!
+              </Text>
+            </View>
+
+            {/* Continue Button */}
           <TouchableOpacity
             onPress={handleNext}
+              disabled={currentPrompts.length === 0}
             style={[
-              styles.nextButton,
-              currentPrompts.length === 0 && styles.nextButtonDisabled
-            ]}
-            disabled={currentPrompts.length === 0}>
-            <Text style={styles.nextButtonText}>Continue</Text>
-            <MaterialIcons name="arrow-forward" size={20} color={colors.textInverse} />
+                styles.continueButton,
+                {
+                  opacity: currentPrompts.length === 0 ? 0.6 : 1,
+                  backgroundColor: currentPrompts.length === 0 ? colors.textTertiary : colors.primary
+                }
+              ]}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
                  </View>
-       </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
        {/* Edit Modal */}
        <Modal
@@ -290,8 +319,8 @@ const PromptsScreen = () => {
            <View style={styles.modalContent}>
              <View style={styles.modalHeader}>
                <Text style={styles.modalTitle}>Edit your answer</Text>
-               <TouchableOpacity onPress={handleCancelEdit}>
-                 <MaterialIcons name="close" size={24} color={colors.textSecondary} />
+              <TouchableOpacity onPress={handleCancelEdit} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
                </TouchableOpacity>
              </View>
              
@@ -321,93 +350,110 @@ const PromptsScreen = () => {
                
                <TouchableOpacity
                  onPress={handleSaveEdit}
+                disabled={!editAnswer.trim()}
                  style={[
                    styles.saveButton,
-                   { opacity: editAnswer.trim() ? 1 : 0.5 }
-                 ]}
-                 disabled={!editAnswer.trim()}>
+                  {
+                    opacity: editAnswer.trim() ? 1 : 0.6,
+                    backgroundColor: editAnswer.trim() ? colors.primary : colors.textTertiary
+                  }
+                ]}>
                  <Text style={styles.saveButtonText}>Save Changes</Text>
                </TouchableOpacity>
              </View>
            </View>
          </KeyboardAvoidingView>
        </Modal>
-     </SafeAreaWrapper>
+    </SafeAreaView>
    );
  };
-
-export default PromptsScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  content: {
+  keyboardAvoidingView: {
     flex: 1,
   },
-  headerGradient: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomLeftRadius: borderRadius.large,
-    borderBottomRightRadius: borderRadius.large,
-    marginBottom: spacing.md,
-    ...shadows.medium,
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: Platform.OS === 'android' ? 20 : 0,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerSection: {
+    height: 180,
+    width: '100%',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     justifyContent: 'center',
-  },
-  logoContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    ...shadows.large,
+    elevation: 8,
   },
-  iconContainer: {
+  headerContent: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0),
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 20 : 10,
+    left: spacing.lg,
+    zIndex: 1,
     width: 40,
     height: 40,
-    borderRadius: borderRadius.round,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoText: {
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  headerTitle: {
+    marginTop: spacing.sm,
     fontSize: typography.fontSize.lg,
     fontFamily: typography.fontFamily.bold,
     color: colors.textInverse,
   },
-  scrollContent: {
+  mainContent: {
     flex: 1,
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: Platform.OS === 'android' ? 100 : 0,
+  },
+  titleSection: {
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: typography.fontSize.xxl,
+    fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
     marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
-    marginBottom: spacing.xl,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   promptsContainer: {
     gap: spacing.md,
     marginBottom: spacing.xl,
   },
   promptCard: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.medium,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    borderColor: colors.border,
     ...shadows.small,
-    flexDirection: 'row',
-    alignItems: 'stretch',
   },
   promptContent: {
-    flex: 1,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   promptHeader: {
     flexDirection: 'row',
@@ -426,85 +472,114 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.medium,
     color: colors.textSecondary,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    lineHeight: 22,
+  },
+  promptActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.md,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-end',
     gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.small,
+    backgroundColor: colors.primary + '10',
   },
   editText: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.medium,
-    color: colors.textSecondary,
+    color: colors.primary,
   },
   deleteButton: {
-    width: 50,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.errorBackground,
-    borderTopRightRadius: borderRadius.medium,
-    borderBottomRightRadius: borderRadius.medium,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.small,
+    backgroundColor: colors.error + '10',
+  },
+  deleteText: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.error,
   },
   placeholderCard: {
-    borderColor: colors.cardBorder,
+    borderColor: colors.border,
     borderWidth: 2,
     borderStyle: 'dashed',
     borderRadius: borderRadius.medium,
-    padding: spacing.lg,
+    padding: spacing.xl,
     alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.surface,
+  },
+  placeholderIcon: {
+    marginBottom: spacing.sm,
   },
   placeholderTitle: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.semiBold,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   placeholderSubtitle: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.regular,
-    color: colors.textTertiary,
-    marginTop: spacing.xs,
+    color: colors.textSecondary,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.errorBackground,
-    padding: spacing.md,
-    borderRadius: borderRadius.medium,
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.error + '20',
   },
   errorText: {
-    flex: 1,
-    fontSize: typography.fontSize.md,
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.medium,
     color: colors.error,
+    flex: 1,
   },
-  bottomContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.cardBorder,
-    backgroundColor: colors.cardBackground,
-  },
-  nextButton: {
-    backgroundColor: colors.primary,
+  infoContainer: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.primary + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
+    marginBottom: spacing.xl,
+  },
+  infoText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
+  },
+  continueButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.round,
-    gap: spacing.sm,
-    ...shadows.small,
+    marginTop: spacing.lg,
+    marginBottom: Platform.OS === 'android' ? 20 : 0,
+    ...shadows.medium,
   },
-  nextButtonDisabled: {
-    backgroundColor: colors.textTertiary,
-  },
-  nextButtonText: {
+  continueButtonText: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.semiBold,
     color: colors.textInverse,
@@ -514,90 +589,81 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
   },
   modalContent: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.background,
     borderRadius: borderRadius.large,
     padding: spacing.lg,
-    width: '100%',
-    maxHeight: '80%',
+    margin: spacing.lg,
+    width: width - spacing.xl * 2,
+    maxHeight: height * 0.8,
     ...shadows.large,
-  },
-  modalScrollView: {
-    flex: 1,
-    marginBottom: spacing.md,
-  },
-  modalScrollContent: {
-    flexGrow: 1,
-  },
-  modalScrollContent: {
-    flexGrow: 1,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   modalTitle: {
     fontSize: typography.fontSize.lg,
     fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
   },
+  closeButton: {
+    padding: spacing.xs,
+  },
   questionTitle: {
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.semiBold,
-    color: colors.primary,
-    marginBottom: spacing.lg,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    fontStyle: 'italic',
   },
   textInputContainer: {
-    borderColor: colors.cardBorder,
-    borderWidth: 1,
-    borderRadius: borderRadius.medium,
-    padding: spacing.md,
     marginBottom: spacing.lg,
-    backgroundColor: colors.backgroundSecondary,
-    minHeight: 120,
-    flex: 1,
   },
   textInput: {
-    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.medium,
+    padding: spacing.md,
     fontSize: typography.fontSize.md,
-    lineHeight: 24,
-    textAlignVertical: 'top',
-    flex: 1,
     fontFamily: typography.fontFamily.regular,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.round,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: colors.textInverse,
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textPrimary,
+    minHeight: 120,
+    textAlignVertical: 'top',
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.lg,
     gap: spacing.md,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: colors.textTertiary,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.medium,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.round,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cancelButtonText: {
-    color: colors.textInverse,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textSecondary,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  saveButtonText: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.semiBold,
+    color: colors.textInverse,
   },
 });
+
+export default PromptsScreen;

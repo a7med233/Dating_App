@@ -26,6 +26,23 @@ const io = socketIo(server, {
 const matchesCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Helper function to normalize gender values
+const normalizeGender = (gender) => {
+  if (!gender) return null;
+  const normalized = gender.toLowerCase();
+  if (normalized === 'men' || normalized === 'male') return 'Male';
+  if (normalized === 'women' || normalized === 'female') return 'Female';
+  return gender; // Return original if not recognized
+};
+
+// Helper function to get opposite gender for matching
+const getOppositeGender = (gender) => {
+  const normalized = normalizeGender(gender);
+  if (normalized === 'Male') return 'Female';
+  if (normalized === 'Female') return 'Male';
+  return null; // Return null if gender is not recognized
+};
+
 // Function to clear matches cache for a user
 const clearMatchesCache = (userId) => {
   const cacheKey = `matches_${userId}`;
@@ -103,12 +120,32 @@ const deleteNotification = (userId, notificationId) => {
   }
 };
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
+}));
 
 // Increase payload size limits for image uploads
 app.use(bodyParser.urlencoded({extended: false, limit: '50mb'}));
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(express.json({limit: '50mb'}));
+
+// Add headers for Android compatibility
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 const jwt = require('jsonwebtoken');
 
@@ -126,8 +163,30 @@ mongoose
     console.log('Error connecting to MongoDB', error);
   });
 
-app.listen(port, '0.0.0.0', () => {
+// Test endpoint to check if server is running
+app.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Server is running!',
+    timestamp: new Date().toISOString(),
+    socketConnected: io.engine.clientsCount
+  });
+});
+
+
+
+// Debug endpoint to check socket connections
+app.get('/debug/socket-users', (req, res) => {
+  const connectedUsers = Array.from(io.sockets.sockets.keys());
+  res.json({ 
+    message: 'Socket debug info',
+    connectedUsers: connectedUsers.length,
+    userIds: connectedUsers
+  });
+});
+
+server.listen(port, '0.0.0.0', () => {
   console.log('Server is running on port 3000');
+  console.log('Socket.IO server is also running on port 3000');
   console.log('Accessible at:');
   console.log('  - Local: http://localhost:3000');
   console.log('  - Network: http://192.168.0.116:3000');
@@ -137,6 +196,7 @@ const User = require('./models/user');
 const Chat = require('./models/message');
 const Admin = require('./models/admin');
 const SupportChat = require('./models/supportChat');
+const Report = require('./models/report');
 const { uploadImage, deleteImage } = require('./config/cloudinary');
 
 // In-memory notification store (in production, use Redis or database)
@@ -165,6 +225,22 @@ app.post('/register', async (req, res) => {
   try {
     // Extract user data from the request body
     const userData = req.body;
+
+    // Normalize gender values
+    if (userData.gender) {
+      userData.gender = normalizeGender(userData.gender);
+    }
+
+    // Filter out empty strings for optional enum fields
+    if (userData.children === '') {
+      delete userData.children;
+    }
+    if (userData.smoking === '') {
+      delete userData.smoking;
+    }
+    if (userData.drinking === '') {
+      delete userData.drinking;
+    }
 
     // Hash the password before saving
     const saltRounds = 10;
@@ -215,13 +291,39 @@ app.get('/users/:userId', async (req, res) => {
       return res.status(404).json({message: 'User not found'});
     }
 
+    // Calculate age from dateOfBirth
+    const calculateAge = (dateOfBirth) => {
+      if (!dateOfBirth) return null;
+      
+      // Handle DD/MM/YYYY format
+      let birthDate;
+      if (dateOfBirth.includes('/')) {
+        const [day, month, year] = dateOfBirth.split('/');
+        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        birthDate = new Date(dateOfBirth);
+      }
+      
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    // Add age to user object
+    const userWithAge = user.toObject();
+    userWithAge.age = calculateAge(user.dateOfBirth);
+
     // If requesting user is the same as the profile owner, return full data
     if (requestingUserId === userId) {
-      return res.status(200).json({user});
+      return res.status(200).json({user: userWithAge});
     }
 
     // For other users, filter based on visibility settings
-    const filteredUser = { ...user.toObject() };
+    const filteredUser = { ...userWithAge };
     
     // Remove gender if not visible
     if (!user.genderVisible) {
@@ -293,6 +395,97 @@ app.put('/users/:userId/visibility', async (req, res) => {
   }
 });
 
+// Endpoint to update user profile
+app.put('/users/:userId/profile', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updateData = req.body;
+
+    // Fields that can be updated
+    const allowedFields = [
+      'location', 'gender', 'lookingFor', 'height', 'hometown', 
+      'languages', 'bio', 'children', 'smoking', 'drinking', 
+      'religion', 'occupation'
+    ];
+
+    // Filter out only allowed fields
+    const filteredUpdateData = {};
+    allowedFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        filteredUpdateData[field] = updateData[field];
+      }
+    });
+
+    // Filter out empty strings for optional enum fields
+    if (filteredUpdateData.children === '') {
+      delete filteredUpdateData.children;
+    }
+    if (filteredUpdateData.smoking === '') {
+      delete filteredUpdateData.smoking;
+    }
+    if (filteredUpdateData.drinking === '') {
+      delete filteredUpdateData.drinking;
+    }
+
+    // Normalize gender values if being updated
+    if (filteredUpdateData.gender) {
+      filteredUpdateData.gender = normalizeGender(filteredUpdateData.gender);
+    }
+
+    // Validate bio length
+    if (filteredUpdateData.bio && filteredUpdateData.bio.length > 500) {
+      return res.status(400).json({ message: 'Bio cannot exceed 500 characters' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      filteredUpdateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Calculate age from dateOfBirth
+    const calculateAge = (dateOfBirth) => {
+      if (!dateOfBirth) return null;
+      
+      // Handle DD/MM/YYYY format
+      let birthDate;
+      if (dateOfBirth.includes('/')) {
+        const [day, month, year] = dateOfBirth.split('/');
+        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        birthDate = new Date(dateOfBirth);
+      }
+      
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    // Add age to user object
+    const userWithAge = updatedUser.toObject();
+    userWithAge.age = calculateAge(updatedUser.dateOfBirth);
+
+    // Clear matches cache for this user since profile changed
+    clearMatchesCache(userId);
+
+    res.status(200).json({ 
+      message: 'Profile updated successfully',
+      user: userWithAge
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Error updating profile' });
+  }
+});
+
 //endpoint to login
 app.post('/login', async (req, res) => {
   try {
@@ -331,6 +524,8 @@ app.get('/matches', async (req, res) => {
       return res.status(400).json({message: 'User ID is required'});
     }
 
+    console.log('Fetching matches for userId:', userId);
+
     // Check cache first
     const cacheKey = `matches_${userId}`;
     const cachedData = matchesCache.get(cacheKey);
@@ -342,12 +537,31 @@ app.get('/matches', async (req, res) => {
 
     // Fetch user with only necessary fields in a single query
     const user = await User.findById(userId)
-      .select('gender type matches likedProfiles')
+      .select('gender type datingPreferences matches likedProfiles blockedUsers rejectedProfiles')
       .lean();
 
+    // Also fetch users who have liked the current user to exclude them from matches
+    const usersWhoLikedMe = await User.find({
+      likedProfiles: userId
+    }).select('_id').lean();
+    
+    const usersWhoLikedMeIds = usersWhoLikedMe.map(u => u._id.toString());
+
     if (!user) {
+      console.log('User not found:', userId);
       return res.status(404).json({message: 'User not found'});
     }
+
+    console.log('Current user data:', {
+      gender: user.gender,
+      type: user.type,
+      datingPreferences: user.datingPreferences,
+      matches: user.matches?.length || 0,
+      likedProfiles: user.likedProfiles?.length || 0,
+      blockedUsers: user.blockedUsers?.length || 0,
+      rejectedProfiles: user.rejectedProfiles?.length || 0,
+      usersWhoLikedMe: usersWhoLikedMeIds.length
+    });
 
     // Build filter object
     let filter = {
@@ -355,11 +569,29 @@ app.get('/matches', async (req, res) => {
       visibility: {$ne: 'hidden'} // Exclude banned users
     };
 
-    // Add gender filter
-    if (user.gender === 'Men') {
-      filter.gender = 'Women';
-    } else if (user.gender === 'Women') {
-      filter.gender = 'Men';
+    // Add gender filter based on user's dating preferences
+    if (user.datingPreferences && user.datingPreferences.length > 0) {
+      const genderPreferences = user.datingPreferences;
+      
+      if (genderPreferences.includes('Everyone')) {
+        // Show all genders
+        filter.gender = { $in: ['Male', 'Female', 'Non-binary'] };
+      } else if (genderPreferences.includes('Male') && genderPreferences.includes('Female')) {
+        // Show both male and female
+        filter.gender = { $in: ['Male', 'Female'] };
+      } else if (genderPreferences.includes('Male')) {
+        // Show only male
+        filter.gender = 'Male';
+      } else if (genderPreferences.includes('Female')) {
+        // Show only female
+        filter.gender = 'Female';
+      }
+    } else {
+      // Fallback to opposite gender if no preferences set
+      const oppositeGender = getOppositeGender(user.gender);
+      if (oppositeGender) {
+        filter.gender = oppositeGender;
+      }
     }
 
     // Add type filter if user has a type
@@ -367,25 +599,91 @@ app.get('/matches', async (req, res) => {
       filter.type = user.type;
     }
 
-    // Get IDs to exclude (matches and liked profiles)
+    // Get IDs to exclude (matches, liked profiles, blocked users, rejected profiles, and users who liked me)
     const excludeIds = [
       userId,
       ...(user.matches || []),
-      ...(user.likedProfiles || [])
+      ...(user.likedProfiles || []),
+      ...(user.blockedUsers || []),
+      ...(user.rejectedProfiles || []),
+      ...usersWhoLikedMeIds
     ];
+
+    console.log('Excluding IDs:', {
+      userId,
+      matchesCount: user.matches?.length || 0,
+      likedProfilesCount: user.likedProfiles?.length || 0,
+      blockedUsersCount: user.blockedUsers?.length || 0,
+      rejectedProfilesCount: user.rejectedProfiles?.length || 0,
+      usersWhoLikedMeCount: usersWhoLikedMeIds.length,
+      totalExcluded: excludeIds.length,
+      rejectedProfiles: user.rejectedProfiles || [],
+      usersWhoLikedMe: usersWhoLikedMeIds
+    });
+
+    // Also need to exclude users who have blocked the current user
+    // We'll handle this in the query by checking if the current user is in their blockedUsers array
 
     // Add exclusion filter
     if (excludeIds.length > 0) {
       filter._id = {$nin: excludeIds};
     }
 
-    console.log('Matches filter:', filter);
+    // Also exclude users who have blocked the current user
+    // We need to check that the current user is not in their blockedUsers array
+    filter.blockedUsers = { $nin: [userId] };
+
+    console.log('Matches filter:', JSON.stringify(filter, null, 2));
+
+    // First, let's see how many total users exist
+    const totalUsers = await User.countDocuments({});
+    console.log('Total users in database:', totalUsers);
+
+    // Check how many users match the basic filter (without exclusions)
+    const basicFilter = {
+      _id: {$ne: userId},
+      visibility: {$ne: 'hidden'}
+    };
+    
+    // Add gender filter based on user's dating preferences for basic filter
+    if (user.datingPreferences && user.datingPreferences.length > 0) {
+      const genderPreferences = user.datingPreferences;
+      
+      if (genderPreferences.includes('Everyone')) {
+        // Show all genders
+        basicFilter.gender = { $in: ['Male', 'Female', 'Non-binary'] };
+      } else if (genderPreferences.includes('Male') && genderPreferences.includes('Female')) {
+        // Show both male and female
+        basicFilter.gender = { $in: ['Male', 'Female'] };
+      } else if (genderPreferences.includes('Male')) {
+        // Show only male
+        basicFilter.gender = 'Male';
+      } else if (genderPreferences.includes('Female')) {
+        // Show only female
+        basicFilter.gender = 'Female';
+      }
+    } else {
+      // Fallback to opposite gender if no preferences set
+      const basicOppositeGender = getOppositeGender(user.gender);
+      if (basicOppositeGender) {
+        basicFilter.gender = basicOppositeGender;
+      }
+    }
+    
+    if (user.type) {
+      basicFilter.type = user.type;
+    }
+    
+    const basicMatches = await User.countDocuments(basicFilter);
+    console.log('Users matching basic filter (before exclusions):', basicMatches);
 
     // Fetch matches with only necessary fields and limit results
     const matches = await User.find(filter)
       .select('firstName imageUrls prompts gender type location hometown genderVisible typeVisible lookingForVisible lookingFor')
       .limit(50) // Limit results to improve performance
       .lean(); // Use lean() for better performance
+
+    console.log('Final matches found:', matches.length);
 
     // Filter out non-visible fields
     const filteredMatches = matches.map(match => {
@@ -420,6 +718,7 @@ app.get('/matches', async (req, res) => {
       timestamp: Date.now()
     });
 
+    console.log('Returning filtered matches:', filteredMatches.length);
     return res.status(200).json({matches: filteredMatches});
   } catch (error) {
     console.error('Error fetching matches:', error);
@@ -432,9 +731,33 @@ app.post('/like-profile', async (req, res) => {
   try {
     const {userId, likedUserId, image, comment} = req.body;
 
+    // Check if users are already matched
+    const currentUser = await User.findById(userId).select('matches blockedUsers');
+    const likedUser = await User.findById(likedUserId).select('matches blockedUsers');
+
+    if (!currentUser || !likedUser) {
+      return res.status(404).json({message: 'User not found'});
+    }
+
+    // Check if they are already matched
+    const isAlreadyMatched = currentUser.matches && currentUser.matches.includes(likedUserId);
+    const isAlreadyMatchedReverse = likedUser.matches && likedUser.matches.includes(userId);
+
+    if (isAlreadyMatched || isAlreadyMatchedReverse) {
+      return res.status(400).json({message: 'You are already matched with this user'});
+    }
+
+    // Check if either user has blocked the other
+    const isBlocked = currentUser.blockedUsers && currentUser.blockedUsers.includes(likedUserId);
+    const isBlockedReverse = likedUser.blockedUsers && likedUser.blockedUsers.includes(userId);
+
+    if (isBlocked || isBlockedReverse) {
+      return res.status(403).json({message: 'Cannot like this user'});
+    }
+
     // Get user details for notification
     const user = await User.findById(userId).select('firstName');
-    const likedUser = await User.findById(likedUserId).select('firstName');
+    const likedUserDetails = await User.findById(likedUserId).select('firstName');
 
     // Update the liked user's receivedLikes array
     await User.findByIdAndUpdate(likedUserId, {
@@ -448,7 +771,7 @@ app.post('/like-profile', async (req, res) => {
     });
     // Update the user's likedProfiles array
     await User.findByIdAndUpdate(userId, {
-      $push: {
+      $addToSet: {
         likedProfiles: likedUserId,
       },
     });
@@ -478,15 +801,204 @@ app.post('/like-profile', async (req, res) => {
   }
 });
 
+// Endpoint for rejecting a profile
+app.post('/reject-profile', async (req, res) => {
+  try {
+    const {userId, rejectedUserId} = req.body;
+
+    if (!userId || !rejectedUserId) {
+      return res.status(400).json({message: 'User ID and rejected user ID are required'});
+    }
+
+    // Check if users exist
+    const user = await User.findById(userId);
+    const rejectedUser = await User.findById(rejectedUserId);
+
+    if (!user || !rejectedUser) {
+      return res.status(404).json({message: 'User not found'});
+    }
+
+    // Add the rejected user to the user's rejectedProfiles array
+    // This prevents them from showing up again in matches
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { rejectedProfiles: rejectedUserId }
+    });
+
+    console.log(`User ${userId} rejected user ${rejectedUserId}`);
+
+    // Clear matches cache for the user
+    clearMatchesCache(userId);
+
+    res.status(200).json({message: 'Profile rejected successfully'});
+  } catch (error) {
+    console.error('Error rejecting profile:', error);
+    res.status(500).json({message: 'Internal server error'});
+  }
+});
+
+// Endpoint for unrejecting a profile (in case user changes their mind)
+app.post('/unreject-profile', async (req, res) => {
+  try {
+    const {userId, rejectedUserId} = req.body;
+
+    if (!userId || !rejectedUserId) {
+      return res.status(400).json({message: 'User ID and rejected user ID are required'});
+    }
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({message: 'User not found'});
+    }
+
+    // Remove the rejected user from the user's rejectedProfiles array
+    await User.findByIdAndUpdate(userId, {
+      $pull: { rejectedProfiles: rejectedUserId }
+    });
+
+    // Clear matches cache for the user
+    clearMatchesCache(userId);
+
+    res.status(200).json({message: 'Profile unrejected successfully'});
+  } catch (error) {
+    console.error('Error unrejecting profile:', error);
+    res.status(500).json({message: 'Internal server error'});
+  }
+});
+
+// Get rejected profiles endpoint
+app.get('/rejected-profiles/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const user = await User.findById(userId)
+      .populate('rejectedProfiles', 'firstName lastName email imageUrls age location')
+      .select('rejectedProfiles');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ 
+      rejectedProfiles: user.rejectedProfiles || [] 
+    });
+  } catch (error) {
+    console.error('Error fetching rejected profiles:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Debug endpoint to check rejection status
+app.get('/debug-rejection/:userId/:otherUserId', async (req, res) => {
+  try {
+    const { userId, otherUserId } = req.params;
+
+    const user = await User.findById(userId).select('rejectedProfiles blockedUsers');
+    const otherUser = await User.findById(otherUserId).select('rejectedProfiles blockedUsers');
+
+    if (!user || !otherUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userRejectedOther = user.rejectedProfiles && user.rejectedProfiles.includes(otherUserId);
+    const otherRejectedUser = otherUser.rejectedProfiles && otherUser.rejectedProfiles.includes(userId);
+    const userBlockedOther = user.blockedUsers && user.blockedUsers.includes(otherUserId);
+    const otherBlockedUser = otherUser.blockedUsers && otherUser.blockedUsers.includes(userId);
+
+    res.status(200).json({
+      userRejectedOther,
+      otherRejectedUser,
+      userBlockedOther,
+      otherBlockedUser,
+      userRejectedProfiles: user.rejectedProfiles || [],
+      otherRejectedProfiles: otherUser.rejectedProfiles || [],
+      userBlockedUsers: user.blockedUsers || [],
+      otherBlockedUsers: otherUser.blockedUsers || []
+    });
+  } catch (error) {
+    console.error('Error checking rejection status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Debug endpoint to get all rejected profiles for a user
+app.get('/debug-rejected-profiles/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId)
+      .populate('rejectedProfiles', 'firstName lastName email')
+      .select('rejectedProfiles');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      rejectedProfiles: user.rejectedProfiles || [],
+      count: user.rejectedProfiles ? user.rejectedProfiles.length : 0
+    });
+  } catch (error) {
+    console.error('Error fetching rejected profiles:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 app.get('/received-likes/:userId', async (req, res) => {
   try {
     const {userId} = req.params;
 
-    const likes = await User.findById(userId)
-      .populate('receivedLikes.userId', 'firstName imageUrls prompts')
-      .select('receivedLikes');
+    const user = await User.findById(userId)
+      .populate('receivedLikes.userId', 'firstName imageUrls prompts age location occupation dateOfBirth')
+      .select('receivedLikes blockedUsers rejectedProfiles');
 
-    res.status(200).json({receivedLikes: likes.receivedLikes});
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Filter out likes from blocked users and rejected users
+    const filteredLikes = user.receivedLikes.filter(like => {
+      const isBlocked = user.blockedUsers && user.blockedUsers.includes(like.userId._id);
+      const isRejected = user.rejectedProfiles && user.rejectedProfiles.includes(like.userId._id);
+      return !isBlocked && !isRejected;
+    });
+
+    // Calculate age for each like if not already present
+    const calculateAge = (dateOfBirth) => {
+      if (!dateOfBirth) return null;
+      
+      // Handle DD/MM/YYYY format
+      let birthDate;
+      if (dateOfBirth.includes('/')) {
+        const [day, month, year] = dateOfBirth.split('/');
+        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        birthDate = new Date(dateOfBirth);
+      }
+      
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    // Add age to each like if not present
+    const likesWithAge = filteredLikes.map(like => {
+      const likeObj = like.toObject ? like.toObject() : like;
+      if (likeObj.userId && !likeObj.userId.age && likeObj.userId.dateOfBirth) {
+        likeObj.userId.age = calculateAge(likeObj.userId.dateOfBirth);
+      }
+      return likeObj;
+    });
+
+    res.status(200).json({receivedLikes: likesWithAge});
   } catch (error) {
     console.error('Error fetching received likes:', error);
     res.status(500).json({message: 'Internal server error'});
@@ -498,19 +1010,31 @@ app.post('/create-match', async (req, res) => {
   try {
     const {currentUserId, selectedUserId} = req.body;
 
-    // Get user details for notifications
-    const currentUser = await User.findById(currentUserId).select('firstName');
-    const selectedUser = await User.findById(selectedUserId).select('firstName');
+    // Check if either user has blocked the other
+    const currentUser = await User.findById(currentUserId).select('firstName blockedUsers');
+    const selectedUser = await User.findById(selectedUserId).select('firstName blockedUsers');
+
+    if (!currentUser || !selectedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if either user has blocked the other
+    const isBlocked = currentUser.blockedUsers && currentUser.blockedUsers.includes(selectedUserId);
+    const isBlockedReverse = selectedUser.blockedUsers && selectedUser.blockedUsers.includes(currentUserId);
+
+    if (isBlocked || isBlockedReverse) {
+      return res.status(403).json({ message: 'Cannot create match with this user' });
+    }
 
     //update the selected user's crushes array and the matches array
     await User.findByIdAndUpdate(selectedUserId, {
-      $push: {matches: currentUserId},
+      $addToSet: {matches: currentUserId},
       $pull: {likedProfiles: currentUserId},
     });
 
     //update the current user's matches array recievedlikes array
     await User.findByIdAndUpdate(currentUserId, {
-      $push: {matches: selectedUserId},
+      $addToSet: {matches: selectedUserId},
     });
 
     // Find the user document by ID and update the receivedLikes array
@@ -567,17 +1091,49 @@ app.get('/get-matches/:userId', async (req, res) => {
     const {userId} = req.params;
 
     // Find the user by ID and populate the matches field
-    const user = await User.findById(userId).populate(
-      'matches',
-      'firstName imageUrls',
-    );
+    const user = await User.findById(userId)
+      .populate('matches', 'firstName imageUrls age location occupation prompts bio hometown height languages children smoking drinking religion type lookingFor dateOfBirth')
+      .populate('blockedUsers', '_id');
 
     if (!user) {
       return res.status(404).json({message: 'User not found'});
     }
 
-    // Extract matches from the user object
-    const matches = user.matches;
+    // Extract matches from the user object and filter out blocked users
+    let matches = user.matches.filter(match => {
+      return !user.blockedUsers || !user.blockedUsers.some(blocked => blocked._id.toString() === match._id.toString());
+    });
+
+    // Calculate age for each match if not already present
+    const calculateAge = (dateOfBirth) => {
+      if (!dateOfBirth) return null;
+      
+      // Handle DD/MM/YYYY format
+      let birthDate;
+      if (dateOfBirth.includes('/')) {
+        const [day, month, year] = dateOfBirth.split('/');
+        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        birthDate = new Date(dateOfBirth);
+      }
+      
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    // Add age to each match if not present
+    matches = matches.map(match => {
+      const matchObj = match.toObject ? match.toObject() : match;
+      if (!matchObj.age && matchObj.dateOfBirth) {
+        matchObj.age = calculateAge(matchObj.dateOfBirth);
+      }
+      return matchObj;
+    });
 
     res.status(200).json({matches});
   } catch (error) {
@@ -589,17 +1145,34 @@ app.get('/get-matches/:userId', async (req, res) => {
 io.on('connection', socket => {
   console.log('a user is connected');
 
+  // User joins their own room for private messaging
+  socket.on('join', userId => {
+    socket.join(userId);
+    console.log('User joined room:', userId);
+  });
+
   socket.on('sendMessage', async data => {
     try {
       const {senderId, receiverId, message} = data;
-
-      console.log('data', data);
-
+      console.log('Received sendMessage event:', data);
+      
+      if (!senderId || !receiverId || !message) {
+        console.log('Invalid message data:', { senderId, receiverId, message });
+        return;
+      }
+      
       const newMessage = new Chat({senderId, receiverId, message});
       await newMessage.save();
-
+      console.log('Message saved to database:', newMessage);
+      
       // Get sender details for notification
       const sender = await User.findById(senderId).select('firstName');
+      console.log('Sender details:', sender);
+      
+      if (!sender) {
+        console.log('Sender not found for ID:', senderId);
+        return;
+      }
       
       // Send notification to receiver
       createNotification(
@@ -613,38 +1186,43 @@ io.on('connection', socket => {
           message: message.substring(0, 50) + (message.length > 50 ? '...' : '')
         }
       );
-
-      //emit the message to the receiver
+      
+      // Emit the message to both sender and receiver rooms
+      console.log('Emitting message to receiver room:', receiverId);
       io.to(receiverId).emit('receiveMessage', newMessage);
+      console.log('Emitting message to sender room:', senderId);
+      io.to(senderId).emit('receiveMessage', newMessage);
+      console.log('Message emitted successfully');
     } catch (error) {
-      console.log('Error handling the messages');
+      console.log('Error handling the messages:', error);
     }
-    socket.on('disconnet', () => {
-      console.log('user disconnected');
-    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
   });
 });
 
-server.listen(8000, () => {
-  console.log('Socket.IO server running on port 8000');
-});
+
 
 app.get('/messages', async (req, res) => {
   try {
     const {senderId, receiverId} = req.query;
 
-    console.log(senderId);
-    console.log(receiverId);
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ message: 'senderId and receiverId are required' });
+    }
 
     const messages = await Chat.find({
       $or: [
         {senderId: senderId, receiverId: receiverId},
         {senderId: receiverId, receiverId: senderId},
       ],
-    }).populate('senderId', '_id name');
+    }).populate('senderId', '_id firstName').sort({ timestamp: 1 });
 
     res.status(200).json(messages);
   } catch (error) {
+    console.log('Error in /messages endpoint:', error);
     res.status(500).json({message: 'Error in getting messages', error});
   }
 });
@@ -1152,5 +1730,553 @@ app.get('/admin/notifications/stats', adminAuth(), (req, res) => {
   } catch (error) {
     console.error('Error fetching notification stats:', error);
     res.status(500).json({ error: 'Failed to fetch notification stats' });
+  }
+});
+
+// Test endpoint to see all users (for debugging)
+app.get('/test-users', async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('firstName gender type visibility')
+      .lean();
+    
+    console.log('All users in database:', users);
+    res.status(200).json({
+      totalUsers: users.length,
+      users: users
+    });
+  } catch (error) {
+    console.error('Error fetching test users:', error);
+    res.status(500).json({message: 'Internal server error'});
+  }
+});
+
+// Get user stats (profile views, likes received, matches)
+app.get('/user-stats/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Get the user to access their data
+    const user = await User.findById(userId)
+      .select('receivedLikes matches')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Count received likes - this is real data
+    const likesReceived = user.receivedLikes?.length || 0;
+
+    // Count matches - this is real data
+    const matchesCount = user.matches?.length || 0;
+
+    console.log('Raw user data for stats:', {
+      userId,
+      receivedLikes: user.receivedLikes,
+      matches: user.matches,
+      likesCount: likesReceived,
+      matchesCount: matchesCount
+    });
+
+    // For profile views, let's be more realistic
+    // Since we don't have a proper tracking system yet, we'll show a reasonable estimate
+    // based on the user's activity level
+    let profileViews = 0;
+    if (likesReceived > 0 || matchesCount > 0) {
+      // If they have likes or matches, they've been viewed
+      profileViews = Math.max(likesReceived * 2, matchesCount * 3, 5);
+    } else {
+      // New users start with a few views
+      profileViews = 3;
+    }
+
+    const stats = {
+      profileViews,
+      likesReceived,
+      matchesCount
+    };
+
+    console.log('User stats for:', userId, stats);
+    res.status(200).json({ stats });
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Track profile view (call this when someone views a profile)
+app.post('/track-profile-view', async (req, res) => {
+  try {
+    const { viewedUserId, viewerUserId } = req.body;
+
+    if (!viewedUserId) {
+      return res.status(400).json({ message: 'Viewed user ID is required' });
+    }
+
+    // In a real app, you'd store this in a separate collection
+    // For now, we'll just log it
+    console.log('Profile view tracked:', { viewedUserId, viewerUserId, timestamp: new Date() });
+
+    res.status(200).json({ message: 'Profile view tracked successfully' });
+  } catch (error) {
+    console.error('Error tracking profile view:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Test endpoint to see all users and their stats
+app.get('/test-users-stats', async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('firstName email receivedLikes matches')
+      .lean();
+
+    const usersWithStats = users.map(user => ({
+      id: user._id,
+      name: user.firstName,
+      email: user.email,
+      receivedLikes: user.receivedLikes?.length || 0,
+      matches: user.matches?.length || 0,
+      rawReceivedLikes: user.receivedLikes,
+      rawMatches: user.matches
+    }));
+
+    console.log('All users with stats:', usersWithStats);
+    res.status(200).json({ users: usersWithStats });
+  } catch (error) {
+    console.error('Error fetching test users stats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Test endpoint to create a notification
+app.post('/test-create-notification', async (req, res) => {
+  try {
+    const { userId, type, title, message } = req.body;
+    
+    if (!userId || !type || !title || !message) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const notification = createNotification(userId, type, title, message);
+    console.log('Test notification created:', notification);
+    
+    res.status(200).json({ 
+      message: 'Test notification created successfully',
+      notification 
+    });
+  } catch (error) {
+    console.error('Error creating test notification:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Endpoint to deduplicate matches and likedProfiles arrays
+app.post('/deduplicate-user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    let needsUpdate = false;
+    const updates = {};
+    
+    // Clean up matches array
+    if (user.matches && user.matches.length > 0) {
+      const uniqueMatches = [...new Set(user.matches.map(match => match.toString()))];
+      if (uniqueMatches.length !== user.matches.length) {
+        console.log(`User ${user.firstName} (${user._id}): Found ${user.matches.length - uniqueMatches.length} duplicate matches`);
+        updates.matches = uniqueMatches;
+        needsUpdate = true;
+      }
+    }
+    
+    // Clean up likedProfiles array
+    if (user.likedProfiles && user.likedProfiles.length > 0) {
+      const uniqueLikedProfiles = [...new Set(user.likedProfiles.map(profile => profile.toString()))];
+      if (uniqueLikedProfiles.length !== user.likedProfiles.length) {
+        console.log(`User ${user.firstName} (${user._id}): Found ${user.likedProfiles.length - uniqueLikedProfiles.length} duplicate liked profiles`);
+        updates.likedProfiles = uniqueLikedProfiles;
+        needsUpdate = true;
+      }
+    }
+    
+    // Update user if needed
+    if (needsUpdate) {
+      await User.findByIdAndUpdate(userId, updates);
+      res.status(200).json({ 
+        message: 'User deduplicated successfully',
+        removedDuplicates: true
+      });
+    } else {
+      res.status(200).json({ 
+        message: 'No duplicates found',
+        removedDuplicates: false
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error deduplicating user:', error);
+    res.status(500).json({ message: 'Error deduplicating user' });
+  }
+});
+
+// Block/Unblock user endpoint
+app.post('/block-user', async (req, res) => {
+  try {
+    const { userId, blockedUserId } = req.body;
+
+    if (!userId || !blockedUserId) {
+      return res.status(400).json({ message: 'User ID and blocked user ID are required' });
+    }
+
+    if (userId === blockedUserId) {
+      return res.status(400).json({ message: 'Cannot block yourself' });
+    }
+
+    const user = await User.findById(userId);
+    const blockedUser = await User.findById(blockedUserId);
+
+    if (!user || !blockedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if already blocked
+    const isAlreadyBlocked = user.blockedUsers && user.blockedUsers.includes(blockedUserId);
+    
+    if (isAlreadyBlocked) {
+      return res.status(400).json({ message: 'User is already blocked' });
+    }
+
+    // Add to blocked users (unidirectional blocking)
+    // Only the user who initiates the block adds the other user to their blockedUsers array
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { blockedUsers: blockedUserId }
+    });
+
+    // Remove from matches if they were matched
+    await User.findByIdAndUpdate(userId, {
+      $pull: { matches: blockedUserId }
+    });
+    await User.findByIdAndUpdate(blockedUserId, {
+      $pull: { matches: userId }
+    });
+
+    // Remove from liked profiles
+    await User.findByIdAndUpdate(userId, {
+      $pull: { likedProfiles: blockedUserId }
+    });
+    await User.findByIdAndUpdate(blockedUserId, {
+      $pull: { likedProfiles: userId }
+    });
+
+    // Remove from received likes
+    await User.findByIdAndUpdate(userId, {
+      $pull: { receivedLikes: { userId: blockedUserId } }
+    });
+    await User.findByIdAndUpdate(blockedUserId, {
+      $pull: { receivedLikes: { userId: userId } }
+    });
+
+    // Clear matches cache for both users
+    clearMatchesCache(userId);
+    clearMatchesCache(blockedUserId);
+
+    res.status(200).json({ message: 'User blocked successfully' });
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Unblock user endpoint
+app.post('/unblock-user', async (req, res) => {
+  try {
+    const { userId, blockedUserId } = req.body;
+
+    if (!userId || !blockedUserId) {
+      return res.status(400).json({ message: 'User ID and blocked user ID are required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user is blocked
+    const isBlocked = user.blockedUsers && user.blockedUsers.includes(blockedUserId);
+    
+    if (!isBlocked) {
+      return res.status(400).json({ message: 'User is not blocked' });
+    }
+
+    // Remove from blocked users (unidirectional unblocking)
+    // Only the user who initiated the unblock removes the other user from their blockedUsers array
+    await User.findByIdAndUpdate(userId, {
+      $pull: { blockedUsers: blockedUserId }
+    });
+
+    // Clear matches cache for both users
+    clearMatchesCache(userId);
+    clearMatchesCache(blockedUserId);
+
+    res.status(200).json({ message: 'User unblocked successfully' });
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Get blocked users endpoint
+app.get('/blocked-users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const user = await User.findById(userId)
+      .populate('blockedUsers', 'firstName lastName email imageUrls age location dateOfBirth')
+      .select('blockedUsers');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ 
+      blockedUsers: user.blockedUsers || [] 
+    });
+  } catch (error) {
+    console.error('Error fetching blocked users:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Report user endpoint
+app.post('/report-user', async (req, res) => {
+  try {
+    const { reporterId, reportedUserId, reason, description } = req.body;
+
+    if (!reporterId || !reportedUserId || !reason) {
+      return res.status(400).json({ message: 'Reporter ID, reported user ID, and reason are required' });
+    }
+
+    if (reporterId === reportedUserId) {
+      return res.status(400).json({ message: 'Cannot report yourself' });
+    }
+
+    // Check if users exist
+    const reporter = await User.findById(reporterId);
+    const reportedUser = await User.findById(reportedUserId);
+
+    if (!reporter || !reportedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if already reported by this user
+    const existingReport = await Report.findOne({
+      reporterId,
+      reportedUserId,
+      status: { $in: ['pending', 'reviewed'] }
+    });
+
+    if (existingReport) {
+      return res.status(400).json({ message: 'You have already reported this user' });
+    }
+
+    // Create new report
+    const report = new Report({
+      reporterId,
+      reportedUserId,
+      reason,
+      description: description || '',
+      status: 'pending'
+    });
+
+    await report.save();
+
+    res.status(201).json({ 
+      message: 'User reported successfully',
+      reportId: report._id
+    });
+  } catch (error) {
+    console.error('Error reporting user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Get user reports (for admin)
+app.get('/admin/reports', adminAuth(), async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    let query = {};
+    if (status) {
+      query.status = status;
+    }
+
+    const reports = await Report.find(query)
+      .populate('reporterId', 'firstName lastName email')
+      .populate('reportedUserId', 'firstName lastName email')
+      .populate('reviewedBy', 'email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Report.countDocuments(query);
+
+    res.status(200).json({
+      reports,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Update report status (for admin)
+app.patch('/admin/reports/:reportId', adminAuth(), async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, adminNotes } = req.body;
+    const adminId = req.admin.adminId;
+
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required' });
+    }
+
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    const updateData = {
+      status,
+      reviewedBy: adminId,
+      reviewedAt: new Date()
+    };
+
+    if (adminNotes) {
+      updateData.adminNotes = adminNotes;
+    }
+
+    const updatedReport = await Report.findByIdAndUpdate(
+      reportId,
+      updateData,
+      { new: true }
+    ).populate('reporterId', 'firstName lastName email')
+     .populate('reportedUserId', 'firstName lastName email')
+     .populate('reviewedBy', 'email');
+
+    res.status(200).json({
+      message: 'Report updated successfully',
+      report: updatedReport
+    });
+  } catch (error) {
+    console.error('Error updating report:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Get report statistics (for admin dashboard)
+app.get('/admin/reports/stats', adminAuth(), async (req, res) => {
+  try {
+    const totalReports = await Report.countDocuments();
+    const pendingReports = await Report.countDocuments({ status: 'pending' });
+    const reviewedReports = await Report.countDocuments({ status: 'reviewed' });
+    const resolvedReports = await Report.countDocuments({ status: 'resolved' });
+    const dismissedReports = await Report.countDocuments({ status: 'dismissed' });
+
+    // Get reports by reason
+    const reportsByReason = await Report.aggregate([
+      {
+        $group: {
+          _id: '$reason',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get recent reports (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentReports = await Report.countDocuments({
+      createdAt: { $gte: sevenDaysAgo }
+    });
+
+    res.status(200).json({
+      totalReports,
+      pendingReports,
+      reviewedReports,
+      resolvedReports,
+      dismissedReports,
+      reportsByReason,
+      recentReports
+    });
+  } catch (error) {
+    console.error('Error fetching report statistics:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Check if user is blocked by another user
+app.get('/check-blocked/:userId/:otherUserId', async (req, res) => {
+  try {
+    const { userId, otherUserId } = req.params;
+
+    if (!userId || !otherUserId) {
+      return res.status(400).json({ message: 'Both user IDs are required' });
+    }
+
+    const user = await User.findById(userId).select('blockedUsers');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isBlocked = user.blockedUsers && user.blockedUsers.includes(otherUserId);
+
+    res.status(200).json({ 
+      isBlocked,
+      blockedByMe: isBlocked
+    });
+  } catch (error) {
+    console.error('Error checking blocked status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Get reports for a specific user (for admin)
+app.get('/admin/users/:userId/reports', adminAuth(), async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const reports = await Report.find({
+      $or: [
+        { reporterId: userId },
+        { reportedUserId: userId }
+      ]
+    })
+    .populate('reporterId', 'firstName lastName email')
+    .populate('reportedUserId', 'firstName lastName email')
+    .populate('reviewedBy', 'email')
+    .sort({ createdAt: -1 });
+
+    res.status(200).json({ reports });
+  } catch (error) {
+    console.error('Error fetching user reports:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });

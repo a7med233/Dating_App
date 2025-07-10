@@ -7,7 +7,7 @@ import ThemedCard from '../components/ThemedCard';
 import { io } from 'socket.io-client';
 import { useRoute } from '@react-navigation/native';
 
-const SOCKET_URL = 'http://10.0.2.2:8000'; // Change to your backend URL
+const SOCKET_URL = 'http://192.168.0.116:3000'; // Socket.IO server now runs on port 3000
 
 const SupportChatRoom = () => {
   const route = useRoute();
@@ -39,15 +39,16 @@ const SupportChatRoom = () => {
   useEffect(() => {
     if (!chatId) return;
     // Connect to socket and join room
-    socketRef.current = io(SOCKET_URL);
-    socketRef.current.emit('join_support_chat', chatId);
-    socketRef.current.on('support_message', ({ chatId: msgChatId, message: msg }) => {
+    const s = io(SOCKET_URL);
+    s.emit('join_support_chat', chatId);
+    s.on('support_message', ({ chatId: msgChatId, message: msg }) => {
       if (msgChatId === chatId) {
         setMessages(prev => [...prev, msg]);
       }
     });
+    // Clean up on unmount
     return () => {
-      socketRef.current && socketRef.current.disconnect();
+      s.disconnect();
     };
   }, [chatId]);
 

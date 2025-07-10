@@ -3,7 +3,8 @@ import {StyleSheet,
   View,
   Image,
   TextInput,
-  Pressable,} from 'react-native';
+  Pressable,
+  Alert,} from 'react-native';
 import React, {useState} from 'react';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +32,41 @@ const SendLikeScreen = () => {
       }
     } catch (error) {
       console.error('Error liking profile:', error);
+      
+      // Handle specific error for already matched users
+      if (error.response?.status === 400 && error.response?.data?.message === 'You are already matched with this user') {
+        Alert.alert(
+          'Already Matched',
+          'You are already matched with this user!',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack()
+            }
+          ]
+        );
+      } else if (error.response?.status === 403 && error.response?.data?.message === 'Cannot like this user') {
+        Alert.alert(
+          'Cannot Like User',
+          'This user is not available for liking.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack()
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          'Failed to send like. Please try again.',
+          [
+            {
+              text: 'OK'
+            }
+          ]
+        );
+      }
     }
   };
 

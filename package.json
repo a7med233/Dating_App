@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "eslint .",
-    "test": "jest"
+    "test": "jest",
+    "find-ip": "node scripts/find-ip.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",

@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { AntDesign } from '@expo/vector-icons';
-import { getUserDetails, updateProfileVisibility } from '../services/api';
+import { getUserDetails, updateProfileVisibility, getRejectedProfiles, unrejectProfile } from '../services/api';
 
 const SettingsScreen = (props) => {
   const navigation = useNavigation();
@@ -22,6 +22,8 @@ const SettingsScreen = (props) => {
     typeVisible: true,
     lookingForVisible: true,
   });
+  const [rejectedProfiles, setRejectedProfiles] = useState([]);
+  const [showRejectedProfiles, setShowRejectedProfiles] = useState(false);
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -41,6 +43,7 @@ const SettingsScreen = (props) => {
   useEffect(() => {
     if (userId) {
       fetchUserProfile();
+      fetchRejectedProfiles();
     }
   }, [userId]);
 
@@ -62,6 +65,28 @@ const SettingsScreen = (props) => {
       Alert.alert('Error', 'Failed to load profile settings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRejectedProfiles = async () => {
+    try {
+      const response = await getRejectedProfiles(userId);
+      if (response.status === 200) {
+        setRejectedProfiles(response.data.rejectedProfiles || []);
+      }
+    } catch (error) {
+      console.error('Error fetching rejected profiles:', error);
+    }
+  };
+
+  const handleUnreject = async (rejectedUserId, rejectedUserName) => {
+    try {
+      await unrejectProfile(userId, rejectedUserId);
+      setRejectedProfiles(prev => prev.filter(user => user._id !== rejectedUserId));
+      Alert.alert('Success', `${rejectedUserName} has been unrejected`);
+    } catch (error) {
+      console.error('Error unrejecting profile:', error);
+      Alert.alert('Error', 'Failed to unreject profile');
     }
   };
 
@@ -199,10 +224,347 @@ const SettingsScreen = (props) => {
           </View>
         </View>
 
-        <View style={{ marginTop: spacing.xl, paddingHorizontal: spacing.lg }}>
-          <CustomButton onPress={() => navigation.navigate('SupportChatRoom', { userId })} disabled={!userId}>
-            Contact Support
-          </CustomButton>
+        <View style={{ marginTop: spacing.xl }}>
+          <Text style={{
+            fontSize: typography.fontSize.lg,
+            fontFamily: typography.fontFamily.bold,
+            color: colors.textPrimary,
+            paddingHorizontal: spacing.lg,
+            marginBottom: spacing.md,
+          }}>
+            Privacy & Safety
+          </Text>
+          
+          <View style={{
+            backgroundColor: colors.textInverse,
+            borderRadius: borderRadius.medium,
+            marginHorizontal: spacing.lg,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+            <Pressable
+              onPress={() => navigation.navigate('BlockedUsers')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.error + '20',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: spacing.md,
+                }}>
+                  <AntDesign name="ban" size={20} color={colors.error} />
+                </View>
+                <View>
+                  <Text style={{
+                    fontSize: typography.fontSize.md,
+                    fontFamily: typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                  }}>
+                    Blocked Users
+                  </Text>
+                  <Text style={{
+                    fontSize: typography.fontSize.sm,
+                    color: colors.textSecondary,
+                    marginTop: spacing.xs,
+                  }}>
+                    Manage users you've blocked
+                  </Text>
+                </View>
+              </View>
+              <AntDesign name="right" size={16} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Rejected Profiles Section */}
+        <View style={{ marginTop: spacing.xl }}>
+          <Text style={{
+            fontSize: typography.fontSize.lg,
+            fontFamily: typography.fontFamily.bold,
+            color: colors.textPrimary,
+            paddingHorizontal: spacing.lg,
+            marginBottom: spacing.md,
+          }}>
+            Rejected Profiles
+          </Text>
+          
+          <View style={{
+            backgroundColor: colors.textInverse,
+            borderRadius: borderRadius.medium,
+            marginHorizontal: spacing.lg,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+            <Pressable
+              onPress={() => setShowRejectedProfiles(!showRejectedProfiles)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.warning + '20',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: spacing.md,
+                }}>
+                  <AntDesign name="closecircle" size={20} color={colors.warning} />
+                </View>
+                <View>
+                  <Text style={{
+                    fontSize: typography.fontSize.md,
+                    fontFamily: typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                  }}>
+                    Rejected Profiles ({rejectedProfiles.length})
+                  </Text>
+                  <Text style={{
+                    fontSize: typography.fontSize.sm,
+                    color: colors.textSecondary,
+                    marginTop: spacing.xs,
+                  }}>
+                    View and manage rejected profiles
+                  </Text>
+                </View>
+              </View>
+              <AntDesign name={showRejectedProfiles ? "up" : "down"} size={16} color={colors.textSecondary} />
+            </Pressable>
+            
+            {showRejectedProfiles && (
+              <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
+                {rejectedProfiles.length === 0 ? (
+                  <Text style={{
+                    fontSize: typography.fontSize.sm,
+                    color: colors.textSecondary,
+                    textAlign: 'center',
+                    paddingVertical: spacing.md,
+                  }}>
+                    No rejected profiles
+                  </Text>
+                ) : (
+                  rejectedProfiles.map((user) => (
+                    <View key={user._id} style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: spacing.sm,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.backgroundSecondary,
+                    }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{
+                          fontSize: typography.fontSize.md,
+                          fontFamily: typography.fontFamily.semiBold,
+                          color: colors.textPrimary,
+                        }}>
+                          {user.firstName} {user.lastName}
+                        </Text>
+                        <Text style={{
+                          fontSize: typography.fontSize.sm,
+                          color: colors.textSecondary,
+                        }}>
+                          {user.email}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => handleUnreject(user._id, user.firstName)}
+                        style={{
+                          backgroundColor: colors.primary,
+                          paddingHorizontal: spacing.md,
+                          paddingVertical: spacing.sm,
+                          borderRadius: borderRadius.small,
+                        }}
+                      >
+                        <Text style={{
+                          fontSize: typography.fontSize.sm,
+                          color: colors.textInverse,
+                        }}>
+                          Unreject
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={{ marginTop: spacing.xl }}>
+          <Text style={{
+            fontSize: typography.fontSize.lg,
+            fontFamily: typography.fontFamily.bold,
+            color: colors.textPrimary,
+            paddingHorizontal: spacing.lg,
+            marginBottom: spacing.md,
+          }}>
+            Legal & Support
+          </Text>
+          
+          <View style={{
+            backgroundColor: colors.textInverse,
+            borderRadius: borderRadius.medium,
+            marginHorizontal: spacing.lg,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+            <Pressable
+              onPress={() => navigation.navigate('TermsOfUse')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.backgroundSecondary,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.primary + '20',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: spacing.md,
+                }}>
+                  <AntDesign name="filetext1" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={{
+                    fontSize: typography.fontSize.md,
+                    fontFamily: typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                  }}>
+                    Terms of Use
+                  </Text>
+                  <Text style={{
+                    fontSize: typography.fontSize.sm,
+                    color: colors.textSecondary,
+                    marginTop: spacing.xs,
+                  }}>
+                    Read our terms and conditions
+                  </Text>
+                </View>
+              </View>
+              <AntDesign name="right" size={16} color={colors.textSecondary} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('PrivacyPolicy')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.backgroundSecondary,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.secondary + '20',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: spacing.md,
+                }}>
+                  <AntDesign name="lock" size={20} color={colors.secondary} />
+                </View>
+                <View>
+                  <Text style={{
+                    fontSize: typography.fontSize.md,
+                    fontFamily: typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                  }}>
+                    Privacy Policy
+                  </Text>
+                  <Text style={{
+                    fontSize: typography.fontSize.sm,
+                    color: colors.textSecondary,
+                    marginTop: spacing.xs,
+                  }}>
+                    Learn how we protect your data
+                  </Text>
+                </View>
+              </View>
+              <AntDesign name="right" size={16} color={colors.textSecondary} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('SupportChatRoom', { userId })}
+              disabled={!userId}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.success + '20',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: spacing.md,
+                }}>
+                  <AntDesign name="customerservice" size={20} color={colors.success} />
+                </View>
+                <View>
+                  <Text style={{
+                    fontSize: typography.fontSize.md,
+                    fontFamily: typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                  }}>
+                    Contact Support
+                  </Text>
+                  <Text style={{
+                    fontSize: typography.fontSize.sm,
+                    color: colors.textSecondary,
+                    marginTop: spacing.xs,
+                  }}>
+                    Get help from our support team
+                  </Text>
+                </View>
+              </View>
+              <AntDesign name="right" size={16} color={colors.textSecondary} />
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaWrapper>

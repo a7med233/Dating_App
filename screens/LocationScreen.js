@@ -1,7 +1,7 @@
-import {StyleSheet,
+import {
+  StyleSheet,
   Text,
   View,
-  Image,
   TouchableOpacity,
   Alert,
   Platform,
@@ -9,26 +9,32 @@ import {StyleSheet,
   FlatList,
   Modal,
   StatusBar,
-  Animated,} from 'react-native';
+  Animated,
+  Dimensions,
+  KeyboardAvoidingView,
+  ScrollView,
+} from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
-import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+const { width, height } = Dimensions.get('window');
 
 const LocationScreen = () => {
   const navigation = useNavigation();
   const [region, setRegion] = useState({
     latitude: 13.0451,
     longitude: 77.6269,
-    latitudeDelta: 0.01, // Consistent zoom level
+    latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
   const [location, setLocation] = useState('');
@@ -37,7 +43,7 @@ const LocationScreen = () => {
     longitude: 77.6269,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true); // New state for initial GPS attempt
+  const [isInitializing, setIsInitializing] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -108,7 +114,7 @@ const LocationScreen = () => {
       const data = await response.json();
 
       if (data.results) {
-        setSearchResults(data.results.slice(0, 5)); // Limit to 5 results
+        setSearchResults(data.results.slice(0, 5));
       } else {
         setSearchResults([]);
       }
@@ -139,7 +145,7 @@ const LocationScreen = () => {
     setRegion({
       latitude: lat,
       longitude: lng,
-      latitudeDelta: 0.01, // Zoom in closer
+      latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
     setLocation(place.formatted_address);
@@ -159,21 +165,20 @@ const LocationScreen = () => {
 
       const { latitude, longitude } = position.coords;
 
-      // Check if map is zoomed out (large delta values) and zoom back in
       const isZoomedOut = region.latitudeDelta > 0.05 || region.longitudeDelta > 0.05;
 
       const newRegion = {
         latitude,
         longitude,
-        latitudeDelta: isZoomedOut ? 0.01 : region.latitudeDelta, // Zoom in if was zoomed out
+        latitudeDelta: isZoomedOut ? 0.01 : region.latitudeDelta,
         longitudeDelta: isZoomedOut ? 0.01 : region.longitudeDelta,
       };
 
       setRegion(newRegion);
       setMarkerCoordinate({ latitude, longitude });
       setIsLoading(false);
-      setIsInitializing(false); // Stop initializing state
-      stopPulseAnimation(); // Stop the pulse animation
+      setIsInitializing(false);
+      stopPulseAnimation();
 
       // Get address
       fetch(
@@ -192,8 +197,8 @@ const LocationScreen = () => {
     } catch (error) {
       console.log('Location error:', error);
       setIsLoading(false);
-      setIsInitializing(false); // Stop initializing state
-      stopPulseAnimation(); // Stop the pulse animation
+      setIsInitializing(false);
+      stopPulseAnimation();
 
       if (error.code === 'E_LOCATION_PERMISSION_DENIED') {
         Alert.alert(
@@ -215,17 +220,16 @@ const LocationScreen = () => {
     const init = async () => {
       const hasPermission = await checkPermission();
       if (hasPermission) {
-        startPulseAnimation(); // Start the pulse animation
+        startPulseAnimation();
         getCurrentLocation();
       } else {
-        // Set default region for initial load
         setRegion({
           latitude: 13.0451,
           longitude: 77.6269,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         });
-        setIsInitializing(false); // Stop initializing if no permission
+        setIsInitializing(false);
       }
     };
     init();
@@ -236,11 +240,10 @@ const LocationScreen = () => {
     const coordinate = e.nativeEvent.coordinate;
     setMarkerCoordinate(coordinate);
 
-    // Update map region to follow the marker with consistent zoom
     const newRegion = {
       latitude: coordinate.latitude,
       longitude: coordinate.longitude,
-      latitudeDelta: 0.01, // Consistent zoom level
+      latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     };
     setRegion(newRegion);
@@ -272,94 +275,84 @@ const LocationScreen = () => {
     navigation.navigate('Gender');
   };
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   // Render search result item
   const renderSearchResult = ({ item }) => (
     <TouchableOpacity
-      style={{
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-        backgroundColor: colors.textInverse,
-      }}
+      style={styles.searchResultItem}
       onPress={() => selectSearchResult(item)}
     >
-              <Text style={{ fontSize: typography.fontSize.md, fontFamily: typography.fontFamily.medium, color: colors.textPrimary }}>
-        {item.name}
-      </Text>
-              <Text style={{ fontSize: typography.fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs }}>
-        {item.formatted_address}
-      </Text>
+      <Ionicons name="location-outline" size={20} color={colors.textSecondary} />
+      <View style={styles.searchResultContent}>
+        <Text style={styles.searchResultName}>{item.name}</Text>
+        <Text style={styles.searchResultAddress}>{item.formatted_address}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{
-            width: 44,
-            height: 44,
-            borderRadius: borderRadius.xlarge,
-            borderColor: colors.textPrimary,
-            borderWidth: 2,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-            <MaterialCommunityIcons
-              name="cake-variant-outline"
-              size={26}
-              color="black"
-            />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header Section with Gradient */}
+          <LinearGradient
+            colors={colors.primaryGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerSection}
+          >
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={colors.textInverse} />
+              </TouchableOpacity>
+              
+              <View style={styles.logoContainer}>
+                <Ionicons name="location-outline" size={40} color={colors.textInverse} />
+                <Text style={styles.headerTitle}>Location</Text>
           </View>
-          <Image
-            style={{ width: 100, height: 40 }}
-            source={{
-              uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-            }}
-          />
         </View>
+          </LinearGradient>
 
-        <Text style={{
-          fontSize: typography.fontSize.xxxl,
-          fontFamily: typography.fontFamily.bold,
-          marginTop: spacing.md,
-        }}>
-          Where do you live?
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>Where do you live?</Text>
+              <Text style={styles.subtitle}>
+                This helps us show you people nearby and improve your matches.
         </Text>
+            </View>
 
         {/* Search Bar */}
         <TouchableOpacity
           onPress={() => setShowSearchModal(true)}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#f8f9fa',
-            borderWidth: 1,
-            borderColor: '#dee2e6',
-            borderRadius: borderRadius.round,
-            paddingHorizontal: spacing.md,
-            paddingVertical: 12,
-            marginTop: spacing.lg,
-          }}
+              style={styles.searchBar}
         >
-          <MaterialCommunityIcons name="magnify" size={20} color="#6c757d" />
-          <Text style={{ marginLeft: 10, color: '#6c757d', fontSize: typography.fontSize.md }}>
+              <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.searchPlaceholder}>
             Search for a location...
           </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
         </TouchableOpacity>
 
-        {/* Map Container with GPS Button */}
-        <View style={{ position: 'relative', marginTop: spacing.lg }}>
+            {/* Map Container */}
+            <View style={styles.mapContainer}>
           <MapView
             key={`${region.latitude}-${region.longitude}`}
             region={region}
-            style={{ 
-              width: '100%', 
-              height: Platform.OS === 'android' ? 280 : 350, 
-              borderRadius: borderRadius.small 
-            }}
+                style={styles.map}
             showsUserLocation={true}
             showsMyLocationButton={false}
           >
@@ -369,202 +362,114 @@ const LocationScreen = () => {
               onDragEnd={onMarkerDragEnd}
               title="Your Location"
               description="Drag to set location"
-              pinColor="colors.primary"
+                  pinColor={colors.primary}
             />
           </MapView>
 
           {/* GPS Location Indicator Overlay */}
           {isInitializing && (
-            <View style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              justifyContent: 'center',
-              alignItems: 'center',
-              borderRadius: borderRadius.small,
-            }}>
-              <Animated.View style={{
-                transform: [{ scale: pulseAnim }],
-                alignItems: 'center',
-              }}>
-                <View style={{
-                  backgroundColor: colors.primary,
-                  borderRadius: borderRadius.round,
-                  padding: 20,
-                  marginBottom: spacing.md,
-                  elevation: 10,
-                  shadowColor: colors.primary,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                }}>
-                  <MaterialCommunityIcons
-                    name="crosshairs-gps"
+                <View style={styles.gpsOverlay}>
+                  <Animated.View style={[styles.gpsIndicator, { transform: [{ scale: pulseAnim }] }]}>
+                    <View style={styles.gpsIconContainer}>
+                      <Ionicons
+                        name="location"
                     size={40}
                     color={colors.textInverse}
                   />
                 </View>
-                <Text style={{
-                  color: colors.textInverse,
-                  fontSize: typography.fontSize.lg,
-                  fontFamily: typography.fontFamily.bold,
-                  textAlign: 'center',
-                  marginBottom: spacing.xs,
-                }}>
-                  Locating you...
-                </Text>
-                <Text style={{
-                  color: colors.textInverse,
-                  fontSize: typography.fontSize.sm,
-                  textAlign: 'center',
-                  opacity: 0.8,
-                }}>
+                    <Text style={styles.gpsTitle}>Locating you...</Text>
+                    <Text style={styles.gpsSubtitle}>
                   Please wait while we find your location
                 </Text>
               </Animated.View>
             </View>
           )}
 
-          {/* GPS Button - Inside map at bottom */}
+              {/* GPS Button */}
           <TouchableOpacity
             onPress={getCurrentLocation}
             disabled={isLoading}
-            style={{
-              position: 'absolute',
-              right: 15,
-              bottom: 15,
-              backgroundColor: colors.textInverse,
-              borderRadius: borderRadius.round,
-              padding: 10,
-              elevation: 5,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-            }}
+                style={styles.gpsButton}
           >
-            <MaterialCommunityIcons
-              name="crosshairs-gps"
+                <Ionicons
+                  name="locate"
               size={24}
-              color={isLoading ? "#ccc" : colors.primary}
+                  color={isLoading ? colors.textTertiary : colors.primary}
             />
           </TouchableOpacity>
         </View>
 
         {/* Instructions */}
-        <View style={{
-          backgroundColor: '#f8f9fa',
-          padding: 10,
-          borderRadius: borderRadius.small,
-          marginTop: spacing.md,
-          borderWidth: 1,
-          borderColor: '#dee2e6',
-        }}>
-          <Text style={{
-            textAlign: 'center',
-            color: '#6c757d',
-            fontSize: typography.fontSize.xs,
-            fontStyle: 'italic',
-          }}>
-            💡 Search for a location or drag the red marker to set your location
+            <View style={styles.instructionsContainer}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.instructionsText}>
+                Search for a location or drag the marker to set your location
           </Text>
         </View>
 
         {/* Location Display */}
-        <View style={{
-          backgroundColor: colors.textPrimary,
-          padding: 12,
-          borderRadius: borderRadius.xlarge,
-          marginTop: spacing.md,
-          alignSelf: 'center',
-          marginBottom: Platform.OS === 'android' ? 100 : 80, // Extra margin for Android
-        }}>
-          <Text style={{
-            textAlign: 'center',
-            color: colors.textInverse,
-            fontSize: typography.fontSize.sm,
-            fontFamily: typography.fontFamily.medium,
-          }}>
+            <View style={styles.locationDisplay}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.locationText}>
             {location || 'Drag marker to set location'}
           </Text>
         </View>
 
-        {/* Next Button */}
+            {/* Error Message */}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Continue Button */}
         <TouchableOpacity
           onPress={handleNext}
-          style={{
-            position: 'absolute',
-            right: 20,
-            bottom: Platform.OS === 'android' ? 40 : 30,
-            backgroundColor: colors.primary,
-            borderRadius: borderRadius.round,
-            padding: 15,
-            elevation: 8,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 4.65,
-          }}
+              disabled={!location || location.trim() === ''}
+              style={[
+                styles.continueButton,
+                {
+                  opacity: (!location || location.trim() === '') ? 0.6 : 1,
+                  backgroundColor: (!location || location.trim() === '') ? colors.textTertiary : colors.primary
+                }
+              ]}
         >
-          <MaterialCommunityIcons
-            name="arrow-right"
-            size={30}
-            color="white"
-          />
+              <Text style={styles.continueButtonText}>Continue</Text>
         </TouchableOpacity>
-
-        {error ? (
-          <Text style={{ color: 'red', marginTop: spacing.md, textAlign: 'center' }}>{error}</Text>
-        ) : null}
       </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Search Modal */}
       <Modal
         visible={showSearchModal}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
       >
-        <SafeAreaWrapper backgroundColor={colors.background} style={{ flex: 1, backgroundColor: colors.textInverse }}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           {/* Modal Header */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: 15,
-            borderBottomWidth: 1,
-            borderBottomColor: '#eee',
-          }}>
+          <View style={styles.modalHeader}>
             <TouchableOpacity
               onPress={() => {
                 setShowSearchModal(false);
                 setSearchQuery('');
                 setSearchResults([]);
               }}
-              style={{ marginRight: 15 }}
+              style={styles.closeButton}
             >
-              <MaterialCommunityIcons name="close" size={24} color="colors.textPrimary" />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-            <Text style={{ fontSize: typography.fontSize.lg, fontFamily: typography.fontFamily.bold }}>Search Location</Text>
+            <Text style={styles.modalTitle}>Search Location</Text>
+            <View style={styles.placeholderButton} />
           </View>
 
           {/* Search Input */}
-          <View style={{
-            padding: 15,
-            borderBottomWidth: 1,
-            borderBottomColor: '#eee',
-          }}>
+          <View style={styles.searchInputContainer}>
             <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: '#dee2e6',
-                borderRadius: borderRadius.round,
-                paddingHorizontal: spacing.md,
-                paddingVertical: 12,
-                fontSize: typography.fontSize.md,
-              }}
+              style={styles.searchInput}
               placeholder="Enter location name..."
+              placeholderTextColor={colors.textTertiary}
               value={searchQuery}
               onChangeText={handleSearchChange}
               autoFocus={true}
@@ -573,19 +478,20 @@ const LocationScreen = () => {
 
           {/* Search Results */}
           {isSearching ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text>Searching...</Text>
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Searching...</Text>
             </View>
           ) : (
             <FlatList
               data={searchResults}
               renderItem={renderSearchResult}
               keyExtractor={(item, index) => index.toString()}
-              style={{ flex: 1 }}
+              style={styles.searchResultsList}
               ListEmptyComponent={
                 searchQuery.length > 2 ? (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                    <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+                    <Text style={styles.emptyText}>
                       No locations found for "{searchQuery}"
                     </Text>
                   </View>
@@ -593,18 +499,318 @@ const LocationScreen = () => {
               }
             />
           )}
-        </SafeAreaWrapper>
+        </SafeAreaView>
       </Modal>
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
 
-export default LocationScreen;
-
 const styles = StyleSheet.create({
-  content: {
-    marginHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 20 : 20,
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  keyboardAvoidingView: {
     flex: 1,
   },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: Platform.OS === 'android' ? 20 : 0, // Extra padding for Android navigation
+  },
+  headerSection: {
+    height: 180,
+    width: '100%',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.large,
+    elevation: 8,
+  },
+  headerContent: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0),
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 20 : 10,
+    left: spacing.lg,
+    zIndex: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  headerTitle: {
+    marginTop: spacing.sm,
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textInverse,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: Platform.OS === 'android' ? 100 : 0, // Account for Android navigation bar
+  },
+  titleSection: {
+    marginBottom: spacing.xl,
+  },
+  title: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.medium,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.lg,
+  },
+  searchPlaceholder: {
+    flex: 1,
+    marginLeft: spacing.sm,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+  },
+  mapContainer: {
+    position: 'relative',
+    marginBottom: spacing.lg,
+  },
+  map: {
+    width: '100%',
+    height: Platform.OS === 'android' ? 280 : 320,
+    borderRadius: borderRadius.medium,
+  },
+  gpsOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: borderRadius.medium,
+  },
+  gpsIndicator: {
+    alignItems: 'center',
+  },
+  gpsIconContainer: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.round,
+    padding: 20,
+    marginBottom: spacing.md,
+    ...shadows.large,
+  },
+  gpsTitle: {
+    color: colors.textInverse,
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  gpsSubtitle: {
+    color: colors.textInverse,
+    fontSize: typography.fontSize.sm,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  gpsButton: {
+    position: 'absolute',
+    right: 15,
+    bottom: 15,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.round,
+    padding: 12,
+    ...shadows.medium,
+  },
+  instructionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
+    marginBottom: spacing.lg,
+  },
+  instructionsText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
+  },
+  locationDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.success + '10',
+    borderRadius: borderRadius.medium,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.success + '20',
+    marginBottom: spacing.xl,
+  },
+  locationText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.success,
+    flex: 1,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.error + '20',
+  },
+  errorText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.error,
+    flex: 1,
+  },
+  continueButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    marginBottom: Platform.OS === 'android' ? 20 : 0, // Extra margin for Android
+    ...shadows.medium,
+  },
+  continueButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textInverse,
+  },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  closeButton: {
+    padding: spacing.xs,
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textPrimary,
+  },
+  placeholderButton: {
+    width: 40,
+  },
+  searchInputContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  searchInput: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.medium,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textSecondary,
+  },
+  searchResultsList: {
+    flex: 1,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  searchResultContent: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  searchResultName: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  searchResultAddress: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  emptyText: {
+    marginTop: spacing.md,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
 });
+
+export default LocationScreen;

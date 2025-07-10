@@ -34,9 +34,15 @@ import AnimationScreen from '../screens/AnimationScreen';
 import BasicInfo from '../screens/BasicInfo';
 import ShowPromptsScreen from '../screens/ShowPromptsScreen';
 import SupportChatRoom from '../screens/SupportChatRoom';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import AdditionalInfoScreen from '../screens/AdditionalInfoScreen';
+import BlockedUsersScreen from '../screens/BlockedUsersScreen';
+import TermsOfUseScreen from '../screens/TermsOfUseScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, shadows } from '../theme/colors';
 import { AuthContext } from '../AuthContext';
+import CustomTabBar from '../components/CustomTabBar';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -59,88 +65,33 @@ const StackNavigator = () => {
       <Tab.Navigator
         screenOptions={() => ({
           tabBarShowLabel: false,
-        })}>
+          headerShown: false,
+        })}
+        tabBar={props => <CustomTabBar {...props} />}
+      >
         <Tab.Screen
           name="Home"
           component={HomeScreen}
-          options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
-            headerShown: false,
-            tabBarIcon: ({focused}) =>
-              focused ? (
-                <MaterialCommunityIcons name="alpha" size={35} color="white" />
-              ) : (
-                <MaterialCommunityIcons
-                  name="alpha"
-                  size={35}
-                  color="#989898"
-                />
-              ),
-          }}
         />
 
         <Tab.Screen
           name="Likes"
           component={LikesScreen}
-          options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
-            headerShown: false,
-            tabBarIcon: ({focused}) =>
-              focused ? (
-                <Entypo name="heart" size={30} color="white" />
-              ) : (
-                <Entypo name="heart" size={30} color="#989898" />
-              ),
-          }}
         />
+        
         <Tab.Screen
           name="Chat"
           component={ChatScreen}
-          options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
-            headerShown: false,
-            tabBarIcon: ({focused}) =>
-              focused ? (
-                <MaterialIcons
-                  name="chat-bubble-outline"
-                  size={30}
-                  color="white"
-                />
-              ) : (
-                <MaterialIcons
-                  name="chat-bubble-outline"
-                  size={30}
-                  color="#989898"
-                />
-              ),
-          }}
+        />
+
+        <Tab.Screen
+          name="Notifications"
+          component={NotificationsScreen}
         />
 
         <Tab.Screen
           name="Profile"
           component={ProfileScreen}
-          options={{
-            tabBarStyle: {backgroundColor: '#101010'},
-            tabBarLabelStyle: {color: '#008E97'},
-            headerShown: false,
-            tabBarIcon: ({focused}) =>
-              focused ? (
-                <Ionicons
-                  name="person-circle-outline"
-                  size={30}
-                  color="white"
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle-outline"
-                  size={30}
-                  color="#989898"
-                />
-              ),
-          }}
         />
       </Tab.Navigator>
     );
@@ -162,10 +113,14 @@ const StackNavigator = () => {
       <Stack.Screen name="Dating" component={DatingType} />
       <Stack.Screen name="LookingFor" component={LookingFor} />
       <Stack.Screen name="Hometown" component={HomeTownScreen} />
+      <Stack.Screen name="AdditionalInfo" component={AdditionalInfoScreen} />
       <Stack.Screen name="Photos" component={PhotoScreen} />
       <Stack.Screen name="Prompts" component={PromptsScreen} />
       <Stack.Screen name="ShowPrompts" component={ShowPromptsScreen} />
       <Stack.Screen name="PreFinal" component={PreFinalScreen} />
+      <Stack.Screen name="TermsOfUse" component={TermsOfUseScreen} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      <Stack.Screen name="SupportChatRoom" component={SupportChatRoom} />
     </Stack.Navigator>
   );
 
@@ -179,11 +134,14 @@ const StackNavigator = () => {
         />
         <Stack.Screen name="Animation" component={AnimationScreen} />
         <Stack.Screen name="ProfileDetails" component={ProfileDetailsScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         <Stack.Screen name="SendLike" component={SendLikeScreen} />
         <Stack.Screen name="HandleLike" component={HandleLikeScreen} />
         <Stack.Screen name="ChatRoom" component={ChatRoom} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
+        <Stack.Screen name="TermsOfUse" component={TermsOfUseScreen} />
+        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
         <Stack.Screen name="SupportChatRoom" component={SupportChatRoom} />
       </Stack.Navigator>
     );

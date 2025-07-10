@@ -8,11 +8,12 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import NotificationCenter from '../components/NotificationCenter';
-import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { useTabBar } from '../context/TabBarContext';
 
 const NotificationsScreen = () => {
   const navigation = useNavigation();
+  const { updateCounts } = useTabBar();
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
@@ -32,33 +33,23 @@ const NotificationsScreen = () => {
   };
 
   return (
-    <SafeAreaWrapper backgroundColor={colors.background} style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
-      </View>
       
       <NotificationCenter 
         isVisible={true}
         onClose={() => navigation.goBack()}
         userId={userId}
+        onCountUpdate={(count) => updateCounts({ notifications: count })}
       />
-    </SafeAreaWrapper>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 10 : 10,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  headerTitle: {
-    fontSize: typography.fontSize.xxl,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.textPrimary,
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
   },
 });
 

@@ -42,11 +42,18 @@ const NotificationCenter = ({ isVisible, onClose, userId }) => {
     
     try {
       setLoading(true);
-      const data = await getNotifications(userId);
-      setNotifications(data);
+      const response = await getNotifications(userId);
+      console.log('Notifications response:', response);
+      if (response.status === 200) {
+        setNotifications(response.data);
+      } else {
+        console.error('Failed to fetch notifications:', response.data);
+        setNotifications([]);
+      }
     } catch (error) {
       console.error('Error fetching notifications:', error);
       Alert.alert('Error', 'Failed to load notifications');
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -61,12 +68,14 @@ const NotificationCenter = ({ isVisible, onClose, userId }) => {
   const handleNotificationPress = async (notification) => {
     if (!notification.read) {
       try {
-        await markNotificationAsRead(userId, notification.id);
-        setNotifications(prev => 
-          prev.map(n => 
-            n.id === notification.id ? { ...n, read: true } : n
-          )
-        );
+        const response = await markNotificationAsRead(userId, notification.id);
+        if (response.status === 200) {
+          setNotifications(prev => 
+            prev.map(n => 
+              n.id === notification.id ? { ...n, read: true } : n
+            )
+          );
+        }
       } catch (error) {
         console.error('Error marking notification as read:', error);
       }
@@ -96,8 +105,10 @@ const NotificationCenter = ({ isVisible, onClose, userId }) => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllNotificationsAsRead(userId);
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      const response = await markAllNotificationsAsRead(userId);
+      if (response.status === 200) {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      }
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       Alert.alert('Error', 'Failed to mark all notifications as read');
@@ -106,8 +117,10 @@ const NotificationCenter = ({ isVisible, onClose, userId }) => {
 
   const handleDeleteNotification = async (notificationId) => {
     try {
-      await deleteNotification(userId, notificationId);
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      const response = await deleteNotification(userId, notificationId);
+      if (response.status === 200) {
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      }
     } catch (error) {
       console.error('Error deleting notification:', error);
       Alert.alert('Error', 'Failed to delete notification');

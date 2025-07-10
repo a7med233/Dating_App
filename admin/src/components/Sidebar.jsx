@@ -9,6 +9,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import ReportIcon from '@mui/icons-material/Report';
 import LogoutIcon from '@mui/icons-material/Logout';
 import IconButton from '@mui/material/IconButton';
 import Avatar from '@mui/material/Avatar';
@@ -28,6 +29,7 @@ const Sidebar = ({ admin, logout, mobileOpen, handleDrawerToggle }) => {
     { text: 'Subscriptions', icon: <SubscriptionsIcon />, path: '/subscriptions' },
     { text: 'Analytics', icon: <BarChartIcon />, path: '/analytics' },
     { text: 'Notifications', icon: <NotificationsIcon />, path: '/notifications' },
+    { text: 'Reports', icon: <ReportIcon />, path: '/reports' },
   ];
   const location = useLocation();
   const navigate = useNavigate();

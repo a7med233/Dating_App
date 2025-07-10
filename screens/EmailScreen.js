@@ -1,24 +1,24 @@
-import {StyleSheet,
+import {
+  StyleSheet,
   Text,
   View,
-  Image,
   TextInput,
   TouchableOpacity,
-  Pressable,
   Alert,
   ActivityIndicator,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,} from 'react-native';
-import React, {useState,useEffect} from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Fontisto from 'react-native-vector-icons/Fontisto';
+  ScrollView,
+  SafeAreaView,
+} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import { getRegistrationProgress, saveRegistrationProgress } from '../registrationUtils';
 import { checkEmailExists } from '../services/api';
 import ErrorMessage from '../components/ErrorMessage';
-import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
 const { width, height } = Dimensions.get('window');
@@ -75,9 +75,13 @@ const EmailScreen = () => {
     saveRegistrationProgress('Email', { email });
     navigation.navigate('Password');
   };
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
   
   return (
-    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -87,34 +91,44 @@ const EmailScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
-            {/* Header Section */}
-            <View style={styles.header}>
-              <View style={styles.iconContainer}>
-                <Fontisto name="email" size={26} color="black" />
+          {/* Header Section with Gradient */}
+          <LinearGradient
+            colors={colors.primaryGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerSection}
+          >
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={colors.textInverse} />
+              </TouchableOpacity>
+              
+              <View style={styles.logoContainer}>
+                <Ionicons name="mail-outline" size={40} color={colors.textInverse} />
+                <Text style={styles.headerTitle}>Email</Text>
               </View>
-              <Image
-                style={styles.logo}
-                source={{
-                  uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-                }}
-                resizeMode="contain"
-              />
+            </View>
+          </LinearGradient>
+
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>What's your email address?</Text>
+              <Text style={styles.subtitle}>
+                We'll use this to keep your account secure and send you important updates.
+            </Text>
             </View>
 
-            {/* Title */}
-            <Text style={styles.title}>
-              Please provide a valid email
-            </Text>
-
-            {/* Description */}
-            <Text style={styles.description}>
-              Email verification helps us keep your account secure.{' '}
-              <Text style={styles.learnMore}>Learn more</Text>
-            </Text>
-
             {/* Email Input */}
+            <View style={styles.inputSection}>
             <View style={styles.inputContainer}>
+                <Ionicons 
+                  name="mail-outline" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={styles.inputIcon}
+                />
               <TextInput
                 autoFocus={true}
                 value={email}
@@ -129,8 +143,8 @@ const EmailScreen = () => {
                   }
                 }}
                 style={styles.textInput}
-                placeholder="Enter your email"
-                placeholderTextColor={'#BEBEBE'}
+                  placeholder="Enter your email address"
+                  placeholderTextColor={colors.textTertiary}
                 editable={!isLoading}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -140,110 +154,191 @@ const EmailScreen = () => {
 
             {/* Error Message */}
             {error ? (
-              <ErrorMessage message={error} />
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
             ) : null}
 
-            {/* Note */}
-            <Text style={styles.note}>
-              Note: You will be asked to verify your email
+              {/* Info Note */}
+              <View style={styles.infoContainer}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.infoText}>
+                  We'll send you a verification email to confirm your address.
             </Text>
+              </View>
+            </View>
             
-            {/* Next Button */}
-            <Pressable
+            {/* Continue Button */}
+            <TouchableOpacity
               onPress={handleNext}
-              disabled={isLoading}
-              style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.lg, borderRadius: borderRadius.medium, opacity: isLoading ? 0.6 : 1}}>
+              disabled={isLoading || !email.trim() || !validateEmail(email)}
+              style={[
+                styles.continueButton,
+                {
+                  opacity: (isLoading || !email.trim() || !validateEmail(email)) ? 0.6 : 1,
+                  backgroundColor: (isLoading || !email.trim() || !validateEmail(email)) ? colors.textTertiary : colors.primary
+                }
+              ]}
+            >
               {isLoading ? (
-                <ActivityIndicator size="large" color={colors.textInverse} />
+                <ActivityIndicator size="small" color={colors.textInverse} />
               ) : (
-                <Text
-                  style={{
-                    textAlign: 'center',
-                    color: colors.textInverse,
-                    fontFamily: typography.fontFamily.semiBold,
-                    fontSize: typography.fontSize.md,
-                  }}>
-                  Continue
-                </Text>
+                <Text style={styles.continueButtonText}>Continue</Text>
               )}
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 90 : 60,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.xlarge,
-    borderColor: colors.textPrimary,
-    borderWidth: 2,
+  headerSection: {
+    height: 180,
+    width: '100%',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    ...shadows.large,
+    elevation: 8,
   },
-  logo: {
-    width: 100,
+  headerContent: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 20 : 10,
+    left: spacing.lg,
+    zIndex: 1,
+    width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  headerTitle: {
+    marginTop: spacing.sm,
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textInverse,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  titleSection: {
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: Math.min(width * 0.06, 25),
+    fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.bold,
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
-    marginBottom: spacing.md,
-    color: '#000',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
-  description: {
-    fontSize: Math.min(width * 0.04, 15),
-    color: 'gray',
+  subtitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  inputSection: {
     marginBottom: spacing.xl,
-    lineHeight: 20,
-  },
-  learnMore: {
-    color: colors.primary,
-    fontFamily: typography.fontFamily.medium,
   },
   inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.medium,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: spacing.md,
   },
+  inputIcon: {
+    marginRight: spacing.sm,
+  },
   textInput: {
-    fontSize: Math.min(width * 0.055, 22),
-    borderBottomColor: colors.textPrimary,
-    borderBottomWidth: 1,
-    paddingBottom: 10,
-    paddingTop: 5,
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
-    color: '#000',
+    flex: 1,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textPrimary,
+    paddingVertical: spacing.sm,
   },
-  note: {
-    color: 'gray',
-    fontSize: Math.min(width * 0.035, 15),
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.error + '20',
   },
-  nextButton: {
-    alignSelf: 'flex-end',
+  errorText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.error,
+    flex: 1,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.primary + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
+  },
+  infoText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
+  },
+  continueButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.lg,
+    ...shadows.medium,
+  },
+  continueButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textInverse,
   },
 });
 

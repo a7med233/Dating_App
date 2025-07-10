@@ -72,29 +72,63 @@ const LoginScreen = () => {
       const response = await loginUser(user);
       const token = response.data.token;
       await AsyncStorage.setItem('token', token);
-      setToken(token)
+      setToken(token);
+      
+      // Clear any previous errors on successful login
+      setLoginError('');
+      
     } catch (error) {
       console.error('Login error:', error);
+      
       if (error.response) {
-        if (error.response.status === 401) {
-          setLoginError('Invalid email or password.');
-        } else if (error.response.status === 403) {
-          setLoginError(error.response.data.message || 'Your account has been banned. Please contact support.');
-        } else if (error.response.status === 500) {
-          setLoginError('Server error. Please try again later.');
+        const status = error.response.status;
+        const errorMessage = error.response.data?.message || '';
+        
+        switch (status) {
+          case 400:
+            setLoginError('Please check your email and password format.');
+            break;
+          case 401:
+            // Use the specific message from the backend
+            if (errorMessage.includes('Invalid email or password')) {
+              setLoginError('Email or password is incorrect. Please try again.');
+            } else if (errorMessage.includes('Invalid password')) {
+              setLoginError('Password is incorrect. Please try again.');
+            } else {
+              setLoginError(errorMessage || 'Email or password is incorrect. Please try again.');
+            }
+            break;
+          case 403:
+            if (errorMessage.toLowerCase().includes('banned') || errorMessage.toLowerCase().includes('suspended')) {
+              setLoginError('Your account has been suspended. Please contact support for assistance.');
         } else {
-          setLoginError('Login failed. Please try again.');
+              setLoginError('Access denied. Please contact support.');
+            }
+            break;
+          case 404:
+            setLoginError('Account not found. Please check your email or create a new account.');
+            break;
+          case 429:
+            setLoginError('Too many login attempts. Please wait a few minutes before trying again.');
+            break;
+          case 500:
+            setLoginError('Server error. Please try again in a few minutes.');
+            break;
+          default:
+            setLoginError(errorMessage || 'Login failed. Please try again.');
         }
       } else if (error.message) {
-        if (error.message.includes('Network error')) {
-          setLoginError('Network error. Please check your internet connection.');
+        if (error.message.includes('Network error') || error.message.includes('fetch')) {
+          setLoginError('No internet connection. Please check your network and try again.');
         } else if (error.message.includes('timeout')) {
-          setLoginError('Request timeout. Please try again.');
+          setLoginError('Request timed out. Please check your connection and try again.');
+        } else if (error.message.includes('Failed to fetch')) {
+          setLoginError('Unable to connect to server. Please try again later.');
         } else {
           setLoginError('Login failed. Please try again.');
         }
       } else {
-        setLoginError('Network error. Please try again.');
+        setLoginError('An unexpected error occurred. Please try again.');
       }
     }
   };
@@ -136,33 +170,18 @@ const LoginScreen = () => {
             style={styles.headerSection}
           >
             <View style={styles.logoContainer}>
-              {/* Heart + Flame Icon */}
-              <View style={styles.iconContainer}>
-                <Entypo name="heart" size={40} color={colors.textInverse} />
-                <MaterialIcons 
-                  name="local-fire-department" 
-                  size={35} 
-                  color={colors.warmOrange} 
-                  style={styles.flameIcon}
+              {/* Lashwa Logo */}
+              <Image 
+                source={require('../assets/lashwa_white_logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
                 />
-              </View>
-              <Text style={styles.appName}>lashwa</Text>
               <Text style={styles.tagline}>Designed to be deleted</Text>
             </View>
           </LinearGradient>
 
           {/* Main Content */}
           <View style={styles.mainContent}>
-            {/* Brand Container */}
-            <ThemedCard variant="elevated" padding="large" margin="medium">
-              <View style={styles.brandContainer}>
-                <Image
-                  style={styles.brandLogo}
-                  source={require('../assets/icon.png')}
-                />
-              </View>
-            </ThemedCard>
-
             {/* Form Section */}
             <View style={styles.formSection}>
               {option == 'Sign In' ? (
@@ -223,14 +242,6 @@ const LoginScreen = () => {
                       <Text style={styles.errorText}>&nbsp;</Text>
                     )}
                   </View>
-
-                  {/* Contact Support Button */}
-                  <GradientButton
-                    title="Contact Support"
-                    onPress={() => navigation.navigate('SupportChatRoom', { userId: null })}
-                    variant="outline"
-                    style={styles.supportButton}
-                  />
                 </>
               ) : (
                 <View style={styles.animationContainer}>
@@ -247,19 +258,29 @@ const LoginScreen = () => {
               {/* Action Buttons */}
               <View style={styles.buttonContainer}>
                 <GradientButton
+                  title="Sign In"
+                  onPress={signInUser}
+                  variant={option == 'Sign In' ? 'primary' : 'outline'}
+                  size="medium"
+                  style={styles.actionButton}
+                  gradient={option == 'Sign In' ? 'primary' : undefined}
+                />
+
+                <GradientButton
                   title="Create account"
                   onPress={createAccount}
                   variant={option == 'Create account' ? 'primary' : 'outline'}
+                  size="medium"
                   style={styles.actionButton}
                   gradient={option == 'Create account' ? 'primary' : undefined}
                 />
 
                 <GradientButton
-                  title="Sign In"
-                  onPress={signInUser}
-                  variant={option == 'Sign In' ? 'primary' : 'outline'}
-                  style={styles.actionButton}
-                  gradient={option == 'Sign In' ? 'primary' : undefined}
+                  title="Contact Support"
+                  onPress={() => navigation.navigate('SupportChatRoom', { userId: null })}
+                  variant="outline"
+                  size="medium"
+                  style={styles.supportButton}
                 />
               </View>
             </View>
@@ -281,43 +302,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerSection: {
-    height: 280,
+    height: 180,
     width: '100%',
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.large,
+    elevation: 8,
   },
   logoContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 25,
+    marginTop: 15,
+    paddingHorizontal: 20,
   },
-  iconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 260,
+    height: 110,
     marginBottom: spacing.md,
-  },
-  flameIcon: {
-    marginLeft: -10,
-    marginTop: -5,
-  },
-  appName: {
-    marginTop: spacing.md,
-    textAlign: 'center',
-    fontSize: typography.fontSize.xxxl,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.textInverse,
-    letterSpacing: 2,
   },
   tagline: {
     marginTop: spacing.sm,
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.medium,
     color: colors.textInverse,
-    opacity: 0.9,
+    opacity: 0.95,
+    textAlign: 'center',
   },
   mainContent: {
     alignItems: 'center',
@@ -326,15 +337,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
   },
-  brandContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  brandLogo: {
-    width: 120,
-    height: 60,
-    resizeMode: 'contain',
-  },
+
   formSection: {
     marginTop: spacing.lg,
     width: '100%',
@@ -344,16 +347,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
+    paddingVertical: spacing.xs,
   },
   inputIcon: {
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
+    opacity: 0.8,
   },
   textInput: {
     color: colors.textPrimary,
-    marginVertical: spacing.sm,
+    marginVertical: spacing.xs,
     flex: 1,
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.regular,
+    paddingVertical: spacing.xs,
   },
   rememberForgotContainer: {
     marginTop: spacing.md,
@@ -366,11 +372,11 @@ const styles = StyleSheet.create({
   rememberText: {
     color: colors.textSecondary,
     fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.regular,
+    fontFamily: typography.fontFamily.medium,
   },
   forgotPasswordText: {
     color: colors.primary,
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
   },
   errorContainer: {
@@ -379,16 +385,22 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     width: '100%',
     paddingHorizontal: spacing.sm,
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.medium,
+    borderWidth: 1,
+    borderColor: colors.error + '20',
   },
   errorText: {
     color: colors.error,
     textAlign: 'center',
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.medium,
+    paddingHorizontal: spacing.xs,
   },
   supportButton: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     width: '100%',
+    maxWidth: 300,
   },
   animationContainer: {
     marginTop: spacing.xl,
@@ -400,10 +412,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonContainer: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     width: '100%',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   actionButton: {
     width: '100%',

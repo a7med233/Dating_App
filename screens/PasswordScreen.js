@@ -1,24 +1,25 @@
-import {StyleSheet,
+import {
+  StyleSheet,
   Text,
   View,
-  Pressable,
   TextInput,
-  Image,
   TouchableOpacity,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,} from 'react-native';
+  ScrollView,
+  StatusBar,
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
-import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
 import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
-import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -50,8 +51,13 @@ const PasswordScreen = () => {
     navigation.navigate('Birth');
   };
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   return (
-    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -61,29 +67,44 @@ const PasswordScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
-            {/* Header Section */}
-            <View style={styles.header}>
-              <View style={styles.iconContainer}>
-                <MaterialIcons name="lock" size={26} color="black" />
+          {/* Header Section with Gradient */}
+          <LinearGradient
+            colors={colors.primaryGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerSection}
+          >
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={colors.textInverse} />
+              </TouchableOpacity>
+              
+              <View style={styles.logoContainer}>
+                <Ionicons name="lock-closed-outline" size={40} color={colors.textInverse} />
+                <Text style={styles.headerTitle}>Password</Text>
               </View>
-              <Image
-                style={styles.logo}
-                source={{
-                  uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-                }}
-                resizeMode="contain"
-              />
+            </View>
+          </LinearGradient>
+
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>Create a strong password</Text>
+              <Text style={styles.subtitle}>
+                Choose a password that's secure and easy to remember.
+              </Text>
             </View>
 
-            {/* Title */}
-            <Text style={styles.title}>
-              Please choose your password
-            </Text>
-
             {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
+            <View style={styles.inputSection}>
+              <View style={styles.inputContainer}>
+                <Ionicons 
+                  name="lock-closed-outline" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   secureTextEntry={!showPassword}
                   autoFocus={true}
@@ -100,132 +121,248 @@ const PasswordScreen = () => {
                   }}
                   style={styles.textInput}
                   placeholder="Enter your password"
-                  placeholderTextColor={'#BEBEBE'}
+                  placeholderTextColor={colors.textTertiary}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                <Pressable
+                <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeIcon}
                 >
-                  <MaterialIcons
-                    name={showPassword ? "visibility" : "visibility-off"}
-                    size={24}
+                  <Ionicons
+                    name={showPassword ? "eye-outline" : "eye-off-outline"}
+                    size={20}
                     color={colors.textSecondary}
                   />
-                </Pressable>
+                </TouchableOpacity>
+              </View>
+
+              {/* Error Message */}
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Password Requirements */}
+              <View style={styles.requirementsContainer}>
+                <Text style={styles.requirementsTitle}>Password requirements:</Text>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={password.length >= 6 ? "checkmark-circle" : "ellipse-outline"} 
+                    size={16} 
+                    color={password.length >= 6 ? colors.success : colors.textTertiary} 
+                  />
+                  <Text style={[
+                    styles.requirementText,
+                    { color: password.length >= 6 ? colors.success : colors.textSecondary }
+                  ]}>
+                    At least 6 characters
+                  </Text>
+                </View>
+              </View>
+
+              {/* Security Note */}
+              <View style={styles.infoContainer}>
+                <Ionicons name="shield-checkmark-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.infoText}>
+                  Your password is encrypted and stored securely. We never share your personal information.
+                </Text>
               </View>
             </View>
 
-            {/* Error Message */}
-            {error ? (
-              <Text style={styles.errorText}>{error}</Text>
-            ) : null}
-
-            {/* Note */}
-            <Text style={styles.note}>
-              Note: Your details will be safe with us.
-            </Text>
-
-            {/* Next Button */}
-            <Pressable
+            {/* Continue Button */}
+            <TouchableOpacity
               onPress={handleNext}
-              style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.lg, borderRadius: borderRadius.medium}}>
-              <Text
-                style={{
-                  textAlign: 'center',
-                  color: colors.textInverse,
-                  fontFamily: typography.fontFamily.semiBold,
-                  fontSize: typography.fontSize.md,
-                }}>
-                Continue
-              </Text>
-            </Pressable>
+              disabled={!password.trim() || password.length < 6}
+              style={[
+                styles.continueButton,
+                {
+                  opacity: (!password.trim() || password.length < 6) ? 0.6 : 1,
+                  backgroundColor: (!password.trim() || password.length < 6) ? colors.textTertiary : colors.primary
+                }
+              ]}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 90 : 60,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.xlarge,
-    borderColor: colors.textPrimary,
-    borderWidth: 2,
+  headerSection: {
+    height: 180,
+    width: '100%',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    ...shadows.large,
+    elevation: 8,
   },
-  logo: {
-    width: 100,
+  headerContent: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight || 0,
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 20 : 10,
+    left: spacing.lg,
+    zIndex: 1,
+    width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  headerTitle: {
+    marginTop: spacing.sm,
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textInverse,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: Platform.OS === 'android' ? spacing.md : 0,
+  },
+  titleSection: {
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: Math.min(width * 0.06, 25),
+    fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.bold,
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
-    marginBottom: spacing.md,
-    color: '#000',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  inputSection: {
+    marginBottom: spacing.xl,
   },
   inputContainer: {
-    marginBottom: spacing.md,
-  },
-  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomColor: colors.textPrimary,
-    borderBottomWidth: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.medium,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  inputIcon: {
+    marginRight: spacing.sm,
   },
   textInput: {
     flex: 1,
-    fontSize: Math.min(width * 0.055, 22),
-    paddingBottom: 10,
-    paddingTop: 5,
-    paddingRight: 40, // Space for the eye icon
-    fontFamily: Platform.OS === 'ios' ? 'GeezaPro-Bold' : 'sans-serif',
-    color: '#000',
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textPrimary,
+    paddingVertical: spacing.sm,
   },
   eyeIcon: {
-    position: 'absolute',
-    right: 0,
-    padding: 8,
+    padding: spacing.xs,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.error + '20',
+  },
   errorText: {
-    color: 'red',
-    marginTop: spacing.sm,
-    fontSize: Math.min(width * 0.035, 14),
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.error,
+    flex: 1,
   },
-  note: {
-    color: 'gray',
-    fontSize: Math.min(width * 0.035, 15),
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
+  requirementsContainer: {
+    marginBottom: spacing.md,
   },
-  nextButton: {
-    alignSelf: 'flex-end',
+  requirementsTitle: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  requirementText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.primary + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
+  },
+  infoText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
+  },
+  continueButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.lg,
+    ...shadows.medium,
+  },
+  continueButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textInverse,
   },
 });
 

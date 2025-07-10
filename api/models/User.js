@@ -39,6 +39,35 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
+  // New fields for enhanced profile
+  bio: {
+    type: String,
+    maxlength: 500, // Limit bio to 500 characters
+  },
+  height: {
+    type: String, // e.g., "5'8"", "175 cm"
+  },
+  languages: [{
+    type: String,
+  }],
+  children: {
+    type: String,
+    enum: ['Yes, I have children', 'No, I don\'t have children', 'Prefer not to say'],
+  },
+  smoking: {
+    type: String,
+    enum: ['Yes, I smoke', 'No, I don\'t smoke', 'Occasionally', 'Prefer not to say'],
+  },
+  drinking: {
+    type: String,
+    enum: ['Yes, I drink', 'No, I don\'t drink', 'Occasionally', 'Prefer not to say'],
+  },
+  religion: {
+    type: String,
+  },
+  occupation: {
+    type: String,
+  },
   datingPreferences: [
     {
       type: String,
@@ -135,6 +164,12 @@ const userSchema = new Schema({
     default: true,
   },
   blockedUsers: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
+  rejectedProfiles: [
     {
       type: Schema.Types.ObjectId,
       ref: 'User',

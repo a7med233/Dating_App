@@ -9,6 +9,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
 import BlockIcon from '@mui/icons-material/Block';
 import UndoIcon from '@mui/icons-material/Undo';
+import ReportIcon from '@mui/icons-material/Report';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -57,6 +58,8 @@ const Users = () => {
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
   const [search, setSearch] = useState('');
+  const [userReports, setUserReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -108,6 +111,21 @@ const Users = () => {
       });
   };
 
+  const fetchUserReports = userId => {
+    setLoadingReports(true);
+    fetch(`http://localhost:3000/admin/users/${userId}/reports`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        setUserReports(data.reports || []);
+        setLoadingReports(false);
+      })
+      .catch(() => {
+        setLoadingReports(false);
+      });
+  };
+
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line
@@ -119,6 +137,7 @@ const Users = () => {
     setTab(0);
     fetchMatches(user._id);
     fetchMessages(user._id);
+    fetchUserReports(user._id);
   };
 
   const handleDelete = async userId => {
@@ -246,6 +265,7 @@ const Users = () => {
           <Tab label="Profile" />
           <Tab label="Matches" />
           <Tab label="Messages" />
+          <Tab label="Reports" />
         </Tabs>
         {tab === 0 && selectedUser && (
           <Box display="flex" flexDirection="column" gap={2}>
@@ -295,6 +315,52 @@ const Users = () => {
                   </li>
                 ))}
               </ul>
+            )}
+          </Box>
+        )}
+        {tab === 3 && (
+          <Box>
+            <Typography variant="subtitle1" mb={1}>Reports</Typography>
+            {loadingReports ? (
+              <CircularProgress size={24} />
+            ) : userReports.length === 0 ? (
+              <Typography>No reports found.</Typography>
+            ) : (
+              <Box>
+                <Typography variant="subtitle2" mb={1}>Reports Filed Against This User:</Typography>
+                {userReports.filter(r => r.reportedUserId?._id === selectedUser._id).map((report, i) => (
+                  <Box key={i} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      Reported by: {report.reporterId?.firstName} {report.reporterId?.lastName}
+                    </Typography>
+                    <Typography variant="body2">Reason: {report.reason}</Typography>
+                    <Typography variant="body2">Status: {report.status}</Typography>
+                    {report.description && (
+                      <Typography variant="body2">Description: {report.description}</Typography>
+                    )}
+                    <Typography variant="caption" color="textSecondary">
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                ))}
+                
+                <Typography variant="subtitle2" mb={1} mt={3}>Reports Filed By This User:</Typography>
+                {userReports.filter(r => r.reporterId?._id === selectedUser._id).map((report, i) => (
+                  <Box key={i} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      Reported: {report.reportedUserId?.firstName} {report.reportedUserId?.lastName}
+                    </Typography>
+                    <Typography variant="body2">Reason: {report.reason}</Typography>
+                    <Typography variant="body2">Status: {report.status}</Typography>
+                    {report.description && (
+                      <Typography variant="body2">Description: {report.description}</Typography>
+                    )}
+                    <Typography variant="caption" color="textSecondary">
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
             )}
           </Box>
         )}

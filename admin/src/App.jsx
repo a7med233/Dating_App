@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Admins from './pages/Admins';
 import SupportChats from './pages/SupportChats';
 import Notifications from './pages/Notifications';
+import Reports from './pages/Reports';
 
 function RequireAuth({ children }) {
   const { admin, token } = useAuth();
@@ -38,6 +39,7 @@ function App() {
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/support-chats" element={<SupportChats />} />
                   <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/reports" element={<Reports />} />
                 </Routes>
               </Layout>
             </RequireAuth>

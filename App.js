@@ -29,6 +29,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import StackNavigator from './navigation/StackNavigator';
 import { AuthProvider } from './AuthContext';
+import { TabBarProvider } from './context/TabBarContext';
 import OnboardingTutorial from './components/OnboardingTutorial';
 
 function Section({ children, title }) {
@@ -97,16 +98,18 @@ function App() {
 
   return (
     <AuthProvider>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <StackNavigator/>
-        </NavigationContainer>
-        <OnboardingTutorial 
-          visible={showOnboarding} 
-          onComplete={completeOnboarding} 
-        />
-        <ExpoStatusBar style="auto" />
-      </SafeAreaProvider>
+      <TabBarProvider>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <StackNavigator/>
+          </NavigationContainer>
+          <OnboardingTutorial 
+            visible={showOnboarding} 
+            onComplete={completeOnboarding} 
+          />
+          <ExpoStatusBar style="auto" />
+        </SafeAreaProvider>
+      </TabBarProvider>
     </AuthProvider>
   );
 }

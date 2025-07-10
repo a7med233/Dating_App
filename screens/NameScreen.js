@@ -1,26 +1,24 @@
-import {StyleSheet,
+import {
+  StyleSheet,
   Text,
   View,
-  Image,
   TextInput,
   TouchableOpacity,
-  Pressable,
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,} from 'react-native';
+  ScrollView,
+  SafeAreaView,
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getRegistrationProgress,
   saveRegistrationProgress,
 } from '../registrationUtils';
-import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
-
 
 const { width, height } = Dimensions.get('window');
 
@@ -48,9 +46,13 @@ const NameScreen = () => {
     saveRegistrationProgress('Name', { firstName, lastName });
     navigation.navigate('Email');
   };
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
   
   return (
-    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -60,37 +62,53 @@ const NameScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
+          {/* Header Section with Gradient */}
+          <LinearGradient
+            colors={colors.primaryGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerSection}
+          >
+            <View style={styles.headerContent}>
+              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={colors.textInverse} />
+              </TouchableOpacity>
+              
+              <View style={styles.logoContainer}>
+                <Ionicons name="person-outline" size={40} color={colors.textInverse} />
+                <Text style={styles.headerTitle}>Name</Text>
+              </View>
+            </View>
+          </LinearGradient>
+
+          {/* Main Content */}
+          <View style={styles.mainContent}>
             {/* Disclaimer */}
-            <Text style={styles.disclaimer}>
+            <View style={styles.disclaimerContainer}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.disclaimerText}>
               NO BACKGROUND CHECKS ARE CONDUCTED
             </Text>
-
-            {/* Header Section */}
-            <View style={styles.header}>
-              <View style={styles.iconContainer}>
-                <MaterialCommunityIcons
-                  name="newspaper-variant-outline"
-                  size={26}
-                  color="black"
-                />
-              </View>
-              <Image
-                style={styles.logo}
-                source={{
-                  uri: 'https://cdn-icons-png.flaticon.com/128/10613/10613685.png',
-                }}
-                resizeMode="contain"
-              />
             </View>
 
-            {/* Title */}
-            <Text style={styles.title}>
-              What's your name?
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>What's your name?</Text>
+              <Text style={styles.subtitle}>
+                This is how you'll appear on Lashwa. You can always change this later.
             </Text>
+            </View>
 
             {/* Input Fields */}
+            <View style={styles.inputSection}>
+              {/* First Name Input */}
             <View style={styles.inputContainer}>
+                <Ionicons 
+                  name="person-outline" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={styles.inputIcon}
+                />
               <TextInput
                 autoFocus={true}
                 value={firstName}
@@ -103,131 +121,234 @@ const NameScreen = () => {
                   }
                 }}
                 style={styles.textInput}
-                placeholder="First name (required)"
-                placeholderTextColor={'#BEBEBE'}
+                  placeholder="First name"
+                  placeholderTextColor={colors.textTertiary}
                 autoCapitalize="words"
                 autoCorrect={false}
               />
-              
+              </View>
+
+              {/* Last Name Input */}
+              <View style={styles.inputContainer}>
+                <Ionicons 
+                  name="person-outline" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={styles.inputIcon}
+                />
               <TextInput
                 value={lastName}
                 onChangeText={setLastName}
                 style={styles.textInput}
-                placeholder="Last name"
-                placeholderTextColor={'#BEBEBE'}
+                  placeholder="Last name (optional)"
+                  placeholderTextColor={colors.textTertiary}
                 autoCapitalize="words"
                 autoCorrect={false}
               />
-              
-              <Text style={styles.optionalText}>
-                Last name is optional.
-              </Text>
             </View>
 
             {/* Error Message */}
             {error ? (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
               <Text style={styles.errorText}>{error}</Text>
+                </View>
             ) : null}
 
-            {/* Next Button */}
-            <Pressable
+              {/* Info Note */}
+              <View style={styles.infoContainer}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.infoText}>
+                  Your last name is optional and won't be displayed to other users.
+                </Text>
+              </View>
+            </View>
+
+            {/* Continue Button */}
+            <TouchableOpacity
               onPress={handleNext}
-              style={{backgroundColor: colors.primary, padding: 15, marginTop: spacing.lg, borderRadius: borderRadius.medium}}>
-              <Text
-                style={{
-                  textAlign: 'center',
-                  color: colors.textInverse,
-                  fontFamily: typography.fontFamily.semiBold,
-                  fontWeight: typography.fontWeight.semiBold,
-                  fontSize: typography.fontSize.md,
-                }}>
-                Continue
-              </Text>
-            </Pressable>
+              disabled={!firstName.trim()}
+              style={[
+                styles.continueButton,
+                {
+                  opacity: !firstName.trim() ? 0.6 : 1,
+                  backgroundColor: !firstName.trim() ? colors.textTertiary : colors.primary
+                }
+              ]}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaWrapper>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
-  },
-  disclaimer: {
-    textAlign: 'center',
-    color: 'gray',
-    fontSize: Math.min(width * 0.035, 14),
-    marginBottom: spacing.lg,
-    fontFamily: typography.fontFamily.medium,
-    fontWeight: typography.fontWeight.medium,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.xlarge,
-    borderColor: colors.textPrimary,
-    borderWidth: 2,
+  headerSection: {
+    height: 180,
+    width: '100%',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    ...shadows.large,
+    elevation: 8,
   },
-  logo: {
-    width: 100,
+  headerContent: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 20 : 10,
+    left: spacing.lg,
+    zIndex: 1,
+    width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  headerTitle: {
+    marginTop: spacing.sm,
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textInverse,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  disclaimerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.warning + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.warning + '20',
+  },
+  disclaimerText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  titleSection: {
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: Math.min(width * 0.06, 25),
+    fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.bold,
-    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  inputSection: {
     marginBottom: spacing.xl,
-    color: '#000',
   },
   inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.medium,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: spacing.md,
   },
-  textInput: {
-    fontSize: Math.min(width * 0.055, 22),
-    borderBottomColor: colors.textPrimary,
-    borderBottomWidth: 1,
-    paddingBottom: 10,
-    paddingTop: 5,
-    marginBottom: spacing.lg,
-    fontFamily: typography.fontFamily.bold,
-    fontWeight: typography.fontWeight.bold,
-    color: '#000',
+  inputIcon: {
+    marginRight: spacing.sm,
   },
-  optionalText: {
-    fontSize: Math.min(width * 0.035, 15),
-    color: 'gray',
-    fontFamily: typography.fontFamily.medium,
-    fontWeight: typography.fontWeight.medium,
-    marginTop: -10,
-    marginBottom: spacing.lg,
+  textInput: {
+    flex: 1,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textPrimary,
+    paddingVertical: spacing.sm,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.error + '20',
   },
   errorText: {
-    color: 'red',
-    marginTop: spacing.sm,
-    fontSize: Math.min(width * 0.035, 14),
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.error,
+    flex: 1,
   },
-  nextButton: {
-    alignSelf: 'flex-end',
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.primary + '10',
+    borderRadius: borderRadius.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
+  },
+  infoText: {
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
+  },
+  continueButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.lg,
+    ...shadows.medium,
+  },
+  continueButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    color: colors.textInverse,
   },
 });
 
