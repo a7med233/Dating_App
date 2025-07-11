@@ -4,11 +4,9 @@ import {
   View,
   TouchableOpacity,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StatusBar,
-} from 'react-native';
+  StatusBar} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
@@ -25,7 +23,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
 
 const { width, height } = Dimensions.get('window');
 
@@ -232,12 +231,9 @@ const PhotoScreen = () => {
   const photoCount = imageUrls.filter(url => url.trim() !== '').length;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
+      <SamsungKeyboardAvoidingView>
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -396,7 +392,7 @@ const PhotoScreen = () => {
           </TouchableOpacity>
         </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </SamsungKeyboardAvoidingView>
         
         <ErrorMessage
           error={error}
@@ -407,7 +403,7 @@ const PhotoScreen = () => {
             setError('');
           }}
         />
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, KeyboardAvoidingView, ScrollView, TextInput, Pressable } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TextInput, Pressable } from 'react-native';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientButton from '../components/GradientButton';
@@ -68,7 +68,7 @@ const SupportChatRoom = () => {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SamsungKeyboardAvoidingView>
       {!userId && !identifierSubmitted && (
         <View style={{ padding: 16 }}>
           <Text style={{ marginBottom: spacing.sm }}>Enter your email so support can identify you:</Text>
@@ -131,7 +131,7 @@ const SupportChatRoom = () => {
           </View>
         </>
       )}
-    </KeyboardAvoidingView>
+    </SamsungKeyboardAvoidingView>
   );
 };
 

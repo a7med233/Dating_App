@@ -22,7 +22,17 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import Tooltip from '@mui/material/Tooltip';
+import Chip from '@mui/material/Chip';
+import Avatar from '@mui/material/Avatar';
+import Grid from '@mui/material/Grid';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../config/api';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const genderOptions = [
   { value: '', label: 'All' },
@@ -30,6 +40,7 @@ const genderOptions = [
   { value: 'female', label: 'Female' },
   { value: 'other', label: 'Other' },
 ];
+
 const banOptions = [
   { value: '', label: 'All' },
   { value: 'public', label: 'Active' },
@@ -47,10 +58,9 @@ const Users = () => {
   const [tab, setTab] = useState(0);
   const [filters, setFilters] = useState({ name: '', gender: '', ban: '', location: '', age: '', joinDate: '' });
   const [matches, setMatches] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [errorMatches, setErrorMatches] = useState('');
   const [errorMessages, setErrorMessages] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addForm, setAddForm] = useState({ email: '', password: '', role: 'moderator' });
@@ -60,78 +70,69 @@ const Users = () => {
   const [search, setSearch] = useState('');
   const [userReports, setUserReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [errorMatches, setErrorMatches] = useState('');
 
-  const fetchUsers = () => {
-    setLoading(true);
-    fetch('http://localhost:3000/admin/users', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setUsers(data.users || []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to fetch users');
-        setLoading(false);
-      });
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await api.getUsers();
+      console.log('Users data received:', data);
+      setUsers(data.users || []);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      setError(err.message || 'Failed to fetch users');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const fetchMatches = userId => {
-    setLoadingMatches(true);
-    setErrorMatches('');
-    fetch(`http://localhost:3000/admin/users/${userId}/matches`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setMatches(data.matches || []);
-        setLoadingMatches(false);
-      })
-      .catch(() => {
-        setErrorMatches('Failed to fetch matches');
-        setLoadingMatches(false);
-      });
+  const fetchMatches = async (userId) => {
+    try {
+      setLoadingMatches(true);
+      setErrorMatches('');
+      const data = await api.getUserMatches(userId);
+      setMatches(data.matches || []);
+    } catch (err) {
+      console.error('Failed to fetch matches:', err);
+      setErrorMatches(err.message || 'Failed to fetch matches');
+    } finally {
+      setLoadingMatches(false);
+    }
   };
 
-  const fetchMessages = userId => {
-    setLoadingMessages(true);
-    setErrorMessages('');
-    fetch(`http://localhost:3000/admin/users/${userId}/messages`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setMessages(data.messages || []);
-        setLoadingMessages(false);
-      })
-      .catch(() => {
-        setErrorMessages('Failed to fetch messages');
-        setLoadingMessages(false);
-      });
+  const fetchMessages = async (userId) => {
+    try {
+      setLoadingMessages(true);
+      setErrorMessages('');
+      const data = await api.getUserMessages(userId);
+      setConversations(data.conversations || []);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+      setErrorMessages(err.message || 'Failed to fetch messages');
+    } finally {
+      setLoadingMessages(false);
+    }
   };
 
-  const fetchUserReports = userId => {
-    setLoadingReports(true);
-    fetch(`http://localhost:3000/admin/users/${userId}/reports`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setUserReports(data.reports || []);
-        setLoadingReports(false);
-      })
-      .catch(() => {
-        setLoadingReports(false);
-      });
+  const fetchUserReports = async (userId) => {
+    try {
+      setLoadingReports(true);
+      const data = await api.getUserReports(userId);
+      setUserReports(data.reports || []);
+    } catch (err) {
+      console.error('Failed to fetch user reports:', err);
+    } finally {
+      setLoadingReports(false);
+    }
   };
 
   useEffect(() => {
     fetchUsers();
-    // eslint-disable-next-line
   }, [token]);
 
-  const handleView = user => {
+  const handleView = (user) => {
     setSelectedUser(user);
     setDialogOpen(true);
     setTab(0);
@@ -140,57 +141,48 @@ const Users = () => {
     fetchUserReports(user._id);
   };
 
-  const handleDelete = async userId => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
-    const res = await fetch(`http://localhost:3000/admin/users/${userId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      setSnackbar({ open: true, message: 'User deleted', severity: 'success' });
+  const handleDelete = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+
+    try {
+      await api.deleteUser(userId);
+      setSnackbar({ open: true, message: 'User deleted successfully', severity: 'success' });
       fetchUsers();
-    } else {
-      setSnackbar({ open: true, message: 'Failed to delete user', severity: 'error' });
+    } catch (err) {
+      setSnackbar({ open: true, message: err.message || 'Failed to delete user', severity: 'error' });
     }
   };
 
   const handleBanToggle = async (userId, ban) => {
-    const res = await fetch(`http://localhost:3000/admin/users/${userId}/ban`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ ban }),
-    });
-    if (res.ok) {
-      setSnackbar({ open: true, message: ban ? 'User banned' : 'User unbanned', severity: 'success' });
+    try {
+      await api.banUser(userId, { ban });
+      setSnackbar({
+        open: true,
+        message: ban ? 'User banned successfully' : 'User unbanned successfully',
+        severity: 'success'
+      });
       fetchUsers();
-    } else {
-      setSnackbar({ open: true, message: 'Failed to update user', severity: 'error' });
+    } catch (err) {
+      setSnackbar({ open: true, message: err.message || 'Failed to update user', severity: 'error' });
     }
   };
 
   const handleAddAdmin = async () => {
-    setAddLoading(true);
-    setAddError('');
-    setAddSuccess('');
     try {
-      const res = await fetch('http://localhost:3000/admin/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(addForm),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setAddSuccess('Admin user created successfully');
-        setAddDialogOpen(false);
-        setAddForm({ email: '', password: '', role: 'moderator' });
-        fetchUsers();
-      } else {
-        setAddError(data.message || 'Failed to create admin');
-      }
-    } catch (e) {
-      setAddError('Failed to create admin');
+      setAddLoading(true);
+      setAddError('');
+      setAddSuccess('');
+
+      await api.registerAdmin(addForm);
+      setAddSuccess('Admin user created successfully');
+      setAddDialogOpen(false);
+      setAddForm({ email: '', password: '', role: 'moderator' });
+      fetchUsers();
+    } catch (err) {
+      setAddError(err.message || 'Failed to create admin');
+    } finally {
+      setAddLoading(false);
     }
-    setAddLoading(false);
   };
 
   // Filtering logic
@@ -200,323 +192,575 @@ const Users = () => {
       (u.firstName && u.firstName.toLowerCase().includes(search.toLowerCase())) ||
       (u.lastName && u.lastName.toLowerCase().includes(search.toLowerCase())) ||
       (u.email && u.email.toLowerCase().includes(search.toLowerCase()));
-    if (!searchMatch) return false;
-    if (filters.name && !(`${u.firstName || ''} ${u.lastName || ''}`.toLowerCase().includes(filters.name.toLowerCase()))) return false;
-    if (filters.gender && u.gender !== filters.gender) return false;
-    if (filters.ban && u.visibility !== filters.ban) return false;
-    if (filters.location && !u.location?.toLowerCase().includes(filters.location.toLowerCase())) return false;
-    if (filters.age && u.age !== Number(filters.age)) return false;
-    if (filters.joinDate && u.createdAt && !u.createdAt.startsWith(filters.joinDate)) return false;
-    return true;
+
+    const genderMatch = !filters.gender || u.gender === filters.gender;
+    const banMatch = !filters.ban || u.visibility === filters.ban;
+    const locationMatch = !filters.location ||
+      (u.location && u.location.toLowerCase().includes(filters.location.toLowerCase()));
+
+    return searchMatch && genderMatch && banMatch && locationMatch;
   });
+
+  // Debug logging
+  console.log('Users state:', users);
+  console.log('Filtered users:', filteredUsers);
 
   const columns = [
     {
-      field: 'name',
-      headerName: 'Name',
-      flex: 1,
-      valueGetter: params =>
-        params && params.row
-          ? `${params.row.firstName || ''} ${params.row.lastName || ''}`
-          : '',
+      field: 'avatar',
+      headerName: 'Avatar',
+      width: 80,
+      renderCell: (params) => {
+        if (!params || !params.row) return null;
+        return (
+          <Avatar src={params.row.photos?.[0] || params.row.imageUrls?.[0] || ''} alt={params.row.firstName || ''}>
+            {params.row.firstName?.charAt(0) || ''}
+          </Avatar>
+        );
+      },
     },
-    { field: 'email', headerName: 'Email', flex: 1 },
-    { field: 'gender', headerName: 'Gender', flex: 0.7 },
-    { field: 'type', headerName: 'Type', flex: 0.7 },
-    { field: 'location', headerName: 'Location', flex: 1 },
+    {
+      field: 'firstName',
+      headerName: 'First Name',
+      flex: 1,
+    },
+    {
+      field: 'lastName',
+      headerName: 'Last Name',
+      flex: 1,
+    },
+    {
+      field: 'email',
+      headerName: 'Email',
+      flex: 1.5,
+    },
+    {
+      field: 'gender',
+      headerName: 'Gender',
+      width: 100,
+    },
+
     {
       field: 'visibility',
       headerName: 'Status',
-      flex: 0.7,
-      valueGetter: params =>
-        params && params.row
-          ? params.row.visibility === 'hidden' ? 'Banned' : 'Active'
-          : '',
+      width: 120,
+      renderCell: (params) => {
+        if (!params || !params.row) return null;
+        return (
+          <Chip
+            label={params.value === 'hidden' ? 'Banned' : 'Active'}
+            size="small"
+            color={params.value === 'hidden' ? 'error' : 'success'}
+          />
+        );
+      },
+    },
+
+    {
+      field: 'matchesCount',
+      headerName: 'Matches',
+      width: 100,
+      valueGetter: (params) => {
+        if (!params || !params.row) return 0;
+        return params.row.matchesCount || params.row.matches?.length || 0;
+      },
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          color="info"
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      field: 'likesCount',
+      headerName: 'Likes Given',
+      width: 120,
+      valueGetter: (params) => {
+        if (!params || !params.row) return 0;
+        return params.row.likesCount || params.row.likedProfiles?.length || 0;
+      },
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          color="success"
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      field: 'receivedLikesCount',
+      headerName: 'Likes Received',
+      width: 130,
+      valueGetter: (params) => {
+        if (!params || !params.row) return 0;
+        return params.row.receivedLikesCount || params.row.receivedLikes?.length || 0;
+      },
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          color="warning"
+          variant="outlined"
+        />
+      ),
     },
     {
       field: 'actions',
       headerName: 'Actions',
-      flex: 1,
+      width: 200,
       sortable: false,
-      renderCell: params => (
-        <Box>
-          <IconButton onClick={() => handleView(params.row)} title="View"><VisibilityIcon /></IconButton>
-          {admin?.role === 'superadmin' && (
-            <>
-              <IconButton onClick={() => handleDelete(params.row._id)} title="Delete"><DeleteIcon /></IconButton>
-              {params.row.visibility === 'hidden' ? (
-                <IconButton onClick={() => handleBanToggle(params.row._id, false)} title="Unban"><UndoIcon /></IconButton>
-              ) : (
-                <IconButton onClick={() => handleBanToggle(params.row._id, true)} title="Ban"><BlockIcon /></IconButton>
-              )}
-            </>
-          )}
-        </Box>
-      ),
+      renderCell: (params) => {
+        if (!params || !params.row) return null;
+        return (
+          <Box>
+            <Tooltip title="View Details">
+              <IconButton onClick={() => handleView(params.row)} color="primary" size="small">
+                <VisibilityIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={params.row.visibility === 'hidden' ? 'Unban User' : 'Ban User'}>
+              <IconButton
+                onClick={() => handleBanToggle(params.row._id, params.row.visibility === 'hidden' ? false : true)}
+                color={params.row.visibility === 'hidden' ? 'success' : 'warning'}
+                size="small"
+              >
+                {params.row.visibility === 'hidden' ? <UndoIcon /> : <BlockIcon />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete User">
+              <IconButton onClick={() => handleDelete(params.row._id)} color="error" size="small">
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        );
+      },
     },
   ];
 
-  // Edit modal tabs: Profile, Matches, Messages
-  const renderUserDialog = () => (
-    <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-      <DialogTitle>User Details</DialogTitle>
-      <DialogContent>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-          <Tab label="Profile" />
-          <Tab label="Matches" />
-          <Tab label="Messages" />
-          <Tab label="Reports" />
-        </Tabs>
-        {tab === 0 && selectedUser && (
-          <Box display="flex" flexDirection="column" gap={2}>
-            <TextField label="First Name" value={selectedUser.firstName || ''} fullWidth margin="dense" />
-            <TextField label="Last Name" value={selectedUser.lastName || ''} fullWidth margin="dense" />
-            <TextField label="Email" value={selectedUser.email || ''} fullWidth margin="dense" />
-            <TextField label="Gender" value={selectedUser.gender || ''} fullWidth margin="dense" />
-            <TextField label="Location" value={selectedUser.location || ''} fullWidth margin="dense" />
-            <TextField label="Bio" value={selectedUser.bio || ''} fullWidth margin="dense" multiline rows={2} />
-            {/* TODO: Add photo and preferences editing */}
-          </Box>
-        )}
-        {tab === 1 && (
-          <Box>
-            <Typography variant="subtitle1" mb={1}>Match History</Typography>
-            {loadingMatches ? (
-              <CircularProgress size={24} />
-            ) : errorMatches ? (
-              <Alert severity="error">{errorMatches}</Alert>
-            ) : matches.length === 0 ? (
-              <Typography>No matches found.</Typography>
-            ) : (
-              <ul>
-                {matches.map((m, i) => (
-                  <li key={i}>{m.name} ({m.date})</li>
-                ))}
-              </ul>
-            )}
-          </Box>
-        )}
-        {tab === 2 && (
-          <Box>
-            <Typography variant="subtitle1" mb={1}>Messages</Typography>
-            {loadingMessages ? (
-              <CircularProgress size={24} />
-            ) : errorMessages ? (
-              <Alert severity="error">{errorMessages}</Alert>
-            ) : messages.length === 0 ? (
-              <Typography>No messages found.</Typography>
-            ) : (
-              <ul>
-                {messages.map((msg, i) => (
-                  <li key={i}>
-                    {msg.to ? `To ${msg.to}: ` : ''}
-                    {msg.from ? `From ${msg.from}: ` : ''}
-                    "{msg.text}" ({msg.date})
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Box>
-        )}
-        {tab === 3 && (
-          <Box>
-            <Typography variant="subtitle1" mb={1}>Reports</Typography>
-            {loadingReports ? (
-              <CircularProgress size={24} />
-            ) : userReports.length === 0 ? (
-              <Typography>No reports found.</Typography>
-            ) : (
-              <Box>
-                <Typography variant="subtitle2" mb={1}>Reports Filed Against This User:</Typography>
-                {userReports.filter(r => r.reportedUserId?._id === selectedUser._id).map((report, i) => (
-                  <Box key={i} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
-                    <Typography variant="body2" color="textSecondary">
-                      Reported by: {report.reporterId?.firstName} {report.reporterId?.lastName}
-                    </Typography>
-                    <Typography variant="body2">Reason: {report.reason}</Typography>
-                    <Typography variant="body2">Status: {report.status}</Typography>
-                    {report.description && (
-                      <Typography variant="body2">Description: {report.description}</Typography>
-                    )}
-                    <Typography variant="caption" color="textSecondary">
-                      {new Date(report.createdAt).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                ))}
-                
-                <Typography variant="subtitle2" mb={1} mt={3}>Reports Filed By This User:</Typography>
-                {userReports.filter(r => r.reporterId?._id === selectedUser._id).map((report, i) => (
-                  <Box key={i} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
-                    <Typography variant="body2" color="textSecondary">
-                      Reported: {report.reportedUserId?.firstName} {report.reportedUserId?.lastName}
-                    </Typography>
-                    <Typography variant="body2">Reason: {report.reason}</Typography>
-                    <Typography variant="body2">Status: {report.status}</Typography>
-                    {report.description && (
-                      <Typography variant="body2">Description: {report.description}</Typography>
-                    )}
-                    <Typography variant="caption" color="textSecondary">
-                      {new Date(report.createdAt).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setDialogOpen(false)}>Close</Button>
-        {/* TODO: Add Save/Edit actions */}
-      </DialogActions>
-    </Dialog>
-  );
-
-  if (loading) return <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>;
-  if (error) return <Alert severity="error">{error}</Alert>;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
-      <Typography variant="h4" mb={2}>User Management</Typography>
-      {admin?.role === 'superadmin' && (
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          sx={{ mb: 2 }}
-          onClick={() => setAddDialogOpen(true)}
-        >
-          Add Admin User
-        </Button>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4" component="h1">
+          User Management
+        </Typography>
+        <Box>
+          <Tooltip title="Refresh Users">
+            <IconButton onClick={fetchUsers} color="primary" sx={{ mr: 1 }}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+          {admin?.role === 'admin' && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setAddDialogOpen(true)}
+            >
+              Add Admin
+            </Button>
+          )}
+        </Box>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
       )}
-      <Box display="flex" alignItems="center" gap={1} mb={2}>
-        <SearchIcon sx={{ color: '#888' }} />
+
+      {/* Search and Filters */}
+      <Box sx={{ mb: 3 }}>
         <TextField
-          label="Search users"
+          fullWidth
+          variant="outlined"
+          placeholder="Search users by name or email..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
-          size="small"
-          sx={{ minWidth: 220 }}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+          }}
+          sx={{ mb: 2 }}
         />
-        <TextField
-          label="Name"
-          value={filters.name}
-          onChange={e => setFilters(f => ({ ...f, name: e.target.value }))}
-          size="small"
-          sx={{ minWidth: 140 }}
-        />
-        <TextField
-          select
-          label="Status"
-          value={filters.ban}
-          onChange={e => setFilters(f => ({ ...f, ban: e.target.value }))}
-          size="small"
-          sx={{ minWidth: 120 }}
-        >
-          {banOptions.map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
-        </TextField>
+
+        <Box display="flex" gap={2} flexWrap="wrap">
+          <TextField
+            select
+            label="Gender"
+            value={filters.gender}
+            onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+            sx={{ minWidth: 120 }}
+          >
+            {genderOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            label="Status"
+            value={filters.ban}
+            onChange={(e) => setFilters({ ...filters, ban: e.target.value })}
+            sx={{ minWidth: 120 }}
+          >
+            {banOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            label="Location"
+            value={filters.location}
+            onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+            sx={{ minWidth: 150 }}
+          />
+        </Box>
       </Box>
-      <Box display="flex" gap={2} mb={2} flexWrap="wrap">
-        <TextField
-          select
-          label="Gender"
-          value={filters.gender}
-          onChange={e => setFilters(f => ({ ...f, gender: e.target.value }))}
-          size="small"
-          sx={{ minWidth: 120 }}
-        >
-          {genderOptions.map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
-        </TextField>
-        <TextField
-          label="Location"
-          value={filters.location}
-          onChange={e => setFilters(f => ({ ...f, location: e.target.value }))}
-          size="small"
-        />
-        <TextField
-          label="Age"
-          value={filters.age}
-          onChange={e => setFilters(f => ({ ...f, age: e.target.value }))}
-          size="small"
-          type="number"
-        />
-        <TextField
-          label="Join Date"
-          value={filters.joinDate}
-          onChange={e => setFilters(f => ({ ...f, joinDate: e.target.value }))}
-          size="small"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-        />
-      </Box>
-      <Box sx={{ height: 500, width: '100%', bgcolor: 'white', borderRadius: 2, boxShadow: 1 }}>
-        <DataGrid
+
+      {/* Users DataGrid */}
+      <Box sx={{ height: 600, width: '100%' }}>
+        {filteredUsers.length === 0 && !loading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+            <Typography color="textSecondary">No users found</Typography>
+          </Box>
+        ) : (
+                  <DataGrid
           rows={filteredUsers}
           columns={columns}
-          getRowId={row => row._id}
-          pageSize={10}
-          rowsPerPageOptions={[10, 25, 50]}
-          disableSelectionOnClick
+          getRowId={(row) => row._id}
+          pagination
+          paginationModel={{ page: 0, pageSize: 10 }}
+          pageSizeOptions={[10, 25, 50]}
+          disableRowSelectionOnClick
+          loading={loading}
+          autoHeight
+          sx={{
+            '& .MuiDataGrid-cell:focus': {
+              outline: 'none',
+            },
+          }}
         />
+        )}
       </Box>
+
+      {/* User Details Dialog */}
       {renderUserDialog()}
-      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Add Admin User</DialogTitle>
+
+      {/* Add Admin Dialog */}
+      {renderAddAdminDialog()}
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+
+  function renderUserDialog() {
+    return (
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          User Details: {selectedUser?.firstName} {selectedUser?.lastName}
+        </DialogTitle>
         <DialogContent>
+          {selectedUser && (
+            <Box>
+              <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)} sx={{ mb: 2 }}>
+                <Tab label="Profile" />
+                <Tab label="Matches" />
+                <Tab label="Messages" />
+                <Tab label="Reports" />
+              </Tabs>
+
+              {tab === 0 && (
+                <Box>
+                  <Typography variant="h6" gutterBottom>Profile Information</Typography>
+                  <Grid container spacing={2}>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Email</Typography>
+                      <Typography variant="body1">{selectedUser.email}</Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Gender</Typography>
+                      <Typography variant="body1">{selectedUser.gender}</Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Age</Typography>
+                      <Typography variant="body1">
+                        {selectedUser.dateOfBirth
+                          ? (() => {
+                            const [day, month, year] = selectedUser.dateOfBirth.split('/');
+                            const birthYear = parseInt(year, 10);
+                            const nowYear = new Date().getFullYear();
+                            return isNaN(birthYear) ? 'N/A' : nowYear - birthYear;
+                          })()
+                          : 'N/A'
+                        }
+                      </Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Location</Typography>
+                      <Typography variant="body1">{selectedUser.location || 'N/A'}</Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Hometown</Typography>
+                      <Typography variant="body1">{selectedUser.hometown || 'N/A'}</Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Looking For</Typography>
+                      <Typography variant="body1">{selectedUser.lookingFor || 'N/A'}</Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Status</Typography>
+                      <Chip
+                        label={selectedUser.visibility === 'hidden' ? 'Banned' : 'Active'}
+                        color={selectedUser.visibility === 'hidden' ? 'error' : 'success'}
+                      />
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Joined</Typography>
+                      <Typography variant="body1">
+                        {new Date(selectedUser.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Last Active</Typography>
+                      <Typography variant="body1">
+                        {selectedUser.lastActive ? new Date(selectedUser.lastActive).toLocaleDateString() : 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid xs={12}>
+                      <Typography variant="subtitle2" color="textSecondary">Bio</Typography>
+                      <Typography variant="body1">{selectedUser.bio || 'No bio provided'}</Typography>
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Matches Count</Typography>
+                      <Chip
+                        label={selectedUser.matchesCount || selectedUser.matches?.length || 0}
+                        color="info"
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Likes Given</Typography>
+                      <Chip
+                        label={selectedUser.likesCount || selectedUser.likedProfiles?.length || 0}
+                        color="success"
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Likes Received</Typography>
+                      <Chip
+                        label={selectedUser.receivedLikesCount || selectedUser.receivedLikes?.length || 0}
+                        color="warning"
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid xs={6}>
+                      <Typography variant="subtitle2" color="textSecondary">Photos</Typography>
+                      <Chip
+                        label={selectedUser.photos?.length || selectedUser.imageUrls?.length || 0}
+                        color="primary"
+                        variant="outlined"
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
+
+              {tab === 1 && (
+                <Box>
+                  <Typography variant="h6" gutterBottom>User Matches</Typography>
+                  {loadingMatches ? (
+                    <CircularProgress />
+                  ) : errorMatches ? (
+                    <Alert severity="error">{errorMatches}</Alert>
+                  ) : matches.length > 0 ? (
+                    <Box>
+                      {matches.map((match, index) => (
+                        <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                          <Box display="flex" alignItems="center" gap={2}>
+                            <Avatar src={match.photo} alt={match.name}>
+                              {match.name?.charAt(0)}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle1">
+                                {match.name}
+                              </Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                {match.email}
+                              </Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                Matched on: {match.date}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography color="textSecondary">No matches found</Typography>
+                  )}
+                </Box>
+              )}
+
+              {tab === 2 && (
+                <Box>
+                  <Typography variant="h6" gutterBottom>User Messages</Typography>
+                  {loadingMessages ? (
+                    <CircularProgress />
+                  ) : errorMessages ? (
+                    <Alert severity="error">{errorMessages}</Alert>
+                  ) : conversations.length > 0 ? (
+                    <Box>
+                      {conversations.map((conv, idx) => (
+                        <Accordion key={conv.userId || idx}>
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                            <Box>
+                              <Typography variant="subtitle1" color="primary">
+                                Conversation with: {conv.userName} ({conv.userEmail})
+                              </Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                Total messages: {conv.messageCount}
+                              </Typography>
+                              {conv.lastMessage && (
+                                <Typography variant="body2" color="textSecondary">
+                                  Last: {conv.lastMessage.text} ({conv.lastMessage.date} {conv.lastMessage.time})
+                                </Typography>
+                              )}
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                            {conv.messages.map((msg, mIdx) => (
+                              <Box key={msg.id || mIdx} sx={{ mb: 1, pl: 2 }}>
+                                <Typography variant="body2">
+                                  <b>{msg.isFromUser ? 'User' : conv.userName}:</b> {msg.text}
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {msg.date} {msg.time}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </AccordionDetails>
+                        </Accordion>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography color="textSecondary">No messages found</Typography>
+                  )}
+                </Box>
+              )}
+
+              {tab === 3 && (
+                <Box>
+                  <Typography variant="h6" gutterBottom>Reports Against User</Typography>
+                  {loadingReports ? (
+                    <CircularProgress />
+                  ) : userReports.length > 0 ? (
+                    <Box>
+                      {userReports.map((report, index) => (
+                        <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                          <Typography variant="subtitle2" color="textSecondary">
+                            Reported by: {report.reporterId?.firstName} {report.reporterId?.lastName}
+                          </Typography>
+                          <Typography variant="body1">Reason: {report.reason}</Typography>
+                          <Typography variant="body2">{report.description}</Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {new Date(report.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography color="textSecondary">No reports found</Typography>
+                  )}
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  function renderAddAdminDialog() {
+    return (
+      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Admin</DialogTitle>
+        <DialogContent>
+          {addError && <Alert severity="error" sx={{ mb: 2 }}>{addError}</Alert>}
+          {addSuccess && <Alert severity="success" sx={{ mb: 2 }}>{addSuccess}</Alert>}
+
           <TextField
+            fullWidth
             label="Email"
             type="email"
             value={addForm.email}
-            onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
-            fullWidth
+            onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
             margin="normal"
             required
           />
+
           <TextField
+            fullWidth
             label="Password"
             type="password"
             value={addForm.password}
-            onChange={e => setAddForm(f => ({ ...f, password: e.target.value }))}
-            fullWidth
+            onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
             margin="normal"
             required
           />
+
           <TextField
+            fullWidth
             select
             label="Role"
             value={addForm.role}
-            onChange={e => setAddForm(f => ({ ...f, role: e.target.value }))}
-            fullWidth
+            onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}
             margin="normal"
+            required
           >
-            <MenuItem value="superadmin">Superadmin</MenuItem>
             <MenuItem value="moderator">Moderator</MenuItem>
+            <MenuItem value="admin">Admin</MenuItem>
           </TextField>
-          {addError && <Alert severity="error" sx={{ mt: 2 }}>{addError}</Alert>}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddAdmin} variant="contained" color="primary" disabled={addLoading}>
-            {addLoading ? <CircularProgress size={22} /> : 'Add'}
+          <Button
+            onClick={handleAddAdmin}
+            variant="contained"
+            disabled={addLoading}
+          >
+            {addLoading ? <CircularProgress size={24} /> : 'Add Admin'}
           </Button>
         </DialogActions>
       </Dialog>
-      <Snackbar
-        open={!!addSuccess}
-        autoHideDuration={3000}
-        onClose={() => setAddSuccess('')}
-        message={addSuccess}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        message={snackbar.message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
-    </Box>
-  );
+    );
+  }
 };
 
 export default Users; 

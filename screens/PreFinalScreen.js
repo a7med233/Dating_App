@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import React, { useContext, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -241,7 +241,7 @@ const PreFinalScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <ScrollView 
         contentContainerStyle={styles.scrollContainer}
@@ -625,7 +625,7 @@ const PreFinalScreen = () => {
         type={toast.type}
         onHide={() => setToast({ ...toast, visible: false })}
       />
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

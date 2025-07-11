@@ -13,6 +13,9 @@ import {
   Text,
   useColorScheme,
   View,
+  AppState,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
@@ -61,6 +64,8 @@ function Section({ children, title }) {
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
@@ -70,6 +75,30 @@ function App() {
   useEffect(() => {
     checkOnboardingStatus();
   }, []);
+
+  // Samsung-specific app state handling
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        // App has come to the foreground
+        console.log('App resumed - applying Samsung fixes');
+        
+        // Force a re-render to fix layout issues on Samsung devices
+        if (Platform.OS === 'android') {
+          setTimeout(() => {
+            setForceUpdate(prev => prev + 1);
+          }, 100);
+        }
+      }
+      setAppState(nextAppState);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [appState]);
 
   const checkOnboardingStatus = async () => {
     try {
@@ -101,7 +130,7 @@ function App() {
       <TabBarProvider>
         <SafeAreaProvider>
           <NavigationContainer>
-            <StackNavigator/>
+            <StackNavigator key={`nav-${forceUpdate}`} />
           </NavigationContainer>
           <OnboardingTutorial 
             visible={showOnboarding} 
@@ -113,6 +142,7 @@ function App() {
     </AuthProvider>
   );
 }
+
 const styles = StyleSheet.create({
   sectionContainer: {
     marginTop: 32,
@@ -131,6 +161,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
 export default App;
 
 

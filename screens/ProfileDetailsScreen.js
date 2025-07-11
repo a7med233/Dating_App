@@ -580,7 +580,8 @@ const ProfileDetailsScreen = () => {
             <ReportModal
                 visible={showReportModal}
                 onClose={() => setShowReportModal(false)}
-                onSubmit={handleReport}
+                onReport={handleReport}
+                reportedUser={currentProfile}
             />
         </SafeAreaView>
     );

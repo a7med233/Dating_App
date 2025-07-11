@@ -1390,8 +1390,38 @@ app.get('/admin/me', adminAuth(), async (req, res) => {
 // Get all users (admin only)
 app.get('/admin/users', adminAuth(), async (req, res) => {
   try {
-    const users = await User.find().select('-password');
-    res.status(200).json({ users });
+    const users = await User.find()
+      .select('-password')
+      .populate('matches', 'firstName lastName email photos imageUrls')
+      .populate('likedProfiles', 'firstName lastName email photos imageUrls')
+      .populate('receivedLikes.userId', 'firstName lastName email photos imageUrls');
+    
+    // Map users to include photos from imageUrls for frontend compatibility
+    const mappedUsers = users.map(user => {
+      const userObj = user.toObject();
+      
+      // Copy imageUrls to photos if photos is empty
+      if (!userObj.photos || userObj.photos.length === 0) {
+        userObj.photos = userObj.imageUrls || [];
+      }
+      
+      // Add computed fields for admin panel
+      userObj.matchesCount = userObj.matches ? userObj.matches.length : 0;
+      userObj.likesCount = userObj.likedProfiles ? userObj.likedProfiles.length : 0;
+      userObj.receivedLikesCount = userObj.receivedLikes ? userObj.receivedLikes.length : 0;
+      
+      // Format matches for display
+      userObj.matchesList = userObj.matches ? userObj.matches.map(match => ({
+        id: match._id,
+        name: `${match.firstName || ''} ${match.lastName || ''}`.trim(),
+        email: match.email,
+        photo: match.photos?.[0] || match.imageUrls?.[0] || ''
+      })) : [];
+      
+      return userObj;
+    });
+    
+    res.status(200).json({ users: mappedUsers });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching users', error });
   }
@@ -1483,14 +1513,48 @@ app.get('/admin/analytics', adminAuth(), async (req, res) => {
   }
 });
 
+// Stats endpoint (admin only) - for dashboard
+app.get('/admin/stats', adminAuth(), async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const activeToday = await User.countDocuments({ lastActive: { $gte: startOfToday } });
+    const newSignups = await User.countDocuments({ createdAt: { $gte: startOfToday } });
+    const flaggedUsers = await User.countDocuments({ visibility: 'hidden' });
+    
+    res.status(200).json({
+      totalUsers,
+      activeToday,
+      newSignups,
+      flaggedUsers,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching stats', error });
+  }
+});
+
 // Get a user's match history (admin only)
 app.get('/admin/users/:userId/matches', adminAuth(), async (req, res) => {
   try {
-    // TODO: Replace with real match history from DB
-    const matches = [
-      { name: 'Alice', date: '2024-06-01' },
-      { name: 'Bob', date: '2024-06-02' },
-    ];
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+      .populate('matches', 'firstName lastName email photos imageUrls createdAt')
+      .populate('likedProfiles', 'firstName lastName email photos imageUrls createdAt');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Format matches for admin display
+    const matches = user.matches ? user.matches.map(match => ({
+      id: match._id,
+      name: `${match.firstName || ''} ${match.lastName || ''}`.trim(),
+      email: match.email,
+      photo: match.photos?.[0] || match.imageUrls?.[0] || '',
+      date: match.createdAt ? new Date(match.createdAt).toLocaleDateString() : 'N/A'
+    })) : [];
+    
     res.status(200).json({ matches });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching match history', error });
@@ -1500,12 +1564,82 @@ app.get('/admin/users/:userId/matches', adminAuth(), async (req, res) => {
 // Get a user's message history (admin only)
 app.get('/admin/users/:userId/messages', adminAuth(), async (req, res) => {
   try {
-    // TODO: Replace with real message history from DB
-    const messages = [
-      { to: 'Alice', text: 'Hi!', date: '2024-06-01' },
-      { from: 'Bob', text: 'Hello!', date: '2024-06-02' },
-    ];
-    res.status(200).json({ messages });
+    const { userId } = req.params;
+    
+    // Find messages where user is sender or receiver
+    const messages = await Chat.find({
+      $or: [
+        { senderId: userId },
+        { receiverId: userId }
+      ]
+    })
+    .populate('senderId', 'firstName lastName email')
+    .populate('receiverId', 'firstName lastName email')
+    .sort({ timestamp: -1 })
+    .limit(100); // Increased limit for better grouping
+    
+    // Group messages by conversation (other user)
+    const conversations = {};
+    
+    messages.forEach(msg => {
+      // Determine the other user in the conversation
+      const otherUserId = msg.senderId && msg.senderId._id.toString() === userId 
+        ? msg.receiverId?._id?.toString() 
+        : msg.senderId?._id?.toString();
+      
+      const otherUserName = msg.senderId && msg.senderId._id.toString() === userId 
+        ? `${msg.receiverId?.firstName || ''} ${msg.receiverId?.lastName || ''}`.trim()
+        : `${msg.senderId?.firstName || ''} ${msg.senderId?.lastName || ''}`.trim();
+      
+      const otherUserEmail = msg.senderId && msg.senderId._id.toString() === userId 
+        ? msg.receiverId?.email 
+        : msg.senderId?.email;
+      
+      if (otherUserId) {
+        if (!conversations[otherUserId]) {
+          conversations[otherUserId] = {
+            userId: otherUserId,
+            userName: otherUserName || 'Unknown User',
+            userEmail: otherUserEmail || 'unknown@email.com',
+            messages: [],
+            lastMessage: null,
+            messageCount: 0
+          };
+        }
+        
+        const formattedMessage = {
+          id: msg._id,
+          text: msg.message,
+          timestamp: msg.timestamp,
+          date: msg.timestamp ? new Date(msg.timestamp).toLocaleDateString() : 'N/A',
+          time: msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : 'N/A',
+          isFromUser: msg.senderId && msg.senderId._id.toString() === userId,
+          senderName: msg.senderId ? `${msg.senderId.firstName || ''} ${msg.senderId.lastName || ''}`.trim() : 'Unknown',
+          receiverName: msg.receiverId ? `${msg.receiverId.firstName || ''} ${msg.receiverId.lastName || ''}`.trim() : 'Unknown'
+        };
+        
+        conversations[otherUserId].messages.push(formattedMessage);
+        conversations[otherUserId].messageCount++;
+        
+        // Track the most recent message
+        if (!conversations[otherUserId].lastMessage || 
+            msg.timestamp > conversations[otherUserId].lastMessage.timestamp) {
+          conversations[otherUserId].lastMessage = formattedMessage;
+        }
+      }
+    });
+    
+    // Convert to array and sort by most recent conversation
+    const conversationsArray = Object.values(conversations).sort((a, b) => {
+      if (!a.lastMessage || !b.lastMessage) return 0;
+      return new Date(b.lastMessage.timestamp) - new Date(a.lastMessage.timestamp);
+    });
+    
+    res.status(200).json({ 
+      conversations: conversationsArray,
+      totalConversations: conversationsArray.length,
+      totalMessages: messages.length
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching message history', error });
   }
