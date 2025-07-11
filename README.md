@@ -26,8 +26,8 @@ Lashwa is a comprehensive dating app that includes user registration, profile ma
 
 ### Admin Dashboard (React)
 - **Framework**: React with Vite
-- **UI**: Custom admin interface for user management
-- **Features**: Analytics, user management, support chat monitoring
+- **UI**: Material-UI components for admin interface
+- **Features**: Analytics, user management, support chat monitoring, report management
 
 ## 🚀 Quick Start
 
@@ -110,81 +110,28 @@ Lashwa is a comprehensive dating app that includes user registration, profile ma
 DatingApp/
 ├── api/                          # Backend server
 │   ├── config/                   # Configuration files
-│   │   ├── cloudinary-config.js  # Cloudinary setup
-│   │   └── cloudinary.js         # Image upload utilities
 │   ├── models/                   # MongoDB schemas
-│   │   ├── user.js              # User model
-│   │   ├── message.js           # Chat message model
-│   │   ├── supportChat.js       # Support chat model
-│   │   └── admin.js             # Admin model
-│   ├── services/                # Business logic
-│   │   └── imageModeration.js   # Image moderation service
-│   └── index.js                 # Main server file
-├── admin/                       # Admin dashboard
+│   └── index.js                  # Main server file
+├── admin/                        # Admin dashboard
 │   ├── src/
-│   │   ├── components/          # Admin UI components
-│   │   ├── pages/              # Admin pages
-│   │   └── context/            # Admin state management
+│   │   ├── components/           # Admin UI components
+│   │   ├── pages/               # Admin pages
+│   │   └── context/             # Admin state management
 │   └── package.json
-├── screens/                     # Main app screens
-│   ├── Authentication/
-│   │   ├── LoginScreen.js      # User login
-│   │   ├── SignupScreen.js     # User registration
-│   │   └── PasswordScreen.js   # Password setup
-│   ├── Onboarding/
-│   │   ├── BasicInfo.js        # Welcome screen
-│   │   ├── NameScreen.js       # Name input
-│   │   ├── EmailScreen.js      # Email input
-│   │   ├── BirthScreen.js      # Date of birth
-│   │   ├── GenderScreen.js     # Gender selection
-│   │   ├── DatingType.js       # Dating preferences
-│   │   ├── LookingFor.js       # Relationship goals
-│   │   ├── LocationScreen.js   # Location setup
-│   │   ├── PhotoScreen.js      # Photo upload
-│   │   ├── PromptsScreen.js    # Profile prompts
-│   │   └── PreFinalScreen.js   # Final setup
-│   ├── Main/
-│   │   ├── HomeScreen.js       # Main discovery screen
-│   │   ├── ProfileScreen.js    # User profile
-│   │   ├── ChatScreen.js       # Chat list
-│   │   ├── ChatRoom.js         # Individual chat
-│   │   ├── LikesScreen.js      # Received likes
-│   │   └── SettingsScreen.js   # App settings
-│   └── Support/
-│       └── SupportChatRoom.js  # Customer support
-├── components/                  # Reusable UI components
-│   ├── SafeAreaWrapper.js      # Safe area handling
-│   ├── GradientButton.js       # Themed button component
-│   ├── ThemedCard.js           # Card component
-│   ├── CustomButton.js         # Custom button
-│   ├── InputField.js           # Input component
-│   ├── LoadingSpinner.js       # Loading indicator
-│   ├── NotificationBadge.js    # Notification badge
-│   ├── NotificationCenter.js   # Notification panel
-│   ├── OnboardingTutorial.js   # App tutorial
-│   ├── ProfileCard.js          # Profile display
-│   ├── SkeletonLoader.js       # Loading skeleton
-│   ├── Toast.js                # Toast notifications
-│   ├── UserChat.js             # Chat component
-│   ├── DraggablePhotoGrid.js   # Photo management
-│   ├── ErrorMessage.js         # Error display
-│   └── RegistrationProgressBar.js # Progress indicator
-├── navigation/                  # Navigation configuration
-│   └── StackNavigator.js       # Main navigation stack
-├── services/                   # API services
-│   ├── api.js                  # API client
-│   └── notificationService.js  # Push notifications
-├── theme/                      # Design system
-│   └── colors.js               # Colors, typography, spacing
-├── utils/                      # Utility functions
-│   ├── imageUtils.js           # Image processing
-│   └── registrationUtils.js    # Registration helpers
-├── assets/                     # Static assets
-│   ├── images/                 # App images
-│   └── animations/             # Lottie animations
-├── AuthContext.js              # Authentication context
-├── App.js                      # Main app component
-└── package.json                # Dependencies
+├── screens/                      # Main app screens
+│   ├── Authentication/           # Login, signup, password screens
+│   ├── Onboarding/              # Registration flow screens
+│   ├── Main/                    # Home, profile, chat, settings
+│   └── Support/                 # Customer support
+├── components/                   # Reusable UI components
+├── navigation/                   # Navigation configuration
+├── services/                    # API services
+├── theme/                       # Design system
+├── utils/                       # Utility functions
+├── assets/                      # Static assets
+├── AuthContext.js               # Authentication context
+├── App.js                       # Main app component
+└── package.json                 # Dependencies
 ```
 
 ## 🎨 Design System
@@ -198,260 +145,56 @@ DatingApp/
 
 ### Typography
 - **Font Family**: Poppins (Regular, Medium, SemiBold, Bold, Light)
-- **Font Sizes**: 12px to 40px (xs to display)
+- **Sizes**: xs (12px), sm (14px), md (16px), lg (18px), xl (24px), xxl (32px)
 
-### Spacing
-- **Scale**: 4px, 8px, 16px, 24px, 32px, 48px
-- **Border Radius**: 8px, 12px, 16px, 24px, 50px
+## 🔧 Key Features
 
-### Components
-- **GradientButton**: Primary action buttons with gradients
-- **ThemedCard**: Consistent card styling
-- **SafeAreaWrapper**: Safe area handling for all screens
+### User Features
+- **Profile Management**: Complete profile setup with photos, bio, and preferences
+- **Matching System**: Location-based matching with swipe interface
+- **Real-time Chat**: Instant messaging with Socket.io
+- **Location Services**: GPS-based user discovery
+- **Photo Upload**: Cloudinary integration for image storage
+- **Push Notifications**: Real-time notifications for matches and messages
 
-## 🔐 Authentication Flow
-
-1. **Registration Process**:
-   - Basic info → Name → Email → Password → Birth date
-   - Gender → Dating type → Looking for → Location → Photos → Prompts
-   - Email verification and profile completion
-
-2. **Login Process**:
-   - Email/password authentication
-   - JWT token generation and storage
-   - Automatic token refresh
-
-3. **Security Features**:
-   - Password hashing with bcrypt
-   - JWT token authentication
-   - Secure image upload with Cloudinary
-   - Input validation and sanitization
-
-## 💬 Chat System
-
-### Features
-- Real-time messaging with Socket.io
-- Message history persistence
-- Typing indicators
-- Message status (sent, delivered, read)
-- Image sharing in chats
-- Support chat integration
-
-### Implementation
-- **Frontend**: React Native with Socket.io client
-- **Backend**: Socket.io server with MongoDB storage
-- **Real-time**: Live message delivery and notifications
-
-## 📍 Location Features
-
-### Implementation
-- **Maps**: React Native Maps integration
-- **Location Services**: Expo Location for GPS
-- **Search**: Google Places API for location search
-- **Privacy**: User consent and location permissions
-
-### Features
-- Location-based matching
-- Distance calculation
-- Location search and selection
-- Privacy controls
-
-## 🖼️ Image Management
-
-### Features
-- **Photo Upload**: Cloudinary integration
-- **Drag & Drop**: Custom photo grid with reordering
-- **Image Moderation**: AI-powered content filtering
-- **Optimization**: Automatic image compression and resizing
-
-### Implementation
-- **Frontend**: Expo Image Picker with custom UI
-- **Backend**: Cloudinary upload with moderation
-- **Storage**: Cloudinary CDN for fast delivery
-
-## 🔔 Notification System
-
-### Types
-- **Match Notifications**: New matches and likes
-- **Chat Notifications**: New messages and typing indicators
-- **System Notifications**: App updates and announcements
-- **Support Notifications**: Customer service updates
-
-### Implementation
-- **Frontend**: Custom notification center
-- **Backend**: In-memory notification store (Redis recommended for production)
-- **Real-time**: Socket.io for instant delivery
-
-## 👨‍💼 Admin Dashboard
-
-### Features
+### Admin Features
 - **User Management**: View, edit, and manage user accounts
-- **Analytics**: User statistics and app metrics
-- **Support Chat**: Monitor and respond to customer support
-- **Content Moderation**: Review and moderate user content
-- **System Settings**: App configuration and maintenance
+- **Analytics Dashboard**: Comprehensive user statistics and insights
+- **Report Management**: Handle user reports and violations
+- **Support Chat**: Monitor and respond to user support requests
+- **Subscription Management**: Manage user subscriptions and payments
 
-### Access
-- Admin authentication with role-based permissions
-- Secure admin routes with JWT verification
-- Real-time dashboard updates
+## 🛠️ Development
 
-## 🧪 Testing
+### Code Style
+- ESLint configuration for code quality
+- Prettier for code formatting
+- Consistent component structure
+- TypeScript support
 
-### Frontend Testing
-```bash
-npm test
-```
-
-### Backend Testing
-```bash
-cd api
-npm test
-```
+### Testing
+- Manual testing for user flows
+- API endpoint testing
+- Component testing as needed
 
 ## 📱 Platform Support
 
-### Mobile
-- **iOS**: iOS 13+ with Expo SDK 53
-- **Android**: Android 6+ (API level 23+)
-
-### Development
-- **Expo CLI**: Latest version
-- **React Native**: 0.79.5
-- **Node.js**: >= 18
-
-## 🚀 Deployment
-
-### Frontend (Expo)
-1. **Build for production**:
-   ```bash
-   expo build:android
-   expo build:ios
-   ```
-
-2. **Publish to Expo**:
-   ```bash
-   expo publish
-   ```
-
-### Backend (Node.js)
-1. **Environment setup**:
-   - Set production environment variables
-   - Configure MongoDB Atlas
-   - Set up Cloudinary production account
-
-2. **Deploy to server**:
-   ```bash
-   cd api
-   npm install --production
-   npm start
-   ```
-
-### Admin Dashboard (Vite)
-1. **Build for production**:
-   ```bash
-   cd admin
-   npm run build
-   ```
-
-2. **Deploy to hosting service** (Netlify, Vercel, etc.)
-
-## 🔧 Configuration
-
-### API Configuration
-- **Base URL**: Configure in `services/api.js`
-- **Socket URL**: Configure in chat components
-- **Image Upload**: Configure Cloudinary settings
-
-### Navigation Configuration
-- **Stack Navigator**: Configure in `navigation/StackNavigator.js`
-- **Tab Navigator**: Configure bottom tabs
-- **Deep Linking**: Configure app linking
-
-### Theme Configuration
-- **Colors**: Modify `theme/colors.js`
-- **Typography**: Update font families and sizes
-- **Spacing**: Adjust spacing scale
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Metro bundler issues**:
-   ```bash
-   npx expo start --clear
-   ```
-
-2. **Dependencies conflicts**:
-   ```bash
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
-
-3. **iOS build issues**:
-   ```bash
-   cd ios && pod install
-   ```
-
-4. **Android build issues**:
-   ```bash
-   cd android && ./gradlew clean
-   ```
-
-### Debug Mode
-- Enable React Native Debugger
-- Use Expo DevTools
-- Check Metro bundler logs
-
-## 📚 API Documentation
-
-### Authentication Endpoints
-- `POST /register` - User registration
-- `POST /login` - User login
-- `GET /user` - Get user profile
-- `PUT /user` - Update user profile
-
-### Matching Endpoints
-- `GET /matches` - Get user matches
-- `POST /like` - Like a user
-- `POST /pass` - Pass on a user
-- `GET /likes/received` - Get received likes
-
-### Chat Endpoints
-- `GET /chats` - Get user chats
-- `GET /chats/:chatId/messages` - Get chat messages
-- `POST /chats/:chatId/messages` - Send message
-
-### Image Endpoints
-- `POST /upload/image` - Upload image
-- `DELETE /upload/image` - Delete image
+- **iOS**: Native iOS app with Expo
+- **Android**: Native Android app with Expo
+- **Web**: React Native Web support (limited)
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is private and proprietary.
 
-## 📞 Support
+## 🆘 Support
 
-For support and questions:
-- Create an issue in the repository
-- Contact the development team
-- Check the troubleshooting section
-
-## 🔄 Version History
-
-- **v1.0.0**: Initial release with core features
-- **v1.1.0**: Added admin dashboard
-- **v1.2.0**: Enhanced chat system
-- **v1.3.0**: Improved UI/UX and performance
-
----
-
-**Note**: This documentation is maintained by the development team. For the most up-to-date information, always refer to the latest commit and release notes.
+For support and questions, please contact the development team.
