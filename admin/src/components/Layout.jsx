@@ -28,6 +28,7 @@ const navGroups = [
     items: [
       { text: 'Users', path: '/users', icon: <FiUsers size={20} /> },
       { text: 'Subscriptions', path: '/subscriptions', icon: <FiCreditCard size={20} /> },
+      { text: 'Reports', path: '/reports', icon: <FiFileText size={20} /> },
     ],
   },
   {

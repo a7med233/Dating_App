@@ -1387,13 +1387,118 @@ app.get('/admin/me', adminAuth(), async (req, res) => {
   }
 });
 
-// Get all users (admin only)
+// Get all users (admin only) - Enhanced with comprehensive data
 app.get('/admin/users', adminAuth(), async (req, res) => {
   try {
-    const users = await User.find().select('-password');
-    res.status(200).json({ users });
+    const { page = 1, limit = 50, search, gender, type, visibility, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    
+    // Build filter object
+    const filter = {};
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } },
+        { hometown: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (gender) filter.gender = gender;
+    if (type) filter.type = type;
+    if (visibility) filter.visibility = visibility;
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Get users with pagination
+    const users = await User.find(filter)
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('matches', 'firstName lastName email')
+      .populate('likedProfiles', 'firstName lastName email')
+      .populate('blockedUsers', 'firstName lastName email');
+
+    // Get total count for pagination
+    const totalUsers = await User.countDocuments(filter);
+    
+    // Calculate age for each user
+    const usersWithAge = users.map(user => {
+      const userObj = user.toObject();
+      if (userObj.dateOfBirth) {
+        const birthDate = new Date(userObj.dateOfBirth);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        userObj.age = age;
+      }
+      return userObj;
+    });
+
+    res.status(200).json({ 
+      users: usersWithAge, 
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalUsers / parseInt(limit)),
+        totalUsers,
+        hasNextPage: skip + users.length < totalUsers,
+        hasPrevPage: parseInt(page) > 1
+      }
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching users', error });
+    res.status(500).json({ message: 'Error fetching users', error: error.message });
+  }
+});
+
+// Get detailed user information (admin only)
+app.get('/admin/users/:userId/details', adminAuth(), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+      .select('-password')
+      .populate('matches', 'firstName lastName email imageUrls')
+      .populate('likedProfiles', 'firstName lastName email imageUrls')
+      .populate('blockedUsers', 'firstName lastName email')
+      .populate('rejectedProfiles', 'firstName lastName email');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Calculate age
+    const userObj = user.toObject();
+    if (userObj.dateOfBirth) {
+      const birthDate = new Date(userObj.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      userObj.age = age;
+    }
+
+    // Get user activity stats
+    const userStats = {
+      totalMatches: userObj.matches?.length || 0,
+      totalLikes: userObj.likedProfiles?.length || 0,
+      totalBlocked: userObj.blockedUsers?.length || 0,
+      totalRejected: userObj.rejectedProfiles?.length || 0,
+      daysSinceJoined: Math.floor((new Date() - new Date(userObj.createdAt)) / (1000 * 60 * 60 * 24)),
+      daysSinceLastActive: Math.floor((new Date() - new Date(userObj.lastActive)) / (1000 * 60 * 60 * 24))
+    };
+
+    res.status(200).json({ user: userObj, stats: userStats });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user details', error: error.message });
   }
 });
 
@@ -1405,6 +1510,29 @@ app.delete('/admin/users/:userId', adminAuth(), async (req, res) => {
     res.status(200).json({ message: 'User deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting user', error });
+  }
+});
+
+// Update user information (admin only)
+app.patch('/admin/users/:userId', adminAuth(), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updateData = req.body;
+    
+    // Remove sensitive fields that shouldn't be updated via admin
+    delete updateData.password;
+    delete updateData.email; // Email should be updated through a separate process
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    ).select('-password');
+    
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.status(200).json({ message: 'User updated successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating user', error: error.message });
   }
 });
 
@@ -1447,39 +1575,131 @@ app.patch('/admin/users/:userId/subscription', adminAuth(), async (req, res) => 
   }
 });
 
-// Analytics endpoint (admin only)
+// Enhanced Analytics endpoint (admin only)
 app.get('/admin/analytics', adminAuth(), async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const maleUsers = await User.countDocuments({ gender: 'male' });
-    const femaleUsers = await User.countDocuments({ gender: 'female' });
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Basic user counts
+    const totalUsers = await User.countDocuments();
+    const maleUsers = await User.countDocuments({ gender: 'male' });
+    const femaleUsers = await User.countDocuments({ gender: 'female' });
+    const otherUsers = await User.countDocuments({ gender: { $nin: ['male', 'female'] } });
+    const bannedUsers = await User.countDocuments({ visibility: 'hidden' });
+    const activeUsers = await User.countDocuments({ visibility: 'public' });
+
+    // Activity metrics
     const activeToday = await User.countDocuments({ lastActive: { $gte: startOfToday } });
     const activeThisWeek = await User.countDocuments({ lastActive: { $gte: startOfWeek } });
+    const activeThisMonth = await User.countDocuments({ lastActive: { $gte: startOfMonth } });
     const newSignups = await User.countDocuments({ createdAt: { $gte: startOfToday } });
     const newSignupsThisWeek = await User.countDocuments({ createdAt: { $gte: startOfWeek } });
-    // Stub: flagged users and reported profiles/posts (replace with real queries if available)
-    const flaggedUsers = await User.countDocuments({ flagged: true });
-    const reportedProfiles = 5; // TODO: Replace with real count from reports collection
-    // User activity by day (stub)
-    const activeUsersByDay = [12, 19, 3, 5, 2, 3, 7];
+    const newSignupsThisMonth = await User.countDocuments({ createdAt: { $gte: startOfMonth } });
+
+    // User engagement metrics
+    const usersWithMatches = await User.countDocuments({ 'matches.0': { $exists: true } });
+    const usersWithLikes = await User.countDocuments({ 'likedProfiles.0': { $exists: true } });
+    const usersWithPhotos = await User.countDocuments({ 'imageUrls.0': { $exists: true } });
+
+    // Simple user type distribution
+    const userTypes = await User.aggregate([
+      { $group: { _id: '$type', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]).catch(() => []);
+
+    // Simple location distribution
+    const topLocations = await User.aggregate([
+      { $match: { location: { $exists: true, $ne: '' } } },
+      { $group: { _id: '$location', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]).catch(() => []);
+
+    // Simple age distribution
+    const ageDistribution = await User.aggregate([
+      { $match: { dateOfBirth: { $exists: true, $ne: null } } },
+      {
+        $addFields: {
+          age: {
+            $floor: {
+              $divide: [
+                { $subtract: [new Date(), '$dateOfBirth'] },
+                365 * 24 * 60 * 60 * 1000
+              ]
+            }
+          }
+        }
+      },
+      {
+        $bucket: {
+          groupBy: '$age',
+          boundaries: [18, 25, 35, 45, 55, 65, 100],
+          default: '65+',
+          output: { count: { $sum: 1 } }
+        }
+      }
+    ]).catch(() => []);
+
+    // Recent activity trends (last 7 days)
+    const activityTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      
+      const activeCount = await User.countDocuments({
+        lastActive: { $gte: startOfDay, $lt: endOfDay }
+      });
+      
+      activityTrend.push({
+        date: startOfDay.toISOString().split('T')[0],
+        activeUsers: activeCount
+      });
+    }
+
     res.status(200).json({
+      // Basic counts
       totalUsers,
       maleUsers,
       femaleUsers,
+      otherUsers,
+      bannedUsers,
+      activeUsers,
+      
+      // Activity metrics
       activeToday,
       activeThisWeek,
+      activeThisMonth,
       newSignups,
       newSignupsThisWeek,
-      flaggedUsers,
-      reportedProfiles,
-      activeUsersByDay,
+      newSignupsThisMonth,
+      
+      // Distributions
+      userTypes,
+      ageDistribution,
+      topLocations,
+      
+      // Trends
+      activityTrend,
+      
+      // Engagement
+      usersWithMatches,
+      usersWithLikes,
+      usersWithPhotos,
+      
+      // Percentages
+      engagementRate: totalUsers > 0 ? Math.round((usersWithMatches / totalUsers) * 100) : 0,
+      photoUploadRate: totalUsers > 0 ? Math.round((usersWithPhotos / totalUsers) * 100) : 0,
+      banRate: totalUsers > 0 ? Math.round((bannedUsers / totalUsers) * 100) : 0
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching analytics', error });
+    console.error('Analytics error:', error);
+    res.status(500).json({ message: 'Error fetching analytics', error: error.message });
   }
 });
 

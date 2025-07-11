@@ -130,6 +130,7 @@ const Reports = () => {
       headerName: 'Reporter',
       flex: 1,
       valueGetter: params => {
+        if (!params || !params.row) return 'Unknown';
         const reporter = params.row.reporterId;
         return reporter ? `${reporter.firstName} ${reporter.lastName}` : 'Unknown';
       },
@@ -139,6 +140,7 @@ const Reports = () => {
       headerName: 'Reported User',
       flex: 1,
       valueGetter: params => {
+        if (!params || !params.row) return 'Unknown';
         const reportedUser = params.row.reportedUserId;
         return reportedUser ? `${reportedUser.firstName} ${reportedUser.lastName}` : 'Unknown';
       },
@@ -149,7 +151,7 @@ const Reports = () => {
       flex: 1,
       renderCell: params => (
         <Chip 
-          label={reasonLabels[params.value] || params.value} 
+          label={reasonLabels[params?.value] || params?.value || ''} 
           size="small" 
           color="primary" 
           variant="outlined"
@@ -162,9 +164,9 @@ const Reports = () => {
       flex: 0.8,
       renderCell: params => (
         <Chip 
-          label={params.value} 
+          label={params?.value || ''} 
           size="small" 
-          color={statusColors[params.value] || 'default'}
+          color={statusColors[params?.value] || 'default'}
         />
       ),
     },
@@ -172,7 +174,10 @@ const Reports = () => {
       field: 'createdAt',
       headerName: 'Reported On',
       flex: 1,
-      valueGetter: params => new Date(params.value).toLocaleDateString(),
+      valueGetter: params => {
+        if (!params || !params.value) return '';
+        return new Date(params.value).toLocaleDateString();
+      },
     },
     {
       field: 'actions',
@@ -180,7 +185,7 @@ const Reports = () => {
       flex: 0.8,
       sortable: false,
       renderCell: params => (
-        <IconButton onClick={() => handleView(params.row)} title="View Details">
+        <IconButton onClick={() => params?.row && handleView(params.row)} title="View Details">
           <VisibilityIcon />
         </IconButton>
       ),
