@@ -7,11 +7,9 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
-  SafeAreaView,
-} from 'react-native';
+  SafeAreaView} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
@@ -81,11 +79,8 @@ const EmailScreen = () => {
   };
   
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
+    <SafeAreaWrapper backgroundColor="white">
+      <SamsungKeyboardAvoidingView>
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -189,8 +184,8 @@ const EmailScreen = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SamsungKeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
 

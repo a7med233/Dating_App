@@ -5,11 +5,9 @@ import {
   TextInput,
   TouchableOpacity,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StatusBar,
-} from 'react-native';
+  StatusBar} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, {useRef, useState, useEffect} from 'react';
 import {useNavigation} from '@react-navigation/native';
@@ -20,7 +18,8 @@ import {
 } from '../registrationUtils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
 
 const { width, height } = Dimensions.get('window');
 
@@ -175,12 +174,9 @@ const BirthScreen = () => {
   const age = getAge();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
+      <SamsungKeyboardAvoidingView>
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -328,7 +324,7 @@ const BirthScreen = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </SamsungKeyboardAvoidingView>
 
       {/* Date Picker Modal - iOS Only */}
       {showDatePicker && Platform.OS === 'ios' && (
@@ -372,7 +368,7 @@ const BirthScreen = () => {
           minimumDate={new Date(1900, 0, 1)}
         />
       )}
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

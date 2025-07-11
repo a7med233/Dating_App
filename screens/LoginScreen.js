@@ -17,10 +17,12 @@ import AsyncStorage, { useAsyncStorage } from '@react-native-async-storage/async
 import { AuthContext } from '../AuthContext';
 import { loginUser } from '../services/api';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import GradientButton from '../components/GradientButton';
 import ThemedCard from '../components/ThemedCard';
+import { getSamsungKeyboardProps, getSamsungScrollProps } from '../utils/samsungUtils';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -152,15 +154,13 @@ const LoginScreen = () => {
   
   return (
     <SafeAreaWrapper backgroundColor={colors.background}>
-      <KeyboardAvoidingView 
+      <SamsungKeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        {...getSamsungKeyboardProps()}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          {...getSamsungScrollProps()}
         >
           {/* Header Section with Gradient */}
           <LinearGradient
@@ -286,7 +286,7 @@ const LoginScreen = () => {
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </SamsungKeyboardAvoidingView>
     </SafeAreaWrapper>
   );
 };

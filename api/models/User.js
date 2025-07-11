@@ -77,7 +77,7 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  imageUrls: [
+  photos: [
     {
       type: String, // Store URLs of profile pictures
     },
@@ -142,6 +142,10 @@ const userSchema = new Schema({
     default: Date.now,
   },
   lastActive: {
+    type: Date,
+    default: Date.now,
+  },
+  createdAt: {
     type: Date,
     default: Date.now,
   },
