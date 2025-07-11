@@ -26,7 +26,7 @@ const Subscriptions = () => {
 
   const fetchUsers = () => {
     setLoading(true);
-    fetch('http://localhost:3000/admin/users', {
+    fetch('https://lashwa.com/admin/users', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -62,7 +62,7 @@ const Subscriptions = () => {
   };
 
   const handleSave = async () => {
-    const res = await fetch(`http://localhost:3000/admin/users/${editUser._id}/subscription`, {
+    const res = await fetch(`https://lashwa.com/admin/users/${editUser._id}/subscription`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({

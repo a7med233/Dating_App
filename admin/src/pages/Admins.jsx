@@ -32,7 +32,7 @@ const Admins = () => {
 
   const fetchAdmins = () => {
     setLoading(true);
-    fetch('http://localhost:3000/admin/admins', {
+    fetch('https://lashwa.com/admin/admins', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -69,7 +69,7 @@ const Admins = () => {
     if (!window.confirm('Are you sure you want to delete this admin?')) return;
     setFormLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/admin/admins/${id}`, {
+      const res = await fetch(`https://lashwa.com/admin/admins/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -88,7 +88,7 @@ const Admins = () => {
     setFormLoading(true);
     setFormError('');
     try {
-      const url = editMode ? `http://localhost:3000/admin/admins/${selectedId}` : 'http://localhost:3000/admin/register';
+      const url = editMode ? `https://lashwa.com/admin/admins/${selectedId}` : 'https://lashwa.com/admin/register';
       const method = editMode ? 'PATCH' : 'POST';
       const body = editMode ? { role: form.role, password: form.password } : form;
       const res = await fetch(url, {

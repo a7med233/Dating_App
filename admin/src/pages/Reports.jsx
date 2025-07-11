@@ -63,7 +63,7 @@ const Reports = () => {
     if (filters.status) queryParams.append('status', filters.status);
     if (filters.reason) queryParams.append('reason', filters.reason);
 
-    fetch(`http://localhost:3000/admin/reports?${queryParams}`, {
+    fetch(`https://lashwa.com/admin/reports?${queryParams}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -79,7 +79,7 @@ const Reports = () => {
 
   const fetchStats = () => {
     setStatsLoading(true);
-    fetch('http://localhost:3000/admin/reports/stats', {
+    fetch('https://lashwa.com/admin/reports/stats', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -105,7 +105,7 @@ const Reports = () => {
 
   const handleStatusUpdate = async (reportId, newStatus, adminNotes) => {
     try {
-      const res = await fetch(`http://localhost:3000/admin/reports/${reportId}`, {
+      const res = await fetch(`https://lashwa.com/admin/reports/${reportId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus, adminNotes }),

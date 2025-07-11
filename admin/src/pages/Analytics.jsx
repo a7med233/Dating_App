@@ -29,7 +29,7 @@ const Analytics = () => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:3000/admin/analytics', {
+        const response = await fetch('https://lashwa.com/admin/analytics', {
           headers: { Authorization: `Bearer ${token}` },
         });
         

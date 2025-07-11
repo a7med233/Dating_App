@@ -32,7 +32,7 @@ const SupportChats = () => {
   const scrollRef = useRef();
 
   useEffect(() => {
-    fetch('http://localhost:3000/admin/support/chats', {
+    fetch('https://lashwa.com/admin/support/chats', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -68,7 +68,7 @@ const SupportChats = () => {
   const sendMessage = async () => {
     if (!message.trim() || !selectedChat) return;
     setSending(true);
-    await fetch('http://localhost:3000/admin/support/message', {
+    await fetch('https://lashwa.com/admin/support/message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ chatId: selectedChat._id, text: message, adminId: admin?.adminId }),

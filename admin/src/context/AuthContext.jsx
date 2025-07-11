@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (token && !admin) {
       setLoading(true);
-      fetch('http://localhost:3000/admin/me', {
+      fetch('https://lashwa.com/admin/me', {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => res.json())
@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     setLoading(true);
-    const res = await fetch('http://localhost:3000/admin/login', {
+    const res = await fetch('https://lashwa.com/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

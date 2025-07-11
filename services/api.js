@@ -13,11 +13,11 @@ const getCurrentIPAddress = async () => {
   
   // Fallback to environment variable if set
   if (process.env.NODE_ENV === 'production') {
-    return 'https://your-api-domain.com';
+    return 'https://lashwa.com';
   }
   
   // Return the stored default
-  return storedIP || (process.env.NODE_ENV === 'production' ? 'https://lashwa.com' : '192.250.229.214');
+  return storedIP || (process.env.NODE_ENV === 'production' ? 'https://lashwa.com' : 'https://lashwa.com');
 };
 
 // Function to get the correct API base URL

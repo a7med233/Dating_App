@@ -105,7 +105,7 @@ const Users = () => {
         sortOrder: 'desc'
       });
 
-      const response = await fetch(`http://localhost:3000/admin/users?${queryParams}`, {
+      const response = await fetch(`https://lashwa.com/admin/users?${queryParams}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -123,7 +123,7 @@ const Users = () => {
 
   const fetchUserDetails = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:3000/admin/users/${userId}/details`, {
+      const response = await fetch(`https://lashwa.com/admin/users/${userId}/details`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -153,7 +153,7 @@ const Users = () => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     
     try {
-      const res = await fetch(`http://localhost:3000/admin/users/${userId}`, {
+      const res = await fetch(`https://lashwa.com/admin/users/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -171,7 +171,7 @@ const Users = () => {
 
   const handleBanToggle = async (userId, ban) => {
     try {
-      const res = await fetch(`http://localhost:3000/admin/users/${userId}/ban`, {
+      const res = await fetch(`https://lashwa.com/admin/users/${userId}/ban`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ban }),
@@ -220,7 +220,7 @@ const Users = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:3000/admin/users/${selectedUser._id}`, {
+      const res = await fetch(`https://lashwa.com/admin/users/${selectedUser._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(editForm),

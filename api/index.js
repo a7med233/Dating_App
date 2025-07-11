@@ -10,8 +10,16 @@ const socketIo = require('socket.io');
 
 dotenv.config();
 
+// Import models and configs
+const User = require('./models/User');
+const Chat = require('./models/message');
+const Admin = require('./models/admin');
+const SupportChat = require('./models/supportChat');
+const Report = require('./models/report');
+const { uploadImage, deleteImage } = require('./config/cloudinary');
+
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const cors = require('cors');
 
 const server = http.createServer(app);
@@ -121,7 +129,13 @@ const deleteNotification = (userId, notificationId) => {
 };
 
 app.use(cors({
-  origin: '*',
+  origin: [
+    'https://lashwa.com',
+    'https://www.lashwa.com',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
@@ -154,6 +168,10 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Use environment variable for MongoDB URI
 const MONGODB_URI = process.env.MONGODB_URI;
 
+// Validate environment variables
+if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
+if (!MONGODB_URI) throw new Error('MONGODB_URI environment variable is required');
+
 mongoose
   .connect(MONGODB_URI)
   .then(() => {
@@ -184,20 +202,10 @@ app.get('/debug/socket-users', (req, res) => {
   });
 });
 
-server.listen(port, '0.0.0.0', () => {
-  console.log('Server is running on port 3000');
-  console.log('Socket.IO server is also running on port 3000');
-  console.log('Accessible at:');
-  console.log('  - Local: http://localhost:3000');
-  console.log('  - Network: http://192.168.0.116:3000');
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+  console.log(`Socket.IO server is also running on port ${port}`);
 });
-
-const User = require('./models/user');
-const Chat = require('./models/message');
-const Admin = require('./models/admin');
-const SupportChat = require('./models/supportChat');
-const Report = require('./models/report');
-const { uploadImage, deleteImage } = require('./config/cloudinary');
 
 // In-memory notification store (in production, use Redis or database)
 const notifications = new Map();
