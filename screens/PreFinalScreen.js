@@ -39,6 +39,8 @@ const PreFinalScreen = () => {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const [userDataLoading, setUserDataLoading] = useState(true);
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   const { token, isLoading, setToken } = useContext(AuthContext);
 
@@ -165,6 +167,13 @@ const PreFinalScreen = () => {
         setLoading(false);
         return;
       }
+      
+      if (!termsAgreed || !privacyAgreed) {
+        setToast({ visible: true, message: 'Please agree to Terms of Use and Privacy Policy', type: 'error' });
+        setLoading(false);
+        return;
+      }
+      
       const payload = {
         firstName: userData.firstName,
         lastName: userData.lastName || '',
@@ -324,31 +333,49 @@ const PreFinalScreen = () => {
             
             <View style={styles.termsContainer}>
               <TouchableOpacity
-                onPress={() => navigation.navigate('TermsOfUse')}
+                onPress={() => setTermsAgreed(!termsAgreed)}
                 style={styles.termsItem}
               >
                 <View style={styles.termsCheckbox}>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                  {termsAgreed ? (
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                  ) : (
+                    <Ionicons name="ellipse-outline" size={20} color={colors.textSecondary} />
+                  )}
                 </View>
                 <View style={styles.termsContent}>
                   <Text style={styles.termsText}>
                     I agree to the{' '}
-                    <Text style={styles.termsLink}>Terms of Use</Text>
+                    <Text 
+                      style={styles.termsLink}
+                      onPress={() => navigation.navigate('TermsOfUse')}
+                    >
+                      Terms of Use
+                    </Text>
                   </Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate('PrivacyPolicy')}
+                onPress={() => setPrivacyAgreed(!privacyAgreed)}
                 style={styles.termsItem}
               >
                 <View style={styles.termsCheckbox}>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                  {privacyAgreed ? (
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                  ) : (
+                    <Ionicons name="ellipse-outline" size={20} color={colors.textSecondary} />
+                  )}
                 </View>
                 <View style={styles.termsContent}>
                   <Text style={styles.termsText}>
                     I agree to the{' '}
-                    <Text style={styles.termsLink}>Privacy Policy</Text>
+                    <Text 
+                      style={styles.termsLink}
+                      onPress={() => navigation.navigate('PrivacyPolicy')}
+                    >
+                      Privacy Policy
+                    </Text>
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -366,13 +393,13 @@ const PreFinalScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-        onPress={userData ? registerUser : undefined}
-              disabled={loading}
+              onPress={userData ? registerUser : undefined}
+              disabled={loading || !termsAgreed || !privacyAgreed}
               style={[
                 styles.registerButton,
                 {
-                  opacity: loading ? 0.6 : 1,
-                  backgroundColor: loading ? colors.textTertiary : colors.primary
+                  opacity: (loading || !termsAgreed || !privacyAgreed) ? 0.6 : 1,
+                  backgroundColor: (loading || !termsAgreed || !privacyAgreed) ? colors.textTertiary : colors.primary
                 }
               ]}
             >
