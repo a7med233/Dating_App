@@ -3,9 +3,9 @@ const cloudinaryConfig = require('./cloudinary-config');
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || cloudinaryConfig.cloud_name,
-  api_key: process.env.CLOUDINARY_API_KEY || cloudinaryConfig.api_key,
-  api_secret: process.env.CLOUDINARY_API_SECRET || cloudinaryConfig.api_secret,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Function to upload image to Cloudinary

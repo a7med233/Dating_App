@@ -149,10 +149,10 @@ app.use((req, res, next) => {
 
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_default_jwt_secret';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Use environment variable for MongoDB URI
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ahmed:Marwa%4012345@cluster0.wqfualw.mongodb.net/';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
   .connect(MONGODB_URI)

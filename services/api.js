@@ -12,12 +12,12 @@ const getCurrentIPAddress = async () => {
   }
   
   // Fallback to environment variable if set
-  if (process.env.API_IP_ADDRESS) {
-    return process.env.API_IP_ADDRESS;
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://your-api-domain.com';
   }
   
   // Return the stored default
-  return storedIP;
+  return storedIP || (process.env.NODE_ENV === 'production' ? 'https://lashwa.com' : '192.250.229.214');
 };
 
 // Function to get the correct API base URL
