@@ -12,4 +12,13 @@ const config = getDefaultConfig(__dirname);
 config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 
+// Disable Turbomode to fix invariant violation
+config.resolver.unstable_enableSymlinks = false;
+config.resolver.unstable_enablePackageExports = false;
+
+// Ensure gesture handler is properly resolved
+config.resolver.alias = {
+  'react-native-gesture-handler': require.resolve('react-native-gesture-handler'),
+};
+
 module.exports = config;

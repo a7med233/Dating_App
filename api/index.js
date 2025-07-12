@@ -202,6 +202,11 @@ app.get('/debug/socket-users', (req, res) => {
   });
 });
 
+// Health check route
+app.get('/', (req, res) => {
+  res.send('🚀 Lashwa backend is up and running!');
+});
+
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   console.log(`Socket.IO server is also running on port ${port}`);

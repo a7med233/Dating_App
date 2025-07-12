@@ -11,16 +11,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    minify: false, // Disable minification to reduce file operations
     rollupOptions: {
+      external: ['@socket.io/component-emitter', 'socket.io-parser'],
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          mui: ['@mui/material', '@mui/icons-material', '@mui/x-data-grid'],
-        },
+        manualChunks: undefined, // Disable manual chunks to reduce complexity
       },
     },
   },
   define: {
     'process.env': {},
   },
+  optimizeDeps: {
+    exclude: ['@socket.io/component-emitter']
+  }
 })

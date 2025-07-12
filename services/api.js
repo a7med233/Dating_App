@@ -22,22 +22,12 @@ const getCurrentIPAddress = async () => {
 
 // Function to get the correct API base URL
 const getApiBaseUrl = async () => {
-  const currentIP = await getCurrentIPAddress();
-  
-  if (Platform.OS === 'android') {
-    // For Android - try emulator first, then physical device
-    // If testing on physical device, uncomment the line below and comment out the emulator line
-    // return 'http://10.0.2.2:3000'; // Android emulator
-    return `http://${currentIP}:3000`; // Physical device - uses dynamic IP
-  } else if (Platform.OS === 'ios') {
-    // For iOS - try simulator first, then physical device
-    // If testing on physical device, uncomment the line below and comment out the simulator line
-    // return 'http://localhost:3000'; // iOS simulator
-    return `http://${currentIP}:3000`; // Physical device - uses dynamic IP
-  } else {
-    // For web or other platforms
-    return 'http://localhost:3000';
+  // For development, use localhost or your development server
+  if (__DEV__) {
+    return 'http://10.0.2.2:3000'; // Android emulator localhost
   }
+  // For production builds, use the production API
+  return 'https://lashwa.com';
 };
 
 // Create API instance with dynamic base URL

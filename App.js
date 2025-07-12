@@ -5,6 +5,7 @@
  * @format
  */
 
+import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
@@ -30,6 +31,8 @@ import { Ionicons } from '@expo/vector-icons';
 import StackNavigator from './navigation/StackNavigator';
 import { AuthProvider } from './AuthContext';
 import { TabBarProvider } from './context/TabBarContext';
+
+
 
 function Section({ children, title }) {
   const isDarkMode = useColorScheme() === 'dark';
@@ -80,6 +83,7 @@ function App() {
     </AuthProvider>
   );
 }
+
 const styles = StyleSheet.create({
   sectionContainer: {
     marginTop: 32,

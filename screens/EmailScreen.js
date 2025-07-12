@@ -16,6 +16,8 @@ import {useNavigation} from '@react-navigation/native';
 import { getRegistrationProgress, saveRegistrationProgress } from '../registrationUtils';
 import { checkEmailExists } from '../services/api';
 import ErrorMessage from '../components/ErrorMessage';
+import SafeAreaWrapper from '../components/SafeAreaWrapper';
+import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 

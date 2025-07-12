@@ -9,6 +9,8 @@
   "scripts": {
     "start": "nodemon index.js",              
     "start:prod": "node index.js",            
+    "dev": "nodemon index.js",
+    "prod": "node index.js",
     "test": "echo \"No tests yet\" && exit 0",
     "clean": "rm -rf dist",                   
     "build": "echo 'No build step required'"  
