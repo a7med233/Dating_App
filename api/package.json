@@ -7,13 +7,14 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js",              
+    "start": "node index.js",              
     "start:prod": "node index.js",            
     "dev": "nodemon index.js",
     "prod": "node index.js",
     "test": "echo \"No tests yet\" && exit 0",
     "clean": "rm -rf dist",                   
-    "build": "echo 'No build step required'"  
+    "build": "echo 'No build step required'",
+    "postinstall": "echo 'API dependencies installed successfully'"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
