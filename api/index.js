@@ -1323,13 +1323,30 @@ app.post('/upload-photo', async (req, res) => {
       return res.status(400).json({ message: 'Image data is required' });
     }
 
+    console.log('Upload photo request received for user:', userId);
+    console.log('Cloudinary config check:');
+    console.log('- Cloud name:', process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Not set');
+    console.log('- API Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Not set');
+    console.log('- API Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Not set');
+
     // Upload image to Cloudinary
     const uploadResult = await uploadImage(imageBase64, `dating-app/users/${userId}`);
     
+    console.log('Upload successful:', uploadResult.url);
+    
     // Save the uploaded image URL to the user's profile
-    await User.findByIdAndUpdate(userId, { 
-      $push: { imageUrls: uploadResult.url }
-    });
+    try {
+      const updatedUser = await User.findByIdAndUpdate(userId, { 
+        $push: { imageUrls: uploadResult.url },
+        $unset: { photos: 1 } // Remove old photos field if it exists
+      }, { new: true });
+      
+      console.log('User updated successfully:', updatedUser._id);
+      console.log('Current imageUrls:', updatedUser.imageUrls);
+    } catch (updateError) {
+      console.error('Error updating user:', updateError);
+      throw updateError;
+    }
     
     res.status(200).json({
       message: 'Photo uploaded successfully',
@@ -1338,7 +1355,15 @@ app.post('/upload-photo', async (req, res) => {
     });
   } catch (error) {
     console.error('Error uploading photo:', error);
-    res.status(500).json({ message: 'Failed to upload photo' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      message: 'Failed to upload photo',
+      error: error.message 
+    });
   }
 });
 
@@ -1373,7 +1398,20 @@ app.post('/upload-photos', async (req, res) => {
     if (successfulUploads.length > 0) {
       // Save the uploaded image URLs to the user's profile
       const imageUrls = successfulUploads.map(upload => upload.url);
-      await User.findByIdAndUpdate(userId, { imageUrls });
+      
+      // Update user with new imageUrls and remove old photos field if it exists
+      try {
+        const updatedUser = await User.findByIdAndUpdate(userId, { 
+          imageUrls,
+          $unset: { photos: 1 } // Remove old photos field if it exists
+        }, { new: true });
+        
+        console.log('User updated successfully:', updatedUser._id);
+        console.log('Current imageUrls:', updatedUser.imageUrls);
+      } catch (updateError) {
+        console.error('Error updating user:', updateError);
+        throw updateError;
+      }
 
       res.status(200).json({
         message: 'Photos uploaded successfully',

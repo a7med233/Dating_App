@@ -64,6 +64,8 @@ const AuthProvider = ({ children }) => {
         try {
             await AsyncStorage.removeItem('token');
             setToken(null);
+            // Small delay to ensure state update propagates
+            await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
             console.log('Error during logout:', error);
         }

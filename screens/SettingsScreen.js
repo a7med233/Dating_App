@@ -125,23 +125,10 @@ const SettingsScreen = (props) => {
             try {
               setLoading(true);
               await deactivateAccount(userId, password);
-              Alert.alert(
-                'Account Deactivated',
-                'Your account has been deactivated. You can reactivate it by logging in again.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: async () => {
-                      // Use the logout function from AuthContext
-                      await logout();
-                    }
-                  }
-                ]
-              );
+              await logout();
             } catch (error) {
               console.error('Error deactivating account:', error);
               Alert.alert('Error', error.response?.data?.message || 'Failed to deactivate account');
-            } finally {
               setLoading(false);
             }
           }
@@ -178,23 +165,10 @@ const SettingsScreen = (props) => {
                     try {
                       setLoading(true);
                       await deleteAccount(userId, password);
-                      Alert.alert(
-                        'Account Deleted',
-                        'Your account has been permanently deleted. You will be logged out.',
-                        [
-                          {
-                            text: 'OK',
-                            onPress: async () => {
-                              // Use the logout function from AuthContext
-                              await logout();
-                            }
-                          }
-                        ]
-                      );
+                      await logout();
                     } catch (error) {
                       console.error('Error deleting account:', error);
                       Alert.alert('Error', error.response?.data?.message || 'Failed to delete account');
-                    } finally {
                       setLoading(false);
                     }
                   }
