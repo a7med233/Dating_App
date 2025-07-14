@@ -128,18 +128,39 @@ const deleteNotification = (userId, notificationId) => {
   }
 };
 
-app.use(cors({
-  origin: [
-    'https://lashwa.com',
-    'https://www.lashwa.com',
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173'
-  ],
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://lashwa.com',
+      'https://www.lashwa.com',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ];
+    
+    // Allow any Vercel deployment
+    if (origin.includes('vercel.app') || origin.includes('railway.app')) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Increase payload size limits for image uploads
 app.use(bodyParser.urlencoded({extended: false, limit: '50mb'}));
