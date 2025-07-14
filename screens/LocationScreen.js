@@ -11,7 +11,10 @@ import {
   StatusBar,
   Animated,
   Dimensions,
-  ScrollView} from 'react-native';
+  ScrollView,
+  KeyboardAvoidingView
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useRef } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -24,7 +27,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
-import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -296,7 +299,10 @@ const LocationScreen = () => {
   return (
     <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <SamsungKeyboardAvoidingView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -435,7 +441,7 @@ const LocationScreen = () => {
         </TouchableOpacity>
       </View>
         </ScrollView>
-      </SamsungKeyboardAvoidingView>
+      </KeyboardAvoidingView>
 
       {/* Search Modal */}
       <Modal

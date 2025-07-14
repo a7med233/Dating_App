@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ScrollView,
-  SafeAreaView,
+  ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getStoredIPAddress, setStoredIPAddress, getComputerIPInstructions } from '../utils/ipConfig';
 import { testApiConnection } from '../services/api';
 

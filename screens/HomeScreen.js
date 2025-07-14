@@ -9,12 +9,12 @@ import {
   StatusBar,
   TouchableOpacity,
   Dimensions,
-  SafeAreaView,
   Modal,
   Alert,
   TextInput,
-  Animated,
+  Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, {useEffect, useState, useCallback, useRef} from 'react';
 import { Ionicons, Entypo, AntDesign, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';

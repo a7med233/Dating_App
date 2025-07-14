@@ -298,10 +298,15 @@ app.get('/users/:userId', async (req, res) => {
     const {userId} = req.params;
     const { requestingUserId } = req.query; // ID of the user requesting the profile
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).where({ isDeleted: { $ne: true } });
 
     if (!user) {
       return res.status(404).json({message: 'User not found'});
+    }
+
+    // Check if user account is deactivated
+    if (!user.isActive) {
+      return res.status(403).json({message: 'This account has been deactivated'});
     }
 
     // Calculate age from dateOfBirth
@@ -408,6 +413,36 @@ app.put('/users/:userId/visibility', async (req, res) => {
   }
 });
 
+// Endpoint to update user photos
+app.put('/users/:userId/photos', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { imageUrls } = req.body;
+
+    if (!imageUrls || !Array.isArray(imageUrls)) {
+      return res.status(400).json({ message: 'imageUrls array is required' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { imageUrls },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ 
+      message: 'Photos updated successfully',
+      imageUrls: updatedUser.imageUrls
+    });
+  } catch (error) {
+    console.error('Error updating photos:', error);
+    res.status(500).json({ message: 'Error updating photos' });
+  }
+});
+
 // Endpoint to update user profile
 app.put('/users/:userId/profile', async (req, res) => {
   try {
@@ -505,7 +540,7 @@ app.post('/login', async (req, res) => {
     const {email, password} = req.body;
 
     //check if the user exists already
-    const user = await User.findOne({email});
+    const user = await User.findOne({email, isDeleted: { $ne: true }});
     if (!user) {
       return res.status(401).json({message: 'Invalid email or password'});
     }
@@ -519,6 +554,16 @@ app.post('/login', async (req, res) => {
     // Check if user is banned
     if (user.visibility === 'hidden') {
       return res.status(403).json({message: 'Your account has been banned. Please contact support for assistance.'});
+    }
+
+    // Check if user account is deactivated
+    if (!user.isActive) {
+      return res.status(403).json({message: 'Your account has been deactivated. Please contact support to reactivate your account.'});
+    }
+
+    // Check if user account is deleted
+    if (user.isDeleted) {
+      return res.status(403).json({message: 'Your account has been deleted and cannot be accessed.'});
     }
 
     const token = jwt.sign({userId: user._id}, JWT_SECRET, {expiresIn: '1d'});
@@ -555,7 +600,9 @@ app.get('/matches', async (req, res) => {
 
     // Also fetch users who have liked the current user to exclude them from matches
     const usersWhoLikedMe = await User.find({
-      likedProfiles: userId
+      likedProfiles: userId,
+      isActive: true,
+      isDeleted: { $ne: true }
     }).select('_id').lean();
     
     const usersWhoLikedMeIds = usersWhoLikedMe.map(u => u._id.toString());
@@ -579,7 +626,9 @@ app.get('/matches', async (req, res) => {
     // Build filter object
     let filter = {
       _id: {$ne: userId},
-      visibility: {$ne: 'hidden'} // Exclude banned users
+      visibility: {$ne: 'hidden'}, // Exclude banned users
+      isActive: true, // Only show active accounts
+      isDeleted: {$ne: true} // Exclude deleted accounts
     };
 
     // Add gender filter based on user's dating preferences
@@ -655,7 +704,9 @@ app.get('/matches', async (req, res) => {
     // Check how many users match the basic filter (without exclusions)
     const basicFilter = {
       _id: {$ne: userId},
-      visibility: {$ne: 'hidden'}
+      visibility: {$ne: 'hidden'},
+      isActive: true, // Only show active accounts
+      isDeleted: {$ne: true} // Exclude deleted accounts
     };
     
     // Add gender filter based on user's dating preferences for basic filter
@@ -1270,6 +1321,11 @@ app.post('/upload-photo', async (req, res) => {
     // Upload image to Cloudinary
     const uploadResult = await uploadImage(imageBase64, `dating-app/users/${userId}`);
     
+    // Save the uploaded image URL to the user's profile
+    await User.findByIdAndUpdate(userId, { 
+      $push: { imageUrls: uploadResult.url }
+    });
+    
     res.status(200).json({
       message: 'Photo uploaded successfully',
       imageUrl: uploadResult.url,
@@ -1310,11 +1366,16 @@ app.post('/upload-photos', async (req, res) => {
     const failedUploads = uploadResults.filter(result => !result.success);
 
     if (successfulUploads.length > 0) {
+      // Save the uploaded image URLs to the user's profile
+      const imageUrls = successfulUploads.map(upload => upload.url);
+      await User.findByIdAndUpdate(userId, { imageUrls });
+
       res.status(200).json({
         message: 'Photos uploaded successfully',
         successful: successfulUploads,
         failed: failedUploads,
         totalUploaded: successfulUploads.length,
+        imageUrls: imageUrls
       });
     } else {
       res.status(200).json({
@@ -2510,6 +2571,127 @@ app.get('/admin/users/:userId/reports', adminAuth(), async (req, res) => {
     res.status(200).json({ reports });
   } catch (error) {
     console.error('Error fetching user reports:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Account Management Endpoints
+
+// Deactivate user account
+app.put('/users/:userId/deactivate', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required to deactivate account' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    // Deactivate account
+    user.isActive = false;
+    user.deactivatedAt = new Date();
+    await user.save();
+
+    res.status(200).json({ 
+      message: 'Account deactivated successfully',
+      deactivatedAt: user.deactivatedAt
+    });
+  } catch (error) {
+    console.error('Error deactivating account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Reactivate user account
+app.put('/users/:userId/reactivate', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Reactivate account
+    user.isActive = true;
+    user.deactivatedAt = null;
+    await user.save();
+
+    res.status(200).json({ 
+      message: 'Account reactivated successfully'
+    });
+  } catch (error) {
+    console.error('Error reactivating account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete user account permanently
+app.delete('/users/:userId/delete', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required to delete account' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    // Mark account as deleted (soft delete)
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    user.isActive = false; // Also deactivate
+    await user.save();
+
+    res.status(200).json({ 
+      message: 'Account deleted successfully',
+      deletedAt: user.deletedAt
+    });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Get account status
+app.get('/users/:userId/account-status', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select('isActive isDeleted deactivatedAt deletedAt');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      isActive: user.isActive,
+      isDeleted: user.isDeleted,
+      deactivatedAt: user.deactivatedAt,
+      deletedAt: user.deletedAt
+    });
+  } catch (error) {
+    console.error('Error fetching account status:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

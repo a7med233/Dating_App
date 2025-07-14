@@ -7,9 +7,9 @@ import {
   TextInput,
   Pressable,
   Image,
-  RefreshControl,
-  SafeAreaView,
+  RefreshControl
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, {useState, useLayoutEffect, useEffect, useRef} from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Entypo, Feather, Ionicons } from '@expo/vector-icons';

@@ -22,12 +22,7 @@ const getCurrentIPAddress = async () => {
 
 // Function to get the correct API base URL
 const getApiBaseUrl = async () => {
-  // For development, use localhost or your development server
-  if (__DEV__) {
-    return 'http://10.0.2.2:3000'; // Android emulator localhost
-  }
-  // For production builds, use the production API
-  return 'https://lashwa.com';
+  return 'https://datingapp-production-2526.up.railway.app';
 };
 
 // Create API instance with dynamic base URL
@@ -76,7 +71,7 @@ const initializeApi = async () => {
           const message = error.response.data?.message || '';
           
           // Don't override specific error messages from the server
-          if (message && (status === 401 || status === 403 || status === 404 || status === 429)) {
+          if (message && (status === 401 || status === 403 || status === 404 || status === 409 || status === 429)) {
             throw error; // Let the original error pass through
           }
         }
@@ -172,6 +167,11 @@ export const uploadPhoto = async (imageBase64, userId) => {
 export const uploadPhotos = async (images, userId) => {
   const apiInstance = await getApi();
   return apiInstance.post('/upload-photos', { images, userId });
+};
+
+export const updateUserPhotos = async (userId, imageUrls) => {
+  const apiInstance = await getApi();
+  return apiInstance.put(`/users/${userId}/photos`, { imageUrls });
 };
 
 // Check if email exists
@@ -287,6 +287,27 @@ export const debugRejectionStatus = async (userId, otherUserId) => {
 export const debugRejectedProfiles = async (userId) => {
   const apiInstance = await getApi();
   return apiInstance.get(`/debug-rejected-profiles/${userId}`);
+};
+
+// Account Management Functions
+export const deactivateAccount = async (userId, password) => {
+  const apiInstance = await getApi();
+  return apiInstance.put(`/users/${userId}/deactivate`, { password });
+};
+
+export const reactivateAccount = async (userId) => {
+  const apiInstance = await getApi();
+  return apiInstance.put(`/users/${userId}/reactivate`);
+};
+
+export const deleteAccount = async (userId, password) => {
+  const apiInstance = await getApi();
+  return apiInstance.delete(`/users/${userId}/delete`, { data: { password } });
+};
+
+export const getAccountStatus = async (userId) => {
+  const apiInstance = await getApi();
+  return apiInstance.get(`/users/${userId}/account-status`);
 };
 
 export default getApi; 

@@ -77,7 +77,7 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  photos: [
+  imageUrls: [
     {
       type: String, // Store URLs of profile pictures
     },
@@ -179,6 +179,21 @@ const userSchema = new Schema({
       ref: 'User',
     },
   ],
+  // Account status fields
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  deactivatedAt: {
+    type: Date,
+  },
+  deletedAt: {
+    type: Date,
+  },
   notificationPreferences: {
     // Define notification preferences here
   },

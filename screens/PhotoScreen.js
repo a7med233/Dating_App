@@ -6,7 +6,9 @@ import {
   Dimensions,
   Platform,
   ScrollView,
-  StatusBar} from 'react-native';
+  StatusBar,
+  KeyboardAvoidingView
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
@@ -15,7 +17,7 @@ import {
   saveRegistrationProgress,
 } from '../registrationUtils';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadPhotos } from '../services/api';
+import { uploadPhotos, updateUserPhotos } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { uriToBase64, isCloudUrl, compressBase64Image } from '../utils/imageUtils';
 import DraggablePhotoGrid from '../components/DraggablePhotoGrid';
@@ -24,7 +26,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
-import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,7 +54,7 @@ const PhotoScreen = () => {
     console.log('📸 imageUrls state changed:', imageUrls);
   }, [imageUrls]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const validImages = imageUrls.filter(url => url.trim() !== '');
     if (validImages.length < 4) {
       setError(`Please add at least 4 photos. You currently have ${validImages.length} photo${validImages.length !== 1 ? 's' : ''}.`);
@@ -69,8 +71,25 @@ const PhotoScreen = () => {
       return;
     }
     
-    saveRegistrationProgress('Photos', {imageUrls: cloudUrls});
-    navigation.navigate('Prompts');
+    try {
+      // Save to user's profile in database
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.userId;
+        if (userId && userId !== 'temp') {
+          await updateUserPhotos(userId, cloudUrls);
+        }
+      }
+      
+      // Save to local storage
+      saveRegistrationProgress('Photos', {imageUrls: cloudUrls});
+      navigation.navigate('Prompts');
+    } catch (error) {
+      console.error('Error saving photos to profile:', error);
+      setError('Error saving photos to profile. Please try again.');
+      setShowError(true);
+    }
   };
 
   const handleBack = () => {
@@ -233,7 +252,10 @@ const PhotoScreen = () => {
   return (
     <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <SamsungKeyboardAvoidingView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -392,7 +414,7 @@ const PhotoScreen = () => {
           </TouchableOpacity>
         </View>
         </ScrollView>
-      </SamsungKeyboardAvoidingView>
+      </KeyboardAvoidingView>
         
         <ErrorMessage
           error={error}

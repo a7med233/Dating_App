@@ -14,11 +14,10 @@ Samsung devices with One UI experience layout issues when the app is backgrounde
 
 ### 1. Samsung-Specific Components
 
-#### SamsungKeyboardAvoidingView
-- Enhanced KeyboardAvoidingView with Samsung-specific handling
-- Listens for app state changes and forces layout recalculation
-- Applies Samsung-specific keyboard offset adjustments
-- Location: `components/SamsungKeyboardAvoidingView.js`
+#### SamsungKeyboardAvoidingView (REMOVED)
+- **Status**: This component has been removed and replaced with standard React Native KeyboardAvoidingView
+- **Reason**: The custom component was causing reference errors and has been replaced with the standard implementation
+- **Replacement**: All screens now use `KeyboardAvoidingView` from React Native with platform-specific behavior
 
 #### Enhanced SafeAreaWrapper
 - Updated to handle Samsung device safe area issues
@@ -60,51 +59,38 @@ Samsung devices with One UI experience layout issues when the app is backgrounde
 
 ### For New Screens
 
-1. **Import Samsung components:**
+1. **Import standard React Native components:**
 ```javascript
-import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
-import { getSamsungKeyboardProps, getSamsungScrollProps } from '../utils/samsungUtils';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 ```
 
-2. **Replace KeyboardAvoidingView:**
+2. **Use standard KeyboardAvoidingView:**
 ```javascript
-// Before
 <KeyboardAvoidingView 
   behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
->
-
-// After
-<SamsungKeyboardAvoidingView 
-  {...getSamsungKeyboardProps()}
+  style={{ flex: 1 }}
 >
 ```
 
-3. **Update ScrollView props:**
+3. **Use standard ScrollView props:**
 ```javascript
-// Before
 <ScrollView 
   showsVerticalScrollIndicator={false}
   keyboardShouldPersistTaps="handled"
->
-
-// After
-<ScrollView 
-  {...getSamsungScrollProps()}
 >
 ```
 
 ### For Existing Screens
 
-1. **Update imports** to include Samsung components
-2. **Replace KeyboardAvoidingView** with SamsungKeyboardAvoidingView
-3. **Update ScrollView props** using getSamsungScrollProps()
+1. **Update imports** to use standard React Native components
+2. **Use standard KeyboardAvoidingView** with platform-specific behavior
+3. **Use standard ScrollView props**
 4. **Test on Samsung device** by backgrounding and resuming the app
 
 ### Screens Already Updated
 
-- ✅ LoginScreen.js
-- 🔄 Other screens need to be updated following the same pattern
+- ✅ All screens have been updated to use standard React Native KeyboardAvoidingView
+- ✅ SamsungKeyboardAvoidingView component has been removed
 
 ## Testing
 
@@ -143,13 +129,13 @@ import { getSamsungKeyboardProps, getSamsungScrollProps } from '../utils/samsung
 ### Common Issues
 
 1. **Layout still broken after resume:**
-   - Check if SamsungKeyboardAvoidingView is being used
-   - Verify app state listener is working
-   - Check console for "App resumed" logs
+   - Check if standard KeyboardAvoidingView is being used
+   - Verify platform-specific behavior is set correctly
+   - Check console for any layout errors
 
 2. **Keyboard issues:**
-   - Verify getSamsungKeyboardProps() is being used
-   - Check keyboardVerticalOffset values
+   - Verify standard KeyboardAvoidingView behavior is set correctly
+   - Check platform-specific keyboard handling
    - Test with different keyboard types
 
 3. **Safe area issues:**
@@ -159,17 +145,14 @@ import { getSamsungKeyboardProps, getSamsungScrollProps } from '../utils/samsung
 
 ### Debug Logs
 
-The components include console logs for debugging:
-- "App resumed - applying Samsung fixes"
-- "App has come to the foreground"
-- "App resumed - forcing layout update"
+The standard React Native components should work without additional debug logs. Check for any console errors related to layout or keyboard handling.
 
 ## Performance Considerations
 
-- Samsung-specific components only activate on Android devices
-- App state listeners are properly cleaned up
-- Force re-renders are minimal and only when needed
-- Hardware acceleration is enabled for better performance
+- Standard React Native components are used for better performance
+- No additional app state listeners needed
+- Standard keyboard handling without custom logic
+- Better compatibility across all devices
 
 ## Future Improvements
 

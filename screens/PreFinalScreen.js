@@ -11,6 +11,7 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';

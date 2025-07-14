@@ -7,10 +7,10 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  SafeAreaView,
   Platform,
-  StatusBar,
+  StatusBar
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';

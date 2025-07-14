@@ -7,7 +7,9 @@ import {
   Dimensions,
   Platform,
   ScrollView,
-  StatusBar} from 'react-native';
+  StatusBar,
+  KeyboardAvoidingView
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
@@ -15,7 +17,7 @@ import { getRegistrationProgress, saveRegistrationProgress } from '../registrati
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
-import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,7 +61,10 @@ const HomeTownScreen = () => {
   return (
     <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <SamsungKeyboardAvoidingView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -174,7 +179,7 @@ const HomeTownScreen = () => {
         </TouchableOpacity>
       </View>
         </ScrollView>
-      </SamsungKeyboardAvoidingView>
+      </KeyboardAvoidingView>
     </SafeAreaWrapper>
   );
 };

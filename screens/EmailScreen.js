@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
-  ScrollView,
-  SafeAreaView} from 'react-native';
+  ScrollView
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {useNavigation} from '@react-navigation/native';
@@ -17,7 +17,8 @@ import { getRegistrationProgress, saveRegistrationProgress } from '../registrati
 import { checkEmailExists } from '../services/api';
 import ErrorMessage from '../components/ErrorMessage';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
-import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
+import { KeyboardAvoidingView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 
@@ -82,7 +83,10 @@ const EmailScreen = () => {
   
   return (
     <SafeAreaWrapper backgroundColor="white">
-      <SamsungKeyboardAvoidingView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -186,7 +190,7 @@ const EmailScreen = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </SamsungKeyboardAvoidingView>
+      </KeyboardAvoidingView>
     </SafeAreaWrapper>
   );
 };

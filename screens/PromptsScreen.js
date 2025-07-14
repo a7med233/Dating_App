@@ -8,7 +8,9 @@ import {
   Dimensions,
   Platform,
   ScrollView,
-  StatusBar} from 'react-native';
+  StatusBar,
+  KeyboardAvoidingView
+} from 'react-native';
 import React, {useState, useEffect} from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -19,7 +21,7 @@ import {StackActions} from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
-import SamsungKeyboardAvoidingView from '../components/SamsungKeyboardAvoidingView';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -173,7 +175,10 @@ const PromptsScreen = () => {
   return (
     <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <SamsungKeyboardAvoidingView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -300,7 +305,7 @@ const PromptsScreen = () => {
           </TouchableOpacity>
                  </View>
         </ScrollView>
-      </SamsungKeyboardAvoidingView>
+      </KeyboardAvoidingView>
 
        {/* Edit Modal */}
        <Modal
@@ -308,8 +313,12 @@ const PromptsScreen = () => {
          transparent={true}
          animationType="slide"
          onRequestClose={handleCancelEdit}>
-         <SamsungKeyboardAvoidingView>
-           <View style={styles.modalContent}>
+         <SafeAreaWrapper style={styles.modalOverlay}>
+           <KeyboardAvoidingView
+             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+             style={{ flex: 1 }}
+           >
+             <View style={styles.modalContent}>
              <View style={styles.modalHeader}>
                <Text style={styles.modalTitle}>Edit your answer</Text>
               <TouchableOpacity onPress={handleCancelEdit} style={styles.closeButton}>
@@ -354,8 +363,9 @@ const PromptsScreen = () => {
                  <Text style={styles.saveButtonText}>Save Changes</Text>
                </TouchableOpacity>
              </View>
-           </View>
-         </SamsungKeyboardAvoidingView>
+                        </View>
+           </KeyboardAvoidingView>
+         </SafeAreaWrapper>
        </Modal>
     </SafeAreaWrapper>
    );
@@ -365,6 +375,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   keyboardAvoidingView: {
     flex: 1,

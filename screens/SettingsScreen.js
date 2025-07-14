@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { AntDesign } from '@expo/vector-icons';
-import { getUserDetails, updateProfileVisibility, getRejectedProfiles, unrejectProfile } from '../services/api';
+import { getUserDetails, updateProfileVisibility, getRejectedProfiles, unrejectProfile, deactivateAccount, deleteAccount, getAccountStatus } from '../services/api';
 
 const SettingsScreen = (props) => {
   const navigation = useNavigation();
@@ -24,6 +24,8 @@ const SettingsScreen = (props) => {
   });
   const [rejectedProfiles, setRejectedProfiles] = useState([]);
   const [showRejectedProfiles, setShowRejectedProfiles] = useState(false);
+  const [accountStatus, setAccountStatus] = useState(null);
+  const [showAccountActions, setShowAccountActions] = useState(false);
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -44,6 +46,7 @@ const SettingsScreen = (props) => {
     if (userId) {
       fetchUserProfile();
       fetchRejectedProfiles();
+      fetchAccountStatus();
     }
   }, [userId]);
 
@@ -88,6 +91,126 @@ const SettingsScreen = (props) => {
       console.error('Error unrejecting profile:', error);
       Alert.alert('Error', 'Failed to unreject profile');
     }
+  };
+
+  const fetchAccountStatus = async () => {
+    try {
+      const response = await getAccountStatus(userId);
+      if (response.status === 200) {
+        setAccountStatus(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching account status:', error);
+    }
+  };
+
+  const handleDeactivateAccount = () => {
+    Alert.prompt(
+      'Deactivate Account',
+      'Enter your password to confirm account deactivation. You can reactivate your account later by contacting support.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Deactivate',
+          style: 'destructive',
+          onPress: async (password) => {
+            if (!password) {
+              Alert.alert('Error', 'Password is required');
+              return;
+            }
+            
+            try {
+              setLoading(true);
+              await deactivateAccount(userId, password);
+              Alert.alert(
+                'Account Deactivated',
+                'Your account has been deactivated. You will be logged out.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Clear token and navigate to login
+                      AsyncStorage.removeItem('token');
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      });
+                    }
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('Error deactivating account:', error);
+              Alert.alert('Error', error.response?.data?.message || 'Failed to deactivate account');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ],
+      'secure-text'
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.prompt(
+              'Confirm Deletion',
+              'Enter your password to permanently delete your account:',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Permanently',
+                  style: 'destructive',
+                  onPress: async (password) => {
+                    if (!password) {
+                      Alert.alert('Error', 'Password is required');
+                      return;
+                    }
+                    
+                    try {
+                      setLoading(true);
+                      await deleteAccount(userId, password);
+                      Alert.alert(
+                        'Account Deleted',
+                        'Your account has been permanently deleted. You will be logged out.',
+                        [
+                          {
+                            text: 'OK',
+                            onPress: () => {
+                              // Clear token and navigate to login
+                              AsyncStorage.removeItem('token');
+                              navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Login' }],
+                              });
+                            }
+                          }
+                        ]
+                      );
+                    } catch (error) {
+                      console.error('Error deleting account:', error);
+                      Alert.alert('Error', error.response?.data?.message || 'Failed to delete account');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }
+                }
+              ],
+              'secure-text'
+            );
+          }
+        }
+      ]
+    );
   };
 
   const updateVisibility = async (field, value) => {
@@ -421,6 +544,155 @@ const SettingsScreen = (props) => {
             paddingHorizontal: spacing.lg,
             marginBottom: spacing.md,
           }}>
+            Account Management
+          </Text>
+          
+          <View style={{
+            backgroundColor: colors.textInverse,
+            borderRadius: borderRadius.medium,
+            marginHorizontal: spacing.lg,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+            <Pressable
+              onPress={() => setShowAccountActions(!showAccountActions)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.warning + '20',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: spacing.md,
+                }}>
+                  <AntDesign name="setting" size={20} color={colors.warning} />
+                </View>
+                <View>
+                  <Text style={{
+                    fontSize: typography.fontSize.md,
+                    fontFamily: typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                  }}>
+                    Account Actions
+                  </Text>
+                  <Text style={{
+                    fontSize: typography.fontSize.sm,
+                    color: colors.textSecondary,
+                    marginTop: spacing.xs,
+                  }}>
+                    Deactivate or delete your account
+                  </Text>
+                </View>
+              </View>
+              <AntDesign name={showAccountActions ? "up" : "down"} size={16} color={colors.textSecondary} />
+            </Pressable>
+            
+            {showAccountActions && (
+              <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
+                <Pressable
+                  onPress={handleDeactivateAccount}
+                  disabled={loading}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: spacing.md,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.backgroundSecondary,
+                    opacity: loading ? 0.5 : 1,
+                  }}
+                >
+                  <View style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: colors.warning + '20',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginRight: spacing.md,
+                  }}>
+                    <AntDesign name="pausecircle" size={16} color={colors.warning} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{
+                      fontSize: typography.fontSize.md,
+                      fontFamily: typography.fontFamily.semiBold,
+                      color: colors.textPrimary,
+                    }}>
+                      Deactivate Account
+                    </Text>
+                    <Text style={{
+                      fontSize: typography.fontSize.sm,
+                      color: colors.textSecondary,
+                      marginTop: spacing.xs,
+                    }}>
+                      Temporarily disable your account
+                    </Text>
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleDeleteAccount}
+                  disabled={loading}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: spacing.md,
+                    opacity: loading ? 0.5 : 1,
+                  }}
+                >
+                  <View style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: colors.error + '20',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginRight: spacing.md,
+                  }}>
+                    <AntDesign name="delete" size={16} color={colors.error} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{
+                      fontSize: typography.fontSize.md,
+                      fontFamily: typography.fontFamily.semiBold,
+                      color: colors.error,
+                    }}>
+                      Delete Account
+                    </Text>
+                    <Text style={{
+                      fontSize: typography.fontSize.sm,
+                      color: colors.textSecondary,
+                      marginTop: spacing.xs,
+                    }}>
+                      Permanently delete your account and data
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={{ marginTop: spacing.xl }}>
+          <Text style={{
+            fontSize: typography.fontSize.lg,
+            fontFamily: typography.fontFamily.bold,
+            color: colors.textPrimary,
+            paddingHorizontal: spacing.lg,
+            marginBottom: spacing.md,
+          }}>
             Legal & Support
           </Text>
           
@@ -566,6 +838,9 @@ const SettingsScreen = (props) => {
             </Pressable>
           </View>
         </View>
+
+        {/* Bottom padding */}
+        <View style={{ height: spacing.xl }} />
       </ScrollView>
     </SafeAreaWrapper>
   );

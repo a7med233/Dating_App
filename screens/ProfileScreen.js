@@ -11,9 +11,9 @@ import {
   StatusBar,
   Dimensions,
   RefreshControl,
-  SafeAreaView,
-  Animated,
+  Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, {useContext, useEffect, useState, useRef} from 'react';
 import {AuthContext} from '../AuthContext';
 import { Feather, AntDesign, Ionicons, MaterialIcons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
