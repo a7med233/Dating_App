@@ -5,17 +5,17 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3001,
+    port: process.env.PORT || 3001,
     host: true,
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: false, // Disable minification to reduce file operations
+    minify: true, // Enable minification for production
     rollupOptions: {
       external: ['@socket.io/component-emitter', 'socket.io-parser'],
       output: {
-        manualChunks: undefined, // Disable manual chunks to reduce complexity
+        manualChunks: undefined,
       },
     },
   },

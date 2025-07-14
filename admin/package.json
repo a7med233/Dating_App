@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "start": "vite --port 3001 --host",
+    "start": "vite --port $PORT --host",
     "deploy": "npm run build && npm run start"
   },
   "dependencies": {
