@@ -20,5 +20,10 @@ export default defineConfig({
   },
   define: {
     'process.env': {},
+  },
+  resolve: {
+    alias: {
+      'clsx': 'clsx'
+    }
   }
 })
