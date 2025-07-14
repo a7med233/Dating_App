@@ -11,6 +11,7 @@ import Admins from './pages/Admins';
 import SupportChats from './pages/SupportChats';
 import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function RequireAuth({ children }) {
   const { admin, token } = useAuth();
@@ -23,30 +24,32 @@ function RequireAuth({ children }) {
 
 function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="*"
-          element={
-            <RequireAuth>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/admins" element={<Admins />} />
-                  <Route path="/subscriptions" element={<Subscriptions />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/support-chats" element={<SupportChats />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/reports" element={<Reports />} />
-                </Routes>
-              </Layout>
-            </RequireAuth>
-          }
-        />
-      </Routes>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="*"
+            element={
+              <RequireAuth>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/users" element={<Users />} />
+                    <Route path="/admins" element={<Admins />} />
+                    <Route path="/subscriptions" element={<Subscriptions />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/support-chats" element={<SupportChats />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/reports" element={<Reports />} />
+                  </Routes>
+                </Layout>
+              </RequireAuth>
+            }
+          />
+        </Routes>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
