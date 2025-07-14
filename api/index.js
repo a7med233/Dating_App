@@ -556,14 +556,19 @@ app.post('/login', async (req, res) => {
       return res.status(403).json({message: 'Your account has been banned. Please contact support for assistance.'});
     }
 
-    // Check if user account is deactivated
-    if (!user.isActive) {
-      return res.status(403).json({message: 'Your account has been deactivated. Please contact support to reactivate your account.'});
-    }
-
     // Check if user account is deleted
     if (user.isDeleted) {
       return res.status(403).json({message: 'Your account has been deleted and cannot be accessed.'});
+    }
+
+    // Check if user account is deactivated - allow reactivation on login
+    if (!user.isActive) {
+      // Reactivate the account automatically on successful login
+      user.isActive = true;
+      user.deactivatedAt = null;
+      await user.save();
+      
+      console.log(`Account reactivated for user: ${user.email}`);
     }
 
     const token = jwt.sign({userId: user._id}, JWT_SECRET, {expiresIn: '1d'});
@@ -2678,6 +2683,11 @@ app.delete('/users/:userId/delete', async (req, res) => {
 app.get('/users/:userId/account-status', async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Validate ObjectId format
+    if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
+    }
 
     const user = await User.findById(userId).select('isActive isDeleted deactivatedAt deletedAt');
     if (!user) {

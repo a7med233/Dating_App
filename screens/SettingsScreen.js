@@ -11,9 +11,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { AntDesign } from '@expo/vector-icons';
 import { getUserDetails, updateProfileVisibility, getRejectedProfiles, unrejectProfile, deactivateAccount, deleteAccount, getAccountStatus } from '../services/api';
+import { useContext } from 'react';
+import { AuthContext } from '../AuthContext';
 
 const SettingsScreen = (props) => {
   const navigation = useNavigation();
+  const { logout } = useContext(AuthContext);
   const [userId, setUserId] = useState('');
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +110,7 @@ const SettingsScreen = (props) => {
   const handleDeactivateAccount = () => {
     Alert.prompt(
       'Deactivate Account',
-      'Enter your password to confirm account deactivation. You can reactivate your account later by contacting support.',
+      'Enter your password to confirm account deactivation. You can reactivate your account by logging in again.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -124,17 +127,13 @@ const SettingsScreen = (props) => {
               await deactivateAccount(userId, password);
               Alert.alert(
                 'Account Deactivated',
-                'Your account has been deactivated. You will be logged out.',
+                'Your account has been deactivated. You can reactivate it by logging in again.',
                 [
                   {
                     text: 'OK',
-                    onPress: () => {
-                      // Clear token and navigate to login
-                      AsyncStorage.removeItem('token');
-                      navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'Login' }],
-                      });
+                    onPress: async () => {
+                      // Use the logout function from AuthContext
+                      await logout();
                     }
                   }
                 ]
@@ -185,13 +184,9 @@ const SettingsScreen = (props) => {
                         [
                           {
                             text: 'OK',
-                            onPress: () => {
-                              // Clear token and navigate to login
-                              AsyncStorage.removeItem('token');
-                              navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'Login' }],
-                              });
+                            onPress: async () => {
+                              // Use the logout function from AuthContext
+                              await logout();
                             }
                           }
                         ]
@@ -637,7 +632,7 @@ const SettingsScreen = (props) => {
                       color: colors.textSecondary,
                       marginTop: spacing.xs,
                     }}>
-                      Temporarily disable your account
+                      Temporarily disable your account (can be reactivated by logging in)
                     </Text>
                   </View>
                 </Pressable>
