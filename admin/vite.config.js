@@ -23,6 +23,7 @@ export default defineConfig({
     'process.env': {},
   },
   optimizeDeps: {
-    exclude: ['@socket.io/component-emitter']
+    exclude: ['@socket.io/component-emitter'],
+    include: ['socket.io-client']
   }
 })

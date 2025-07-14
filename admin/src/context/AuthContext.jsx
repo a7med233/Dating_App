@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
 
 const AuthContext = createContext();
 
@@ -17,8 +18,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (token && !admin) {
       setLoading(true);
-      fetch('https://lashwa.com/admin/me', {
-        headers: { Authorization: `Bearer ${token}` },
+      fetch(getApiUrl('/admin/me'), {
+        headers: getAuthHeaders(token),
       })
         .then(res => res.json())
         .then(data => {
@@ -39,7 +40,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     setLoading(true);
-    const res = await fetch('https://lashwa.com/admin/login', {
+    const res = await fetch(getApiUrl('/admin/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

@@ -19,6 +19,8 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
+
 
 const statusOptions = [
   { value: '', label: 'All' },
@@ -63,8 +65,8 @@ const Reports = () => {
     if (filters.status) queryParams.append('status', filters.status);
     if (filters.reason) queryParams.append('reason', filters.reason);
 
-    fetch(`https://lashwa.com/admin/reports?${queryParams}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    fetch(getApiUrl(`/admin/reports?${queryParams}`), {
+      headers: getAuthHeaders(token),
     })
       .then(res => res.json())
       .then(data => {
@@ -79,8 +81,8 @@ const Reports = () => {
 
   const fetchStats = () => {
     setStatsLoading(true);
-    fetch('https://lashwa.com/admin/reports/stats', {
-      headers: { Authorization: `Bearer ${token}` },
+    fetch(getApiUrl('/admin/reports/stats'), {
+      headers: getAuthHeaders(token),
     })
       .then(res => res.json())
       .then(data => {
@@ -105,9 +107,9 @@ const Reports = () => {
 
   const handleStatusUpdate = async (reportId, newStatus, adminNotes) => {
     try {
-      const res = await fetch(`https://lashwa.com/admin/reports/${reportId}`, {
+      const res = await fetch(getApiUrl(`/admin/reports/${reportId}`), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: getAuthHeaders(token),
         body: JSON.stringify({ status: newStatus, adminNotes }),
       });
       

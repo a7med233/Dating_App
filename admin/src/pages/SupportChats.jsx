@@ -15,8 +15,7 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
-
-const SOCKET_URL = 'http://localhost:8000';
+import { getApiUrl, getAuthHeaders, SOCKET_URL } from '../utils/apiConfig';
 
 const SupportChats = () => {
   const { token, admin } = useAuth();
@@ -32,8 +31,8 @@ const SupportChats = () => {
   const scrollRef = useRef();
 
   useEffect(() => {
-    fetch('https://lashwa.com/admin/support/chats', {
-      headers: { Authorization: `Bearer ${token}` },
+    fetch(getApiUrl('/admin/support-chats'), {
+      headers: getAuthHeaders(token),
     })
       .then(res => res.json())
       .then(data => {
@@ -68,10 +67,10 @@ const SupportChats = () => {
   const sendMessage = async () => {
     if (!message.trim() || !selectedChat) return;
     setSending(true);
-    await fetch('https://lashwa.com/admin/support/message', {
+    await fetch(getApiUrl(`/admin/support-chats/${selectedChat._id}/message`), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ chatId: selectedChat._id, text: message, adminId: admin?.adminId }),
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ text: message, adminId: admin?.adminId }),
     });
     setMessage('');
     setSending(false);

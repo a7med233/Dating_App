@@ -11,6 +11,8 @@ import Snackbar from '@mui/material/Snackbar';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
+
 import SearchIcon from '@mui/icons-material/Search';
 
 const Subscriptions = () => {
@@ -26,8 +28,8 @@ const Subscriptions = () => {
 
   const fetchUsers = () => {
     setLoading(true);
-    fetch('https://lashwa.com/admin/users', {
-      headers: { Authorization: `Bearer ${token}` },
+    fetch(getApiUrl('/admin/users'), {
+      headers: getAuthHeaders(token),
     })
       .then(res => res.json())
       .then(data => {
@@ -62,9 +64,9 @@ const Subscriptions = () => {
   };
 
   const handleSave = async () => {
-    const res = await fetch(`https://lashwa.com/admin/users/${editUser._id}/subscription`, {
+    const res = await fetch(getApiUrl(`/admin/users/${editUser._id}/subscription`), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: getAuthHeaders(token),
       body: JSON.stringify({
         subscriptionType: form.subscriptionType,
         subscriptionStart: form.subscriptionStart,

@@ -17,6 +17,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
+
 
 const Analytics = () => {
   const { token } = useAuth();
@@ -29,8 +31,8 @@ const Analytics = () => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://lashwa.com/admin/analytics', {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await fetch(getApiUrl('/admin/analytics'), {
+          headers: getAuthHeaders(token),
         });
         
         if (!response.ok) throw new Error('Failed to fetch analytics');

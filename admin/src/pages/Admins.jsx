@@ -16,6 +16,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
+
 
 const Admins = () => {
   const { token, admin } = useAuth();
@@ -32,8 +34,8 @@ const Admins = () => {
 
   const fetchAdmins = () => {
     setLoading(true);
-    fetch('https://lashwa.com/admin/admins', {
-      headers: { Authorization: `Bearer ${token}` },
+    fetch(getApiUrl('/admin/admins'), {
+      headers: getAuthHeaders(token),
     })
       .then(res => res.json())
       .then(data => {
@@ -69,9 +71,9 @@ const Admins = () => {
     if (!window.confirm('Are you sure you want to delete this admin?')) return;
     setFormLoading(true);
     try {
-      const res = await fetch(`https://lashwa.com/admin/admins/${id}`, {
+      const res = await fetch(getApiUrl(`/admin/admins/${id}`), {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: getAuthHeaders(token),
       });
       if (res.ok) {
         setFormSuccess('Admin deleted');
@@ -88,12 +90,12 @@ const Admins = () => {
     setFormLoading(true);
     setFormError('');
     try {
-      const url = editMode ? `https://lashwa.com/admin/admins/${selectedId}` : 'https://lashwa.com/admin/register';
+      const url = editMode ? getApiUrl(`/admin/admins/${selectedId}`) : getApiUrl('/admin/register');
       const method = editMode ? 'PATCH' : 'POST';
       const body = editMode ? { role: form.role, password: form.password } : form;
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: getAuthHeaders(token),
         body: JSON.stringify(body),
       });
       if (res.ok) {
