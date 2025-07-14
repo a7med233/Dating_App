@@ -145,6 +145,10 @@ const userSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  isOnline: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

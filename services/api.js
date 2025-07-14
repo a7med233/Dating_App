@@ -310,4 +310,9 @@ export const getAccountStatus = async (userId) => {
   return apiInstance.get(`/users/${userId}/account-status`);
 };
 
+export const getUserStatus = async (userId) => {
+  const apiInstance = await getApi();
+  return apiInstance.get(`/user-status/${userId}`);
+};
+
 export default getApi; 

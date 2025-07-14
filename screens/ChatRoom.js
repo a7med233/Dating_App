@@ -22,8 +22,8 @@ import { getStoredIPAddress } from '../utils/ipConfig';
 
 // Function to get the correct Socket URL dynamically
 const getSocketUrl = async () => {
-  const currentIP = await getStoredIPAddress();
-  return `http://${currentIP}:3000`;
+  // Use the live server URL for socket connections
+  return 'https://datingapp-production-2526.up.railway.app';
 };
 
 const ChatRoom = () => {
@@ -108,6 +108,17 @@ const ChatRoom = () => {
             }
             return prevMessages;
           });
+        });
+        
+        // Handle online/offline status updates
+        s.on('userOnline', (userId) => {
+          console.log('User came online:', userId);
+          // You can add UI updates here if needed
+        });
+        
+        s.on('userOffline', (userId) => {
+          console.log('User went offline:', userId);
+          // You can add UI updates here if needed
         });
         
         return () => {

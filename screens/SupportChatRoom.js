@@ -7,7 +7,7 @@ import ThemedCard from '../components/ThemedCard';
 import { io } from 'socket.io-client';
 import { useRoute } from '@react-navigation/native';
 
-const SOCKET_URL = 'http://192.168.0.116:3000'; // Socket.IO server now runs on port 3000
+const SOCKET_URL = 'https://datingapp-production-2526.up.railway.app'; // Live server URL
 
 const SupportChatRoom = () => {
   const route = useRoute();
@@ -24,7 +24,7 @@ const SupportChatRoom = () => {
   useEffect(() => {
     if (!userId && !identifierSubmitted) return;
     // Get or create support chat
-    fetch(`${SOCKET_URL.replace(':8000', ':3000')}/support/chat`, {
+    fetch(`${SOCKET_URL}/support/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userId ? { userId } : { identifier }),
@@ -54,7 +54,7 @@ const SupportChatRoom = () => {
 
   const sendMessage = async () => {
     if (!message.trim() || !chatId) return;
-    await fetch(`${SOCKET_URL.replace(':8000', ':3000')}/support/message`, {
+    await fetch(`${SOCKET_URL}/support/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chatId, text: message }),

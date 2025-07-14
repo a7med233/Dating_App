@@ -1238,13 +1238,34 @@ app.get('/get-matches/:userId', async (req, res) => {
   }
 });
 
+// Store connected users for online status tracking
+const connectedUsers = new Map();
+
 io.on('connection', socket => {
   console.log('a user is connected');
 
   // User joins their own room for private messaging
-  socket.on('join', userId => {
+  socket.on('join', async userId => {
     socket.join(userId);
     console.log('User joined room:', userId);
+    
+    // Mark user as online and update lastActive
+    try {
+      await User.findByIdAndUpdate(userId, {
+        lastActive: new Date(),
+        isOnline: true
+      });
+      
+      // Store socket connection for this user
+      connectedUsers.set(userId, socket.id);
+      
+      // Broadcast to all clients that this user is online
+      socket.broadcast.emit('userOnline', userId);
+      
+      console.log('User marked as online:', userId);
+    } catch (error) {
+      console.error('Error marking user as online:', error);
+    }
   });
 
   socket.on('sendMessage', async data => {
@@ -1294,8 +1315,36 @@ io.on('connection', socket => {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('user disconnected');
+    
+    // Find which user this socket belonged to
+    let disconnectedUserId = null;
+    for (const [userId, socketId] of connectedUsers.entries()) {
+      if (socketId === socket.id) {
+        disconnectedUserId = userId;
+        break;
+      }
+    }
+    
+    if (disconnectedUserId) {
+      // Mark user as offline
+      try {
+        await User.findByIdAndUpdate(disconnectedUserId, {
+          isOnline: false
+        });
+        
+        // Remove from connected users map
+        connectedUsers.delete(disconnectedUserId);
+        
+        // Broadcast to all clients that this user is offline
+        socket.broadcast.emit('userOffline', disconnectedUserId);
+        
+        console.log('User marked as offline:', disconnectedUserId);
+      } catch (error) {
+        console.error('Error marking user as offline:', error);
+      }
+    }
   });
 });
 
@@ -1320,6 +1369,31 @@ app.get('/messages', async (req, res) => {
   } catch (error) {
     console.log('Error in /messages endpoint:', error);
     res.status(500).json({message: 'Error in getting messages', error});
+  }
+});
+
+// Get user online status
+app.get('/user-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId).select('isOnline lastActive');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user is considered online (active within last 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const isRecentlyActive = user.lastActive > fiveMinutesAgo;
+    
+    res.status(200).json({
+      isOnline: user.isOnline && isRecentlyActive,
+      lastActive: user.lastActive
+    });
+  } catch (error) {
+    console.error('Error getting user status:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
