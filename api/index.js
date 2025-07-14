@@ -423,6 +423,12 @@ app.put('/users/:userId/photos', async (req, res) => {
       return res.status(400).json({ message: 'imageUrls array is required' });
     }
 
+    // Validate userId - must be a valid ObjectId
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid userId format' });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { imageUrls },
@@ -1376,6 +1382,14 @@ app.post('/upload-photos', async (req, res) => {
       return res.status(400).json({ message: 'Images array is required' });
     }
 
+    // Validate userId - must be a valid ObjectId or 'temp'
+    if (userId && userId !== 'temp') {
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'Invalid userId format' });
+      }
+    }
+
     const uploadPromises = images.map(async (imageBase64, index) => {
       try {
         const uploadResult = await uploadImage(imageBase64, `dating-app/users/${userId}`);
@@ -1399,18 +1413,23 @@ app.post('/upload-photos', async (req, res) => {
       // Save the uploaded image URLs to the user's profile
       const imageUrls = successfulUploads.map(upload => upload.url);
       
-      // Update user with new imageUrls and remove old photos field if it exists
-      try {
-        const updatedUser = await User.findByIdAndUpdate(userId, { 
-          imageUrls,
-          $unset: { photos: 1 } // Remove old photos field if it exists
-        }, { new: true });
-        
-        console.log('User updated successfully:', updatedUser._id);
-        console.log('Current imageUrls:', updatedUser.imageUrls);
-      } catch (updateError) {
-        console.error('Error updating user:', updateError);
-        throw updateError;
+      // Only update user if userId is valid and not 'temp'
+      if (userId && userId !== 'temp') {
+        try {
+          const updatedUser = await User.findByIdAndUpdate(userId, { 
+            imageUrls,
+            $unset: { photos: 1 } // Remove old photos field if it exists
+          }, { new: true });
+          
+          console.log('User updated successfully:', updatedUser._id);
+          console.log('Current imageUrls:', updatedUser.imageUrls);
+        } catch (updateError) {
+          console.error('Error updating user:', updateError);
+          // Don't throw error here, just log it and continue
+          console.log('Continuing without user update due to error');
+        }
+      } else {
+        console.log('Skipping user update - userId is temp or invalid');
       }
 
       res.status(200).json({

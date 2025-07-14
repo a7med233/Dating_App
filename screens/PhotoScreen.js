@@ -75,10 +75,17 @@ const PhotoScreen = () => {
       // Save to user's profile in database
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const userId = payload.userId;
-        if (userId && userId !== 'temp') {
-          await updateUserPhotos(userId, cloudUrls);
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const userId = payload.userId;
+          if (userId && userId !== 'temp' && userId.length === 24) { // MongoDB ObjectId is 24 characters
+            await updateUserPhotos(userId, cloudUrls);
+            console.log('Photos saved to user profile successfully');
+          } else {
+            console.log('Skipping profile save - invalid userId:', userId);
+          }
+        } catch (tokenError) {
+          console.log('Could not decode token, skipping profile save');
         }
       }
       
@@ -127,7 +134,12 @@ const PhotoScreen = () => {
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            userId = payload.userId || 'temp';
+            const extractedUserId = payload.userId;
+            if (extractedUserId && extractedUserId !== 'temp' && extractedUserId.length === 24) {
+              userId = extractedUserId;
+            } else {
+              console.log('Invalid userId from token, using temp');
+            }
           } catch (e) {
             console.log('Could not decode token, using temp userId');
           }
@@ -191,7 +203,12 @@ const PhotoScreen = () => {
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            userId = payload.userId || 'temp';
+            const extractedUserId = payload.userId;
+            if (extractedUserId && extractedUserId !== 'temp' && extractedUserId.length === 24) {
+              userId = extractedUserId;
+            } else {
+              console.log('Invalid userId from token, using temp');
+            }
           } catch (e) {
             console.log('Could not decode token, using temp userId');
           }
