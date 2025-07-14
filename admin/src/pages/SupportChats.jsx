@@ -29,7 +29,7 @@ const SupportChats = () => {
   const scrollRef = useRef();
 
   useEffect(() => {
-    fetch(getApiUrl('/admin/support-chats'), {
+    fetch(getApiUrl('/admin/support/chats'), {
       headers: getAuthHeaders(token),
     })
       .then(res => res.json())
@@ -56,10 +56,10 @@ const SupportChats = () => {
   const sendMessage = async () => {
     if (!message.trim() || !selectedChat) return;
     setSending(true);
-    await fetch(getApiUrl(`/admin/support-chats/${selectedChat._id}/message`), {
+    await fetch(getApiUrl(`/admin/support/message`), {
       method: 'POST',
       headers: getAuthHeaders(token),
-      body: JSON.stringify({ text: message, adminId: admin?.adminId }),
+      body: JSON.stringify({ chatId: selectedChat._id, text: message, adminId: admin?.adminId }),
     });
     setMessage('');
     setSending(false);
