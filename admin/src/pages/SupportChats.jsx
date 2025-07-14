@@ -14,8 +14,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { useAuth } from '../context/AuthContext';
-import { io } from 'socket.io-client';
-import { getApiUrl, getAuthHeaders, SOCKET_URL } from '../utils/apiConfig';
+import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
 
 const SupportChats = () => {
   const { token, admin } = useAuth();
@@ -27,7 +26,6 @@ const SupportChats = () => {
   const [sending, setSending] = useState(false);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [messages, setMessages] = useState([]);
-  const socketRef = useRef(null);
   const scrollRef = useRef();
 
   useEffect(() => {
@@ -49,20 +47,11 @@ const SupportChats = () => {
     setSelectedChat(chat);
     setMessages(chat.messages || []);
     setChatDialogOpen(true);
-    if (socketRef.current) socketRef.current.disconnect();
-    socketRef.current = io(SOCKET_URL);
-    socketRef.current.emit('join_support_chat', chat._id);
-    socketRef.current.on('support_message', ({ chatId, message: msg }) => {
-      if (chatId === chat._id) {
-        setMessages(prev => [...prev, msg]);
-      }
-    });
   };
   const closeChat = () => {
     setChatDialogOpen(false);
     setSelectedChat(null);
     setMessages([]);
-    if (socketRef.current) socketRef.current.disconnect();
   };
   const sendMessage = async () => {
     if (!message.trim() || !selectedChat) return;

@@ -13,7 +13,6 @@ export default defineConfig({
     sourcemap: false,
     minify: true, // Enable minification for production
     rollupOptions: {
-      external: ['@socket.io/component-emitter', 'socket.io-parser'],
       output: {
         manualChunks: undefined,
       },
@@ -21,9 +20,5 @@ export default defineConfig({
   },
   define: {
     'process.env': {},
-  },
-  optimizeDeps: {
-    exclude: ['@socket.io/component-emitter'],
-    include: ['socket.io-client']
   }
 })
