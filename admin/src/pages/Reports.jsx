@@ -19,7 +19,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
+import { api } from '../config/api';
 
 
 const statusOptions = [
@@ -59,39 +59,33 @@ const Reports = () => {
   const [stats, setStats] = useState({});
   const [statsLoading, setStatsLoading] = useState(true);
 
-  const fetchReports = () => {
+  const fetchReports = async () => {
     setLoading(true);
-    const queryParams = new URLSearchParams();
-    if (filters.status) queryParams.append('status', filters.status);
-    if (filters.reason) queryParams.append('reason', filters.reason);
+    try {
+      const params = {};
+      if (filters.status) params.status = filters.status;
+      if (filters.reason) params.reason = filters.reason;
 
-    fetch(getApiUrl(`/admin/reports?${queryParams}`), {
-      headers: getAuthHeaders(token),
-    })
-      .then(res => res.json())
-      .then(data => {
-        setReports(data.reports || []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to fetch reports');
-        setLoading(false);
-      });
+      const data = await api.getReports(params);
+      setReports(data.reports || []);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching reports:', err);
+      setError(err.message || 'Failed to fetch reports');
+      setLoading(false);
+    }
   };
 
-  const fetchStats = () => {
+  const fetchStats = async () => {
     setStatsLoading(true);
-    fetch(getApiUrl('/admin/reports/stats'), {
-      headers: getAuthHeaders(token),
-    })
-      .then(res => res.json())
-      .then(data => {
-        setStats(data);
-        setStatsLoading(false);
-      })
-      .catch(() => {
-        setStatsLoading(false);
-      });
+    try {
+      const data = await api.getReportStats();
+      setStats(data);
+      setStatsLoading(false);
+    } catch (err) {
+      console.error('Error fetching report stats:', err);
+      setStatsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -101,28 +95,21 @@ const Reports = () => {
   }, [token, filters]);
 
   const handleView = report => {
+    console.log('Selected report:', report); // Debug log
     setSelectedReport(report);
     setDialogOpen(true);
   };
 
   const handleStatusUpdate = async (reportId, newStatus, adminNotes) => {
     try {
-      const res = await fetch(getApiUrl(`/admin/reports/${reportId}`), {
-        method: 'PATCH',
-        headers: getAuthHeaders(token),
-        body: JSON.stringify({ status: newStatus, adminNotes }),
-      });
-      
-      if (res.ok) {
-        setSnackbar({ open: true, message: 'Report status updated', severity: 'success' });
-        setDialogOpen(false);
-        fetchReports();
-        fetchStats();
-      } else {
-        setSnackbar({ open: true, message: 'Failed to update report', severity: 'error' });
-      }
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Failed to update report', severity: 'error' });
+      await api.updateReport(reportId, { status: newStatus, adminNotes });
+      setSnackbar({ open: true, message: 'Report status updated', severity: 'success' });
+      setDialogOpen(false);
+      fetchReports();
+      fetchStats();
+    } catch (err) {
+      console.error('Error updating report:', err);
+      setSnackbar({ open: true, message: err.message || 'Failed to update report', severity: 'error' });
     }
   };
 
@@ -130,21 +117,73 @@ const Reports = () => {
     {
       field: 'reporter',
       headerName: 'Reporter',
-      flex: 1,
+      flex: 1.2,
       valueGetter: params => {
         if (!params || !params.row) return 'Unknown';
         const reporter = params.row.reporterId;
-        return reporter ? `${reporter.firstName} ${reporter.lastName}` : 'Unknown';
+        if (!reporter) return 'Unknown';
+        
+        // Handle both populated and unpopulated reporter data
+        if (typeof reporter === 'object') {
+          return `${reporter.firstName || ''} ${reporter.lastName || ''}`.trim() || reporter.email || 'Unknown';
+        }
+        return 'Unknown';
+      },
+      renderCell: params => {
+        const reporter = params.row.reporterId;
+        if (!reporter) return 'Unknown';
+        
+        if (typeof reporter === 'object') {
+          const displayName = `${reporter.firstName || ''} ${reporter.lastName || ''}`.trim() || 
+                             reporter.email?.split('@')[0] || 'Unknown Name';
+          return (
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {displayName}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                {reporter.email || 'No email'}
+              </Typography>
+            </Box>
+          );
+        }
+        return 'Unknown';
       },
     },
     {
       field: 'reportedUser',
       headerName: 'Reported User',
-      flex: 1,
+      flex: 1.2,
       valueGetter: params => {
         if (!params || !params.row) return 'Unknown';
         const reportedUser = params.row.reportedUserId;
-        return reportedUser ? `${reportedUser.firstName} ${reportedUser.lastName}` : 'Unknown';
+        if (!reportedUser) return 'Unknown';
+        
+        // Handle both populated and unpopulated reported user data
+        if (typeof reportedUser === 'object') {
+          return `${reportedUser.firstName || ''} ${reportedUser.lastName || ''}`.trim() || reportedUser.email || 'Unknown';
+        }
+        return 'Unknown';
+      },
+      renderCell: params => {
+        const reportedUser = params.row.reportedUserId;
+        if (!reportedUser) return 'Unknown';
+        
+        if (typeof reportedUser === 'object') {
+          const displayName = `${reportedUser.firstName || ''} ${reportedUser.lastName || ''}`.trim() || 
+                             reportedUser.email?.split('@')[0] || 'Unknown Name';
+          return (
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {displayName}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                {reportedUser.email || 'No email'}
+              </Typography>
+            </Box>
+          );
+        }
+        return 'Unknown';
       },
     },
     {
@@ -202,22 +241,46 @@ const Reports = () => {
           <Box display="flex" flexDirection="column" gap={2} mt={1}>
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <Typography variant="subtitle2" color="textSecondary">Reporter</Typography>
-                <Typography variant="body1">
-                  {selectedReport.reporterId?.firstName} {selectedReport.reporterId?.lastName}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {selectedReport.reporterId?.email}
-                </Typography>
+                <Card>
+                  <CardContent>
+                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>Reporter</Typography>
+                    <Typography variant="h6" gutterBottom>
+                      {selectedReport.reporterId?.firstName || selectedReport.reporterId?.lastName
+                        ? `${selectedReport.reporterId.firstName || ''} ${selectedReport.reporterId.lastName || ''}`.trim()
+                        : selectedReport.reporterId?.email?.split('@')[0] || 'Unknown Name'
+                      }
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      Email: {selectedReport.reporterId?.email || 'No email'}
+                    </Typography>
+                    {selectedReport.reporterId?.age && (
+                      <Typography variant="body2" color="textSecondary">
+                        Age: {selectedReport.reporterId.age}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="subtitle2" color="textSecondary">Reported User</Typography>
-                <Typography variant="body1">
-                  {selectedReport.reportedUserId?.firstName} {selectedReport.reportedUserId?.lastName}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {selectedReport.reportedUserId?.email}
-                </Typography>
+                <Card>
+                  <CardContent>
+                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>Reported User</Typography>
+                    <Typography variant="h6" gutterBottom>
+                      {selectedReport.reportedUserId?.firstName || selectedReport.reportedUserId?.lastName
+                        ? `${selectedReport.reportedUserId.firstName || ''} ${selectedReport.reportedUserId.lastName || ''}`.trim()
+                        : selectedReport.reportedUserId?.email?.split('@')[0] || 'Unknown Name'
+                      }
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      Email: {selectedReport.reportedUserId?.email || 'No email'}
+                    </Typography>
+                    {selectedReport.reportedUserId?.age && (
+                      <Typography variant="body2" color="textSecondary">
+                        Age: {selectedReport.reportedUserId.age}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
               </Grid>
             </Grid>
             

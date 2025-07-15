@@ -30,7 +30,6 @@ const navGroups = [
       { text: 'Reports', path: '/reports', icon: <FiFileText size={20} /> },
       { text: 'Notifications', path: '/notifications', icon: <FiBell size={20} /> },
       { text: 'Subscriptions', path: '/subscriptions', icon: <FiCreditCard size={20} /> },
-      { text: 'Reports', path: '/reports', icon: <FiFileText size={20} /> },
     ],
   },
   {
@@ -71,8 +70,8 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <aside className={`admin-sidebar${sidebarOpen ? ' sidebar-mobile-open' : ''}`}>
         <div style={{ padding: '0 32px', fontWeight: 900, fontSize: '1.7rem', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 10, letterSpacing: 1 }}>
-          <span style={{ color: '#2563eb', fontSize: 28, fontWeight: 900 }}>★</span>
-          <span>AdminPanel</span>
+          <span style={{ color: '#2563eb', fontSize: 28, fontWeight: 900 }}></span>
+          <span>Lashwa</span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {navGroups.map((group, idx) => (

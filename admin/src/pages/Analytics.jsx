@@ -17,7 +17,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
+import { api } from '../config/api';
 
 
 const Analytics = () => {
@@ -31,22 +31,20 @@ const Analytics = () => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const response = await fetch(getApiUrl('/admin/analytics'), {
-          headers: getAuthHeaders(token),
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch analytics');
-        
-        const data = await response.json();
+        const data = await api.getAnalytics();
+        console.log('Analytics data:', data); // Debug log
         setAnalytics(data);
         setLoading(false);
       } catch (err) {
-        setError('Failed to fetch analytics data');
+        console.error('Error fetching analytics:', err);
+        setError(err.message || 'Failed to fetch analytics data');
         setLoading(false);
       }
     };
 
-    fetchAnalytics();
+    if (token) {
+      fetchAnalytics();
+    }
   }, [token]);
 
   const handleTabChange = (event, newValue) => {

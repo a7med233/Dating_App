@@ -138,8 +138,11 @@ const corsOptions = {
       'https://lashwa.com',
       'https://www.lashwa.com',
       'http://localhost:3000',
+      'http://localhost:3001',
       'http://localhost:5173',
-      'http://127.0.0.1:5173'
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:3000'
     ];
     
     // Allow any Vercel deployment
@@ -1826,9 +1829,19 @@ apiRouter.get('/admin/analytics', adminAuth(), async (req, res) => {
 
     // Basic user counts
     const totalUsers = await User.countDocuments();
-    const maleUsers = await User.countDocuments({ gender: 'male' });
-    const femaleUsers = await User.countDocuments({ gender: 'female' });
-    const otherUsers = await User.countDocuments({ gender: { $nin: ['male', 'female'] } });
+    const maleUsers = await User.countDocuments({ 
+      gender: { $regex: /^male$/i } // Case-insensitive match for "male" or "Male"
+    });
+    const femaleUsers = await User.countDocuments({ 
+      gender: { $regex: /^female$/i } // Case-insensitive match for "female" or "Female"
+    });
+    const otherUsers = await User.countDocuments({ 
+      gender: { 
+        $not: { 
+          $regex: /^(male|female)$/i 
+        } 
+      } 
+    });
     const bannedUsers = await User.countDocuments({ visibility: 'hidden' });
     const activeUsers = await User.countDocuments({ visibility: 'public' });
 
@@ -2870,7 +2883,7 @@ apiRouter.get('/users/:userId/account-status', async (req, res) => {
 // Mount the API router
 app.use('/api', apiRouter);
 
-const PORT = process.env.PORT; // Let cPanel assign the port
+const PORT = process.env.PORT || 3000; // Use environment PORT or default to 3000
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

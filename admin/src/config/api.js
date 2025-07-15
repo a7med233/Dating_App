@@ -15,7 +15,7 @@ const API_CONFIG = {
     
     // Users
     USERS: '/admin/users',
-    USER_DETAILS: (id) => `/admin/users/${id}`,
+    USER_DETAILS: (id) => `/admin/users/${id}/details`,
     USER_BAN: (id) => `/admin/users/${id}/ban`,
     USER_MATCHES: (id) => `/admin/users/${id}/matches`,
     USER_MESSAGES: (id) => `/admin/users/${id}/messages`,
@@ -35,7 +35,7 @@ const API_CONFIG = {
     SUPPORT_CHAT: (id) => `/admin/support-chats/${id}`,
     
     // Notifications
-    NOTIFICATIONS: '/admin/notifications',
+    NOTIFICATIONS: '/admin/notifications/stats',
     SEND_NOTIFICATION: '/admin/notifications/send',
     
     // Subscriptions
@@ -156,6 +156,7 @@ export const api = {
   // Users
   getUsers: (params) => apiClient.get(API_CONFIG.ENDPOINTS.USERS, params),
   getUserDetails: (id) => apiClient.get(API_CONFIG.ENDPOINTS.USER_DETAILS(id)),
+  updateUser: (id, data) => apiClient.patch(API_CONFIG.ENDPOINTS.USER_DETAILS(id), data),
   deleteUser: (id) => apiClient.delete(API_CONFIG.ENDPOINTS.USER_DETAILS(id)),
   banUser: (id, banData) => apiClient.patch(API_CONFIG.ENDPOINTS.USER_BAN(id), banData),
   getUserMatches: (id) => apiClient.get(API_CONFIG.ENDPOINTS.USER_MATCHES(id)),
@@ -164,7 +165,6 @@ export const api = {
   
   // Reports
   getReports: (params) => apiClient.get(API_CONFIG.ENDPOINTS.REPORTS, params),
-  getReportDetails: (id) => apiClient.get(API_CONFIG.ENDPOINTS.REPORT_DETAILS(id)),
   updateReport: (id, data) => apiClient.patch(API_CONFIG.ENDPOINTS.REPORT_DETAILS(id), data),
   getReportStats: () => apiClient.get(API_CONFIG.ENDPOINTS.REPORT_STATS),
   

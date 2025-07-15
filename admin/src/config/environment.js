@@ -20,8 +20,8 @@ const PRODUCTION_API_URL = 'https://lashwa.com/api';
 const PRODUCTION_SOCKET_URL = 'https://lashwa.com/api';
 
 // Development API URLs
-const DEVELOPMENT_API_URL = 'http://localhost:3000';
-const DEVELOPMENT_SOCKET_URL = 'http://localhost:3000';
+const DEVELOPMENT_API_URL = 'http://localhost:3000/api';
+const DEVELOPMENT_SOCKET_URL = 'http://localhost:3000/api';
 
 // Determine if we're in production
 const isProduction = getEnvironmentVariable('VITE_NODE_ENV') === 'production' || 

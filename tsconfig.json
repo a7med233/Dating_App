@@ -12,8 +12,12 @@
     "noEmit": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node"],
-    "typeRoots": ["./node_modules/@types"]
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
   "include": [
     "**/*.ts",
@@ -25,5 +29,6 @@
     "node_modules",
     "admin/node_modules",
     "admin/**/*"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

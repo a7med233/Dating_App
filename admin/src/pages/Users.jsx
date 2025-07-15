@@ -38,7 +38,7 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Pagination from '@mui/material/Pagination';
 import Tooltip from '@mui/material/Tooltip';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl, getAuthHeaders } from '../utils/apiConfig';
+import { api } from '../config/api';
 
 const genderOptions = [
   { value: '', label: 'All Genders' },
@@ -69,6 +69,7 @@ const Users = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [userStats, setUserStats] = useState(null);
+  const [userMessages, setUserMessages] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [tab, setTab] = useState(0);
@@ -95,7 +96,7 @@ const Users = () => {
   const fetchUsers = async (page = 1) => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
+      const params = {
         page: page.toString(),
         limit: '25',
         ...(filters.search && { search: filters.search }),
@@ -104,35 +105,33 @@ const Users = () => {
         ...(filters.visibility && { visibility: filters.visibility }),
         sortBy: 'createdAt',
         sortOrder: 'desc'
-      });
+      };
 
-      const response = await fetch(getApiUrl(`/admin/users?${queryParams}`), {
-        headers: getAuthHeaders(token),
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch users');
-      
-      const data = await response.json();
+      const data = await api.getUsers(params);
       setUsers(data.users || []);
       setPagination(data.pagination || {});
       setLoading(false);
     } catch (err) {
-      setError('Failed to fetch users');
+      console.error('Error fetching users:', err);
+      setError(err.message || 'Failed to fetch users');
       setLoading(false);
     }
   };
 
   const fetchUserDetails = async (userId) => {
     try {
-      const response = await fetch(getApiUrl(`/admin/users/${userId}/details`), {
-        headers: getAuthHeaders(token),
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch user details');
-      
-      const data = await response.json();
+      const data = await api.getUserDetails(userId);
       setUserDetails(data.user);
       setUserStats(data.stats);
+      
+      // Also fetch user messages
+      try {
+        const messagesData = await api.getUserMessages(userId);
+        setUserMessages(messagesData.messages || []);
+      } catch (messagesErr) {
+        console.error('Error fetching user messages:', messagesErr);
+        setUserMessages([]);
+      }
     } catch (err) {
       console.error('Error fetching user details:', err);
     }
@@ -154,45 +153,30 @@ const Users = () => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     
     try {
-      const res = await fetch(getApiUrl(`/admin/users/${userId}`), {
-        method: 'DELETE',
-        headers: getAuthHeaders(token),
-      });
-      
-      if (res.ok) {
-        setSnackbar({ open: true, message: 'User deleted successfully', severity: 'success' });
-        fetchUsers(pagination.currentPage);
-      } else {
-        setSnackbar({ open: true, message: 'Failed to delete user', severity: 'error' });
-      }
+      await api.deleteUser(userId);
+      setSnackbar({ open: true, message: 'User deleted successfully', severity: 'success' });
+      fetchUsers(pagination.currentPage);
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to delete user', severity: 'error' });
+      console.error('Error deleting user:', err);
+      setSnackbar({ open: true, message: err.message || 'Failed to delete user', severity: 'error' });
     }
   };
 
   const handleBanToggle = async (userId, ban) => {
     try {
-      const res = await fetch(getApiUrl(`/admin/users/${userId}/ban`), {
-        method: 'PATCH',
-        headers: getAuthHeaders(token),
-        body: JSON.stringify({ ban }),
+      await api.banUser(userId, { ban });
+      setSnackbar({ 
+        open: true, 
+        message: ban ? 'User banned successfully' : 'User unbanned successfully', 
+        severity: 'success' 
       });
-      
-      if (res.ok) {
-        setSnackbar({ 
-          open: true, 
-          message: ban ? 'User banned successfully' : 'User unbanned successfully', 
-          severity: 'success' 
-        });
-        fetchUsers(pagination.currentPage);
-        if (selectedUser && selectedUser._id === userId) {
-          setSelectedUser(prev => ({ ...prev, visibility: ban ? 'hidden' : 'public' }));
-        }
-      } else {
-        setSnackbar({ open: true, message: 'Failed to update user status', severity: 'error' });
+      fetchUsers(pagination.currentPage);
+      if (selectedUser && selectedUser._id === userId) {
+        setSelectedUser(prev => ({ ...prev, visibility: ban ? 'hidden' : 'public' }));
       }
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to update user status', severity: 'error' });
+      console.error('Error updating user status:', err);
+      setSnackbar({ open: true, message: err.message || 'Failed to update user status', severity: 'error' });
     }
   };
 
@@ -221,23 +205,14 @@ const Users = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(getApiUrl(`/admin/users/${selectedUser._id}`), {
-        method: 'PATCH',
-        headers: getAuthHeaders(token),
-        body: JSON.stringify(editForm),
-      });
-      
-      if (res.ok) {
-        const updatedUser = await res.json();
-        setUserDetails(updatedUser.user);
-        setEditMode(false);
-        setSnackbar({ open: true, message: 'User updated successfully', severity: 'success' });
-        fetchUsers(pagination.currentPage);
-      } else {
-        setSnackbar({ open: true, message: 'Failed to update user', severity: 'error' });
-      }
+      const updatedUser = await api.updateUser(selectedUser._id, editForm);
+      setUserDetails(updatedUser.user);
+      setEditMode(false);
+      setSnackbar({ open: true, message: 'User updated successfully', severity: 'success' });
+      fetchUsers(pagination.currentPage);
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to update user', severity: 'error' });
+      console.error('Error updating user:', err);
+      setSnackbar({ open: true, message: err.message || 'Failed to update user', severity: 'error' });
     }
     setSaving(false);
   };
@@ -460,6 +435,7 @@ const Users = () => {
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
           <Tab label="Profile" />
           <Tab label="Activity" />
+          <Tab label="Messages" />
           <Tab label="Photos" />
           <Tab label="Preferences" />
         </Tabs>
@@ -779,7 +755,48 @@ const Users = () => {
           </Box>
         )}
         
-        {tab === 2 && userDetails && (
+        {tab === 2 && userMessages && (
+          <Box>
+            <Typography variant="h6" gutterBottom>User Messages</Typography>
+            {userMessages.length > 0 ? (
+              <Box>
+                <Typography variant="body2" color="textSecondary" gutterBottom>
+                  Total Messages: {userMessages.length}
+                </Typography>
+                <List>
+                  {userMessages.map((message, index) => (
+                    <Card key={index} sx={{ mb: 2 }}>
+                      <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                          <Typography variant="subtitle2" color="primary">
+                            {message.senderId === selectedUser?._id ? 'Sent' : 'Received'}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {new Date(message.timestamp || message.createdAt).toLocaleString()}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" paragraph>
+                          {message.content || message.message}
+                        </Typography>
+                        {message.chatId && (
+                          <Typography variant="caption" color="textSecondary">
+                            Chat ID: {message.chatId}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </List>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="textSecondary">
+                No messages found for this user
+              </Typography>
+            )}
+          </Box>
+        )}
+        
+        {tab === 3 && userDetails && (
           <Box>
             <Typography variant="h6" gutterBottom>Profile Photos</Typography>
             {userDetails.imageUrls && userDetails.imageUrls.length > 0 ? (
@@ -810,7 +827,7 @@ const Users = () => {
           </Box>
         )}
         
-        {tab === 3 && userDetails && (
+        {tab === 4 && userDetails && (
           <Box>
             <Typography variant="h6" gutterBottom>Privacy Settings</Typography>
             <Grid container spacing={2}>

@@ -32,8 +32,11 @@ import {
   Delete as DeleteIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../config/api';
 
 const Notifications = () => {
+  const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -62,26 +65,21 @@ const Notifications = () => {
   ];
 
   useEffect(() => {
-    fetchStats();
-    fetchUsers();
-  }, []);
+    if (token) {
+      fetchStats();
+      fetchUsers();
+    }
+  }, [token]);
 
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/admin/notifications/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      
-      const data = await response.json();
+      const data = await api.getNotifications();
+      console.log('Notification stats:', data); // Debug log
       setStats(data);
     } catch (error) {
-      setError('Failed to load notification statistics');
       console.error('Error fetching stats:', error);
+      setError(error.message || 'Failed to load notification statistics');
     } finally {
       setLoading(false);
     }
@@ -89,15 +87,7 @@ const Notifications = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:8000/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch users');
-      
-      const data = await response.json();
+      const data = await api.getUsers();
       setUsers(data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -114,18 +104,7 @@ const Notifications = () => {
       setSending(true);
       setError('');
       
-      const response = await fetch('http://localhost:8000/admin/notifications/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
-        body: JSON.stringify(notificationForm)
-      });
-
-      if (!response.ok) throw new Error('Failed to send notifications');
-      
-      const result = await response.json();
+      const result = await api.sendNotification(notificationForm);
       setSuccess(`Successfully sent ${result.notifications.length} notifications`);
       setSendDialogOpen(false);
       
@@ -141,8 +120,8 @@ const Notifications = () => {
       // Refresh stats
       fetchStats();
     } catch (error) {
-      setError('Failed to send notifications');
       console.error('Error sending notifications:', error);
+      setError(error.message || 'Failed to send notifications');
     } finally {
       setSending(false);
     }

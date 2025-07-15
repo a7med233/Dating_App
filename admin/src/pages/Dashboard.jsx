@@ -9,6 +9,7 @@ import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../config/api';
 
 const Dashboard = () => {
   const { token } = useAuth();
@@ -21,29 +22,27 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         setLoading(true);
+        setError('');
         
-        // Fetch enhanced analytics
-        const analyticsResponse = await fetch('http://localhost:3000/admin/analytics', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const analyticsData = await analyticsResponse.json();
+        // Fetch enhanced analytics using the API client
+        const analyticsData = await api.getAnalytics();
         
-        // Fetch report stats
-        const reportResponse = await fetch('http://localhost:3000/admin/reports/stats', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const reportData = await reportResponse.json();
+        // Fetch report stats using the API client
+        const reportData = await api.getReportStats();
         
         setAnalytics(analyticsData);
         setReportStats(reportData);
         setLoading(false);
       } catch (err) {
-        setError('Failed to fetch dashboard data');
+        console.error('Dashboard fetch error:', err);
+        setError(err.message || 'Failed to fetch dashboard data');
         setLoading(false);
       }
     };
 
-    fetchStats();
+    if (token) {
+      fetchStats();
+    }
   }, [token]);
 
   if (loading) return <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>;
