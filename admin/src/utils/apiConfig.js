@@ -1,11 +1,12 @@
+import { environment } from '../config/environment.js';
+
 // Centralized API configuration
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:8000';
+export const API_BASE_URL = environment.API_BASE_URL;
+export const SOCKET_URL = environment.SOCKET_URL;
 
 // Debug logging
 console.log('Admin Panel Environment Variables:');
-console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-console.log('VITE_SOCKET_URL:', import.meta.env.VITE_SOCKET_URL);
+console.log('Environment:', environment);
 console.log('API_BASE_URL (resolved):', API_BASE_URL);
 console.log('SOCKET_URL (resolved):', SOCKET_URL);
 

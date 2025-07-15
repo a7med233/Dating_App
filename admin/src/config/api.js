@@ -1,8 +1,10 @@
+import { environment } from './environment.js';
+
 // API Configuration for Admin Panel
 const API_CONFIG = {
   // Base URL - will be overridden by environment variables
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
-  TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
+  BASE_URL: environment.API_BASE_URL,
+  TIMEOUT: environment.API_TIMEOUT,
   
   // Endpoints
   ENDPOINTS: {

@@ -7,22 +7,22 @@ import { getStoredIPAddress } from '../utils/ipConfig';
 const getCurrentIPAddress = async () => {
   // Try to get from AsyncStorage first
   const storedIP = await getStoredIPAddress();
-  if (storedIP && storedIP !== '192.168.1.100') {
+  if (storedIP && storedIP !== 'https://lashwa.com/api') {
     return storedIP;
   }
   
   // Fallback to environment variable if set
   if (process.env.NODE_ENV === 'production') {
-    return 'https://lashwa.com';
+    return 'https://lashwa.com/api';
   }
   
   // Return the stored default
-  return storedIP || (process.env.NODE_ENV === 'production' ? 'https://lashwa.com' : 'https://lashwa.com');
+  return storedIP || (process.env.NODE_ENV === 'production' ? 'https://lashwa.com/api' : 'https://lashwa.com/api');
 };
 
 // Function to get the correct API base URL
 const getApiBaseUrl = async () => {
-  return 'https://datingapp-production-2526.up.railway.app';
+  return 'https://lashwa.com/api';
 };
 
 // Create API instance with dynamic base URL

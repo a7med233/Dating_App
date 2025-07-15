@@ -7,7 +7,7 @@ import ThemedCard from '../components/ThemedCard';
 import { io } from 'socket.io-client';
 import { useRoute } from '@react-navigation/native';
 
-const SOCKET_URL = 'https://datingapp-production-2526.up.railway.app'; // Live server URL
+const SOCKET_URL = 'https://lashwa.com/api'; // New domain URL
 
 const SupportChatRoom = () => {
   const route = useRoute();

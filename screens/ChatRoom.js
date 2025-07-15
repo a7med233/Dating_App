@@ -22,8 +22,8 @@ import { getStoredIPAddress } from '../utils/ipConfig';
 
 // Function to get the correct Socket URL dynamically
 const getSocketUrl = async () => {
-  // Use the live server URL for socket connections
-  return 'https://datingapp-production-2526.up.railway.app';
+  // Use the new domain for socket connections
+  return 'https://lashwa.com/api';
 };
 
 const ChatRoom = () => {

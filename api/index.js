@@ -182,6 +182,15 @@ app.use((req, res, next) => {
   }
 });
 
+// Create API router for /api prefix
+const apiRouter = express.Router();
+
+// Make io available to routes
+apiRouter.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -203,19 +212,17 @@ mongoose
   });
 
 // Test endpoint to check if server is running
-app.get('/test', (req, res) => {
+apiRouter.get('/test', (req, res) => {
   res.json({ 
     message: 'Server is running!',
     timestamp: new Date().toISOString(),
-    socketConnected: io.engine.clientsCount
+    socketConnected: req.io.engine.clientsCount
   });
 });
 
-
-
 // Debug endpoint to check socket connections
-app.get('/debug/socket-users', (req, res) => {
-  const connectedUsers = Array.from(io.sockets.sockets.keys());
+apiRouter.get('/debug/socket-users', (req, res) => {
+  const connectedUsers = Array.from(req.io.sockets.sockets.keys());
   res.json({ 
     message: 'Socket debug info',
     connectedUsers: connectedUsers.length,
@@ -224,14 +231,16 @@ app.get('/debug/socket-users', (req, res) => {
 });
 
 // Health check route
+apiRouter.get('/', (req, res) => {
+  res.send('🚀 Lashwa API is up and running!');
+});
+
+// Root route for backward compatibility
 app.get('/', (req, res) => {
   res.send('🚀 Lashwa backend is up and running!');
 });
 
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-  console.log(`Socket.IO server is also running on port ${port}`);
-});
+// Server will be started at the end of the file after all routes are defined
 
 // In-memory notification store (in production, use Redis or database)
 const notifications = new Map();
@@ -255,7 +264,7 @@ const generateToken = user => {
 };
 
 // Backend Route to Create User and Generate Token
-app.post('/register', async (req, res) => {
+apiRouter.post('/register', async (req, res) => {
   try {
     // Extract user data from the request body
     const userData = req.body;
@@ -314,7 +323,7 @@ app.post('/register', async (req, res) => {
 // });
 
 //fetch users data
-app.get('/users/:userId', async (req, res) => {
+apiRouter.get('/users/:userId', async (req, res) => {
   try {
     const {userId} = req.params;
     const { requestingUserId } = req.query; // ID of the user requesting the profile
@@ -392,7 +401,7 @@ app.get('/users/:userId', async (req, res) => {
 });
 
 // Endpoint to update profile visibility settings
-app.put('/users/:userId/visibility', async (req, res) => {
+apiRouter.put('/users/:userId/visibility', async (req, res) => {
   try {
     const { userId } = req.params;
     const { genderVisible, typeVisible, lookingForVisible } = req.body;
@@ -435,7 +444,7 @@ app.put('/users/:userId/visibility', async (req, res) => {
 });
 
 // Endpoint to update user photos
-app.put('/users/:userId/photos', async (req, res) => {
+apiRouter.put('/users/:userId/photos', async (req, res) => {
   try {
     const { userId } = req.params;
     const { imageUrls } = req.body;
@@ -471,7 +480,7 @@ app.put('/users/:userId/photos', async (req, res) => {
 });
 
 // Endpoint to update user profile
-app.put('/users/:userId/profile', async (req, res) => {
+apiRouter.put('/users/:userId/profile', async (req, res) => {
   try {
     const { userId } = req.params;
     const updateData = req.body;
@@ -562,7 +571,7 @@ app.put('/users/:userId/profile', async (req, res) => {
 });
 
 //endpoint to login
-app.post('/login', async (req, res) => {
+apiRouter.post('/login', async (req, res) => {
   try {
     const {email, password} = req.body;
 
@@ -606,7 +615,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.get('/matches', async (req, res) => {
+apiRouter.get('/matches', async (req, res) => {
   try {
     const {userId} = req.query;
 
@@ -823,7 +832,7 @@ app.get('/matches', async (req, res) => {
 });
 
 // Endpoint for liking a profile
-app.post('/like-profile', async (req, res) => {
+apiRouter.post('/like-profile', async (req, res) => {
   try {
     const {userId, likedUserId, image, comment} = req.body;
 
@@ -898,7 +907,7 @@ app.post('/like-profile', async (req, res) => {
 });
 
 // Endpoint for rejecting a profile
-app.post('/reject-profile', async (req, res) => {
+apiRouter.post('/reject-profile', async (req, res) => {
   try {
     const {userId, rejectedUserId} = req.body;
 
@@ -933,7 +942,7 @@ app.post('/reject-profile', async (req, res) => {
 });
 
 // Endpoint for unrejecting a profile (in case user changes their mind)
-app.post('/unreject-profile', async (req, res) => {
+apiRouter.post('/unreject-profile', async (req, res) => {
   try {
     const {userId, rejectedUserId} = req.body;
 
@@ -963,7 +972,7 @@ app.post('/unreject-profile', async (req, res) => {
 });
 
 // Get rejected profiles endpoint
-app.get('/rejected-profiles/:userId', async (req, res) => {
+apiRouter.get('/rejected-profiles/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -989,7 +998,7 @@ app.get('/rejected-profiles/:userId', async (req, res) => {
 });
 
 // Debug endpoint to check rejection status
-app.get('/debug-rejection/:userId/:otherUserId', async (req, res) => {
+apiRouter.get('/debug-rejection/:userId/:otherUserId', async (req, res) => {
   try {
     const { userId, otherUserId } = req.params;
 
@@ -1022,7 +1031,7 @@ app.get('/debug-rejection/:userId/:otherUserId', async (req, res) => {
 });
 
 // Debug endpoint to get all rejected profiles for a user
-app.get('/debug-rejected-profiles/:userId', async (req, res) => {
+apiRouter.get('/debug-rejected-profiles/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -1044,7 +1053,7 @@ app.get('/debug-rejected-profiles/:userId', async (req, res) => {
   }
 });
 
-app.get('/received-likes/:userId', async (req, res) => {
+apiRouter.get('/received-likes/:userId', async (req, res) => {
   try {
     const {userId} = req.params;
 
@@ -1102,7 +1111,7 @@ app.get('/received-likes/:userId', async (req, res) => {
 });
 
 //endpoint to create a match betweeen two people
-app.post('/create-match', async (req, res) => {
+apiRouter.post('/create-match', async (req, res) => {
   try {
     const {currentUserId, selectedUserId} = req.body;
 
@@ -1182,7 +1191,7 @@ app.post('/create-match', async (req, res) => {
 });
 
 // Endpoint to get all matches of a specific user
-app.get('/get-matches/:userId', async (req, res) => {
+apiRouter.get('/get-matches/:userId', async (req, res) => {
   try {
     const {userId} = req.params;
 
@@ -1350,7 +1359,7 @@ io.on('connection', socket => {
 
 
 
-app.get('/messages', async (req, res) => {
+apiRouter.get('/messages', async (req, res) => {
   try {
     const {senderId, receiverId} = req.query;
 
@@ -1373,7 +1382,7 @@ app.get('/messages', async (req, res) => {
 });
 
 // Get user online status
-app.get('/user-status/:userId', async (req, res) => {
+apiRouter.get('/user-status/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
@@ -1398,7 +1407,7 @@ app.get('/user-status/:userId', async (req, res) => {
 });
 
 // Endpoint to check if an email already exists
-app.post('/check-email', async (req, res) => {
+apiRouter.post('/check-email', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -1416,7 +1425,7 @@ app.post('/check-email', async (req, res) => {
 });
 
 // Upload photo to Cloudinary
-app.post('/upload-photo', async (req, res) => {
+apiRouter.post('/upload-photo', async (req, res) => {
   try {
     const { imageBase64, userId } = req.body;
     
@@ -1469,7 +1478,7 @@ app.post('/upload-photo', async (req, res) => {
 });
 
 // Upload multiple photos to Cloudinary
-app.post('/upload-photos', async (req, res) => {
+apiRouter.post('/upload-photos', async (req, res) => {
   try {
     const { images, userId } = req.body;
     
@@ -1549,7 +1558,7 @@ app.post('/upload-photos', async (req, res) => {
 });
 
 // Admin registration endpoint (for initial setup, remove or protect after first use)
-app.post('/admin/register', async (req, res) => {
+apiRouter.post('/admin/register', async (req, res) => {
   try {
     const { email, password, role } = req.body;
     const existing = await Admin.findOne({ email });
@@ -1566,7 +1575,7 @@ app.post('/admin/register', async (req, res) => {
 });
 
 // Admin login endpoint
-app.post('/admin/login', async (req, res) => {
+apiRouter.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const admin = await Admin.findOne({ email });
@@ -1606,7 +1615,7 @@ function adminAuth(requiredRole) {
 }
 
 // Get current admin info
-app.get('/admin/me', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/me', adminAuth(), async (req, res) => {
   try {
     const admin = await Admin.findById(req.admin.adminId).select('-password');
     if (!admin) {
@@ -1619,7 +1628,7 @@ app.get('/admin/me', adminAuth(), async (req, res) => {
 });
 
 // Get all users (admin only) - Enhanced with comprehensive data
-app.get('/admin/users', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/users', adminAuth(), async (req, res) => {
   try {
     const { page = 1, limit = 50, search, gender, type, visibility, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
     
@@ -1690,7 +1699,7 @@ app.get('/admin/users', adminAuth(), async (req, res) => {
 });
 
 // Get detailed user information (admin only)
-app.get('/admin/users/:userId/details', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/users/:userId/details', adminAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
     const user = await User.findById(userId)
@@ -1734,7 +1743,7 @@ app.get('/admin/users/:userId/details', adminAuth(), async (req, res) => {
 });
 
 // Delete a user (admin only)
-app.delete('/admin/users/:userId', adminAuth(), async (req, res) => {
+apiRouter.delete('/admin/users/:userId', adminAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
     await User.findByIdAndDelete(userId);
@@ -1745,7 +1754,7 @@ app.delete('/admin/users/:userId', adminAuth(), async (req, res) => {
 });
 
 // Update user information (admin only)
-app.patch('/admin/users/:userId', adminAuth(), async (req, res) => {
+apiRouter.patch('/admin/users/:userId', adminAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
     const updateData = req.body;
@@ -1768,7 +1777,7 @@ app.patch('/admin/users/:userId', adminAuth(), async (req, res) => {
 });
 
 // Ban or unban a user (admin only)
-app.patch('/admin/users/:userId/ban', adminAuth(), async (req, res) => {
+apiRouter.patch('/admin/users/:userId/ban', adminAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { ban } = req.body; // true to ban, false to unban
@@ -1785,7 +1794,7 @@ app.patch('/admin/users/:userId/ban', adminAuth(), async (req, res) => {
 });
 
 // Update a user's subscription (admin only)
-app.patch('/admin/users/:userId/subscription', adminAuth(), async (req, res) => {
+apiRouter.patch('/admin/users/:userId/subscription', adminAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { subscriptionType, subscriptionStart, subscriptionEnd, isSubscribed } = req.body;
@@ -1807,7 +1816,7 @@ app.patch('/admin/users/:userId/subscription', adminAuth(), async (req, res) => 
 });
 
 // Enhanced Analytics endpoint (admin only)
-app.get('/admin/analytics', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/analytics', adminAuth(), async (req, res) => {
   try {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1935,7 +1944,7 @@ app.get('/admin/analytics', adminAuth(), async (req, res) => {
 });
 
 // Get a user's match history (admin only)
-app.get('/admin/users/:userId/matches', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/users/:userId/matches', adminAuth(), async (req, res) => {
   try {
     // TODO: Replace with real match history from DB
     const matches = [
@@ -1949,7 +1958,7 @@ app.get('/admin/users/:userId/matches', adminAuth(), async (req, res) => {
 });
 
 // Get a user's message history (admin only)
-app.get('/admin/users/:userId/messages', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/users/:userId/messages', adminAuth(), async (req, res) => {
   try {
     // TODO: Replace with real message history from DB
     const messages = [
@@ -1963,7 +1972,7 @@ app.get('/admin/users/:userId/messages', adminAuth(), async (req, res) => {
 });
 
 // List all admin users (superadmin only)
-app.get('/admin/admins', adminAuth('superadmin'), async (req, res) => {
+apiRouter.get('/admin/admins', adminAuth('superadmin'), async (req, res) => {
   try {
     const admins = await Admin.find().select('-password');
     res.status(200).json({ admins });
@@ -1973,7 +1982,7 @@ app.get('/admin/admins', adminAuth('superadmin'), async (req, res) => {
 });
 
 // Update an admin user (role/password, superadmin only)
-app.patch('/admin/admins/:id', adminAuth('superadmin'), async (req, res) => {
+apiRouter.patch('/admin/admins/:id', adminAuth('superadmin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { role, password } = req.body;
@@ -1992,7 +2001,7 @@ app.patch('/admin/admins/:id', adminAuth('superadmin'), async (req, res) => {
 });
 
 // Delete an admin user (superadmin only)
-app.delete('/admin/admins/:id', adminAuth('superadmin'), async (req, res) => {
+apiRouter.delete('/admin/admins/:id', adminAuth('superadmin'), async (req, res) => {
   try {
     const { id } = req.params;
     await Admin.findByIdAndDelete(id);
@@ -2003,7 +2012,7 @@ app.delete('/admin/admins/:id', adminAuth('superadmin'), async (req, res) => {
 });
 
 // User: Start or get support chat
-app.post('/support/chat', async (req, res) => {
+apiRouter.post('/support/chat', async (req, res) => {
   try {
     const { userId } = req.body;
     let chat = await SupportChat.findOne({ userId, status: 'open' });
@@ -2018,7 +2027,7 @@ app.post('/support/chat', async (req, res) => {
 });
 
 // User: Send message
-app.post('/support/message', async (req, res) => {
+apiRouter.post('/support/message', async (req, res) => {
   try {
     const { chatId, text } = req.body;
     const chat = await SupportChat.findById(chatId);
@@ -2033,7 +2042,7 @@ app.post('/support/message', async (req, res) => {
 });
 
 // User: Get own chat
-app.get('/support/chat', async (req, res) => {
+apiRouter.get('/support/chat', async (req, res) => {
   try {
     const { userId } = req.query;
     const chat = await SupportChat.findOne({ userId, status: 'open' });
@@ -2045,7 +2054,7 @@ app.get('/support/chat', async (req, res) => {
 });
 
 // Admin: List all support chats
-app.get('/admin/support/chats', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/support/chats', adminAuth(), async (req, res) => {
   try {
     const chats = await SupportChat.find().populate('userId', 'email').sort('-updatedAt');
     res.status(200).json({ chats });
@@ -2055,7 +2064,7 @@ app.get('/admin/support/chats', adminAuth(), async (req, res) => {
 });
 
 // Admin: Get chat by id
-app.get('/admin/support/chat/:id', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/support/chat/:id', adminAuth(), async (req, res) => {
   try {
     const chat = await SupportChat.findById(req.params.id).populate('userId', 'email');
     if (!chat) return res.status(404).json({ message: 'Chat not found' });
@@ -2066,7 +2075,7 @@ app.get('/admin/support/chat/:id', adminAuth(), async (req, res) => {
 });
 
 // Admin: Send message
-app.post('/admin/support/message', adminAuth(), async (req, res) => {
+apiRouter.post('/admin/support/message', adminAuth(), async (req, res) => {
   try {
     const { chatId, text, adminId } = req.body;
     const chat = await SupportChat.findById(chatId);
@@ -2090,7 +2099,7 @@ io.on('connection', socket => {
 });
 
 // Notification endpoints
-app.get('/api/notifications/:userId', (req, res) => {
+apiRouter.get('/api/notifications/:userId', (req, res) => {
   try {
     const { userId } = req.params;
     const userNotifications = getUserNotifications(userId);
@@ -2101,7 +2110,7 @@ app.get('/api/notifications/:userId', (req, res) => {
   }
 });
 
-app.post('/api/notifications/:userId/read/:notificationId', (req, res) => {
+apiRouter.post('/api/notifications/:userId/read/:notificationId', (req, res) => {
   try {
     const { userId, notificationId } = req.params;
     markNotificationAsRead(userId, notificationId);
@@ -2112,7 +2121,7 @@ app.post('/api/notifications/:userId/read/:notificationId', (req, res) => {
   }
 });
 
-app.post('/api/notifications/:userId/read-all', (req, res) => {
+apiRouter.post('/api/notifications/:userId/read-all', (req, res) => {
   try {
     const { userId } = req.params;
     markAllNotificationsAsRead(userId);
@@ -2123,7 +2132,7 @@ app.post('/api/notifications/:userId/read-all', (req, res) => {
   }
 });
 
-app.delete('/api/notifications/:userId/:notificationId', (req, res) => {
+apiRouter.delete('/api/notifications/:userId/:notificationId', (req, res) => {
   try {
     const { userId, notificationId } = req.params;
     deleteNotification(userId, notificationId);
@@ -2135,7 +2144,7 @@ app.delete('/api/notifications/:userId/:notificationId', (req, res) => {
 });
 
 // Admin notification endpoints
-app.post('/admin/notifications/send', adminAuth(), async (req, res) => {
+apiRouter.post('/admin/notifications/send', adminAuth(), async (req, res) => {
   try {
     const { targetUsers, type, title, message, data } = req.body;
     
@@ -2161,7 +2170,7 @@ app.post('/admin/notifications/send', adminAuth(), async (req, res) => {
   }
 });
 
-app.get('/admin/notifications/stats', adminAuth(), (req, res) => {
+apiRouter.get('/admin/notifications/stats', adminAuth(), (req, res) => {
   try {
     const stats = {
       totalUsers: notifications.size,
@@ -2185,7 +2194,7 @@ app.get('/admin/notifications/stats', adminAuth(), (req, res) => {
 });
 
 // Test endpoint to see all users (for debugging)
-app.get('/test-users', async (req, res) => {
+apiRouter.get('/test-users', async (req, res) => {
   try {
     const users = await User.find({})
       .select('firstName gender type visibility')
@@ -2203,7 +2212,7 @@ app.get('/test-users', async (req, res) => {
 });
 
 // Get user stats (profile views, likes received, matches)
-app.get('/user-stats/:userId', async (req, res) => {
+apiRouter.get('/user-stats/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -2261,7 +2270,7 @@ app.get('/user-stats/:userId', async (req, res) => {
 });
 
 // Track profile view (call this when someone views a profile)
-app.post('/track-profile-view', async (req, res) => {
+apiRouter.post('/track-profile-view', async (req, res) => {
   try {
     const { viewedUserId, viewerUserId } = req.body;
 
@@ -2281,7 +2290,7 @@ app.post('/track-profile-view', async (req, res) => {
 });
 
 // Test endpoint to see all users and their stats
-app.get('/test-users-stats', async (req, res) => {
+apiRouter.get('/test-users-stats', async (req, res) => {
   try {
     const users = await User.find({})
       .select('firstName email receivedLikes matches')
@@ -2306,7 +2315,7 @@ app.get('/test-users-stats', async (req, res) => {
 });
 
 // Test endpoint to create a notification
-app.post('/test-create-notification', async (req, res) => {
+apiRouter.post('/test-create-notification', async (req, res) => {
   try {
     const { userId, type, title, message } = req.body;
     
@@ -2328,7 +2337,7 @@ app.post('/test-create-notification', async (req, res) => {
 });
 
 // Endpoint to deduplicate matches and likedProfiles arrays
-app.post('/deduplicate-user/:userId', async (req, res) => {
+apiRouter.post('/deduplicate-user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
@@ -2381,7 +2390,7 @@ app.post('/deduplicate-user/:userId', async (req, res) => {
 });
 
 // Block/Unblock user endpoint
-app.post('/block-user', async (req, res) => {
+apiRouter.post('/block-user', async (req, res) => {
   try {
     const { userId, blockedUserId } = req.body;
 
@@ -2449,7 +2458,7 @@ app.post('/block-user', async (req, res) => {
 });
 
 // Unblock user endpoint
-app.post('/unblock-user', async (req, res) => {
+apiRouter.post('/unblock-user', async (req, res) => {
   try {
     const { userId, blockedUserId } = req.body;
 
@@ -2487,7 +2496,7 @@ app.post('/unblock-user', async (req, res) => {
 });
 
 // Get blocked users endpoint
-app.get('/blocked-users/:userId', async (req, res) => {
+apiRouter.get('/blocked-users/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -2513,7 +2522,7 @@ app.get('/blocked-users/:userId', async (req, res) => {
 });
 
 // Report user endpoint
-app.post('/report-user', async (req, res) => {
+apiRouter.post('/report-user', async (req, res) => {
   try {
     const { reporterId, reportedUserId, reason, description } = req.body;
 
@@ -2566,7 +2575,7 @@ app.post('/report-user', async (req, res) => {
 });
 
 // Get user reports (for admin)
-app.get('/admin/reports', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/reports', adminAuth(), async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
@@ -2599,7 +2608,7 @@ app.get('/admin/reports', adminAuth(), async (req, res) => {
 });
 
 // Update report status (for admin)
-app.patch('/admin/reports/:reportId', adminAuth(), async (req, res) => {
+apiRouter.patch('/admin/reports/:reportId', adminAuth(), async (req, res) => {
   try {
     const { reportId } = req.params;
     const { status, adminNotes } = req.body;
@@ -2643,7 +2652,7 @@ app.patch('/admin/reports/:reportId', adminAuth(), async (req, res) => {
 });
 
 // Get report statistics (for admin dashboard)
-app.get('/admin/reports/stats', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/reports/stats', adminAuth(), async (req, res) => {
   try {
     const totalReports = await Report.countDocuments();
     const pendingReports = await Report.countDocuments({ status: 'pending' });
@@ -2684,7 +2693,7 @@ app.get('/admin/reports/stats', adminAuth(), async (req, res) => {
 });
 
 // Check if user is blocked by another user
-app.get('/check-blocked/:userId/:otherUserId', async (req, res) => {
+apiRouter.get('/check-blocked/:userId/:otherUserId', async (req, res) => {
   try {
     const { userId, otherUserId } = req.params;
 
@@ -2710,7 +2719,7 @@ app.get('/check-blocked/:userId/:otherUserId', async (req, res) => {
 });
 
 // Get reports for a specific user (for admin)
-app.get('/admin/users/:userId/reports', adminAuth(), async (req, res) => {
+apiRouter.get('/admin/users/:userId/reports', adminAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -2735,7 +2744,7 @@ app.get('/admin/users/:userId/reports', adminAuth(), async (req, res) => {
 // Account Management Endpoints
 
 // Deactivate user account
-app.put('/users/:userId/deactivate', async (req, res) => {
+apiRouter.put('/users/:userId/deactivate', async (req, res) => {
   try {
     const { userId } = req.params;
     const { password } = req.body;
@@ -2771,7 +2780,7 @@ app.put('/users/:userId/deactivate', async (req, res) => {
 });
 
 // Reactivate user account
-app.put('/users/:userId/reactivate', async (req, res) => {
+apiRouter.put('/users/:userId/reactivate', async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -2795,7 +2804,7 @@ app.put('/users/:userId/reactivate', async (req, res) => {
 });
 
 // Delete user account permanently
-app.delete('/users/:userId/delete', async (req, res) => {
+apiRouter.delete('/users/:userId/delete', async (req, res) => {
   try {
     const { userId } = req.params;
     const { password } = req.body;
@@ -2832,7 +2841,7 @@ app.delete('/users/:userId/delete', async (req, res) => {
 });
 
 // Get account status
-app.get('/users/:userId/account-status', async (req, res) => {
+apiRouter.get('/users/:userId/account-status', async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -2858,8 +2867,12 @@ app.get('/users/:userId/account-status', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+// Mount the API router
+app.use('/api', apiRouter);
 
-app.listen(PORT, () => {
+const PORT = process.env.PORT; // Let cPanel assign the port
+
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`Socket.IO server is also running on port ${PORT}`);
 });

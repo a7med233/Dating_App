@@ -7,10 +7,10 @@ export const IP_CONFIG_KEY = 'API_IP_ADDRESS';
 export const getStoredIPAddress = async () => {
   try {
     const storedIP = await AsyncStorage.getItem(IP_CONFIG_KEY);
-    return storedIP || '192.168.0.116'; // Updated default fallback
+    return storedIP || 'https://lashwa.com/api'; // Updated default fallback
   } catch (error) {
     console.error('Error getting stored IP:', error);
-    return '192.168.0.116'; // Updated default fallback
+    return 'https://lashwa.com/api'; // Updated default fallback
   }
 };
 

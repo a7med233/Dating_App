@@ -33,7 +33,7 @@ A comprehensive admin dashboard for managing the Lashwa dating app, built with R
    Create a `.env` file in the admin directory:
    ```env
    # API Configuration
-   VITE_API_BASE_URL=http://192.168.1.100:3000
+   VITE_API_BASE_URL=https://lashwa.com/api
    VITE_API_TIMEOUT=30000
 
    # App Configuration
@@ -49,7 +49,7 @@ A comprehensive admin dashboard for managing the Lashwa dating app, built with R
    VITE_NODE_ENV=development
    ```
 
-   **Note**: The IP address `192.168.1.100` is configured for your current WiFi network. If your IP changes, update this value.
+   **Note**: The API is now configured to use the production domain. For local development, you can override this in `env.local`.
 
 ## Development
 
@@ -208,7 +208,7 @@ admin/
 
 2. **IP Address Changes**
    - If your WiFi IP changes, update the `VITE_API_BASE_URL` in your `.env` file
-   - Current IP: `192.168.1.100`
+   - Current API: `https://lashwa.com/api`
    - Check your IP with: `ipconfig` (Windows) or `ifconfig` (Mac/Linux)
 
 3. **Build Errors**
@@ -226,7 +226,7 @@ admin/
 For issues and questions:
 1. Check the browser console for error messages
 2. Verify your environment configuration
-3. Ensure the backend API is accessible at `http://192.168.1.100:3000`
+3. Ensure the backend API is accessible at `https://lashwa.com/api`
 4. Check the network tab for failed requests
 
 ## Contributing
