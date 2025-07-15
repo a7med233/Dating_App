@@ -7,21 +7,27 @@ import { getStoredIPAddress } from '../utils/ipConfig';
 const getCurrentIPAddress = async () => {
   // Try to get from AsyncStorage first
   const storedIP = await getStoredIPAddress();
-  if (storedIP && storedIP !== 'https://lashwa.com/api') {
+  if (storedIP) {
     return storedIP;
   }
   
-  // Fallback to environment variable if set
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://lashwa.com/api';
+  // For development, use the computer's IP address
+  if (__DEV__) {
+    return 'http://192.168.0.116:3000/api';
   }
   
-  // Return the stored default
-  return storedIP || (process.env.NODE_ENV === 'production' ? 'https://lashwa.com/api' : 'https://lashwa.com/api');
+  // For production, use the production URL
+  return 'https://lashwa.com/api';
 };
 
 // Function to get the correct API base URL
 const getApiBaseUrl = async () => {
+  // For local development, use the computer's IP address
+  if (__DEV__) {
+    return 'http://192.168.0.116:3000/api';
+  }
+  
+  // For production, use the production URL
   return 'https://lashwa.com/api';
 };
 

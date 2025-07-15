@@ -352,7 +352,7 @@ const ChatScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       {/* Header */}
       <LinearGradient
@@ -369,8 +369,12 @@ const ChatScreen = () => {
             )}
           </View>
           
-          <TouchableOpacity style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
+          <TouchableOpacity 
+            style={styles.settingsButton}
+            onPress={() => navigation.navigate('Settings')}
+            activeOpacity={0.7}
+          >
+            <AntDesign name="setting" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -514,7 +518,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
   settingsButton: {
-    padding: spacing.sm,
+    padding: spacing.xs,
     borderRadius: borderRadius.medium,
   },
   filterContainer: {

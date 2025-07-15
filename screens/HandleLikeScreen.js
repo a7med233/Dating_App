@@ -131,7 +131,7 @@ const HandleLikeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       {/* Header */}
       <LinearGradient
@@ -308,11 +308,13 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   profileCard: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.md,
     ...shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -377,11 +379,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   likedPhotosSection: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.md,
     ...shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
@@ -415,11 +419,13 @@ const styles = StyleSheet.create({
     borderColor: 'white',
   },
   commentsSection: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.md,
     ...shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   commentItem: {
     marginBottom: spacing.sm,
@@ -437,11 +443,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   photosSection: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.md,
     ...shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   photoContainer: {
     marginBottom: spacing.md,
@@ -452,11 +460,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   promptsSection: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.md,
     ...shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   promptCard: {
     backgroundColor: '#F8F9FA',
@@ -485,12 +495,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: colors.cardBorder,
   },
   passButton: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     width: 60,
     height: 60,
     borderRadius: 30,

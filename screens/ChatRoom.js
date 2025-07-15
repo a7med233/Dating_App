@@ -7,7 +7,9 @@ import {
   TextInput,
   Pressable,
   Image,
-  RefreshControl
+  RefreshControl,
+  Modal,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, {useState, useLayoutEffect, useEffect, useRef} from 'react';
@@ -15,15 +17,71 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Entypo, Feather, Ionicons } from '@expo/vector-icons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {io} from 'socket.io-client';
-import { fetchMessages } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+import { fetchMessages, getUserDetails, getApi } from '../services/api';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { Platform } from 'react-native';
 import { getStoredIPAddress } from '../utils/ipConfig';
+// Custom emoji picker with common emojis
+const COMMON_EMOJIS = [
+  '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
+  '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
+  '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩',
+  '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
+  '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬',
+  '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗',
+  '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😯', '😦', '😧',
+  '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢',
+  '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '💩', '👻', '💀',
+  '☠️', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽',
+  '🙀', '😿', '😾', '🙈', '🙉', '🙊', '👶', '👧', '🧒', '👦',
+  '👩', '🧑', '👨', '👵', '🧓', '👴', '👮‍♀️', '👮', '👮‍♂️', '🕵️‍♀️',
+  '🕵️', '🕵️‍♂️', '💂‍♀️', '💂', '💂‍♂️', '👷‍♀️', '👷', '👷‍♂️', '🤴', '👸',
+  '👳‍♀️', '👳', '👳‍♂️', '👲', '🧕', '🤵', '👰', '🤰', '🤱', '👼',
+  '🎅', '🤶', '🧙‍♀️', '🧙', '🧙‍♂️', '🧝‍♀️', '🧝', '🧝‍♂️', '🧛‍♀️', '🧛',
+  '🧛‍♂️', '🧟‍♀️', '🧟', '🧟‍♂️', '🧞‍♀️', '🧞', '🧞‍♂️', '🧜‍♀️', '🧜', '🧜‍♂️',
+  '🧚‍♀️', '🧚', '🧚‍♂️', '👼', '🤰', '🤱', '👼', '🎅', '🤶', '🧙‍♀️',
+  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+  '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️',
+  '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐',
+  '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐',
+  '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳',
+  '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️',
+  '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️',
+  '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️',
+  '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓',
+  '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️',
+  '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠',
+  'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿', '🅿️', '🛗', '🛂', '🛃',
+  '🛄', '🛅', '🚹', '🚺', '🚼', '🚻', '🚮', '🎦', '📶', '🈁',
+  '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙', '🆒', '🆕',
+  '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣',
+  '9️⃣', '🔟', '🔢', '#️⃣', '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️',
+  '⏺️', '⏭️', '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽',
+  '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️', '↕️', '↔️',
+  '↪️', '↩️', '⤴️', '⤵️', '🔀', '🔁', '🔂', '🔄', '🔃', '🎵',
+  '🎶', '➕', '➖', '➗', '✖️', '♾️', '💲', '💱', '™️', '©️',
+  '®️', '👁️‍🗨️', '🔚', '🔙', '🔛', '🔝', '🔜', '〰️', '➰', '➿',
+  '✔️', '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫',
+  '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔳', '🔲',
+  '▪️', '▫️', '◾', '◽', '◼️', '◻️', '🟥', '🟧', '🟨', '🟩',
+  '🟦', '🟪', '⬛', '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔔',
+  '🔕', '📣', '📢', '💬', '💭', '🗯️', '♠️', '♣️', '♥️', '♦️',
+  '🃏', '🎴', '🀄', '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖',
+  '🕗', '🕘', '🕙', '🕚', '🕛', '🕜', '🕝', '🕞', '🕟', '🕠',
+  '🕡', '🕢', '🕣', '🕤', '🕥', '🕦', '🕧'
+];
 
 // Function to get the correct Socket URL dynamically
 const getSocketUrl = async () => {
-  // Use the new domain for socket connections
-  return 'https://lashwa.com/api';
+  // For local development, use the computer's IP address
+  if (__DEV__) {
+    return 'http://192.168.0.116:3000';
+  }
+  
+  // For production, use the production URL
+  return 'https://lashwa.com';
 };
 
 const ChatRoom = () => {
@@ -36,6 +94,7 @@ const ChatRoom = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const scrollViewRef = useRef(null);
   
   const senderId = route?.params?.senderId;
@@ -53,6 +112,7 @@ const ChatRoom = () => {
     const connectToSocket = async () => {
       try {
         const socketUrl = await getSocketUrl();
+        console.log('Connecting to socket URL:', socketUrl);
         
         const s = io(socketUrl, {
           transports: Platform.OS === 'android' ? ['polling', 'websocket'] : ['websocket', 'polling'], // Android prefers polling
@@ -72,10 +132,12 @@ const ChatRoom = () => {
         }
         
         s.on('connect', () => {
+          console.log('Socket connected successfully');
           setSocketConnected(true);
         });
         
-        s.on('connect_error', () => {
+        s.on('connect_error', (error) => {
+          console.error('Socket connection error:', error);
           setSocketConnected(false);
         });
         
@@ -137,6 +199,8 @@ const ChatRoom = () => {
     if (!message.trim()) return;
     if (!senderId || !receiverId) return;
     
+    console.log('Sending message:', { senderId, receiverId, message });
+    
     if (socket && senderId && receiverId) {
       socket.emit('sendMessage', { senderId, receiverId, message });
       setMessage('');
@@ -149,6 +213,12 @@ const ChatRoom = () => {
       setTimeout(() => {
         fetchMessagesHandler();
       }, 200);
+    } else {
+      console.log('Cannot send message - missing socket or user IDs:', { 
+        hasSocket: !!socket, 
+        senderId, 
+        receiverId 
+      });
     }
   };
 
@@ -168,17 +238,22 @@ const ChatRoom = () => {
       setError(null);
       
       if (!senderId || !receiverId) {
+        console.log('Missing senderId or receiverId:', { senderId, receiverId });
         setError('Missing user information. Please try again.');
         setLoading(false);
         setRefreshing(false);
         return;
       }
       
+      console.log('Fetching messages for:', { senderId, receiverId });
       const response = await fetchMessages({ senderId, receiverId });
-      setMessages(response.data);
+      console.log('Messages response:', response);
+      // The API returns messages directly, not wrapped in a data property
+      setMessages(response.data || response);
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
+      console.error('Error fetching messages:', error);
       setError('Failed to load messages. Please try again.');
       setLoading(false);
       setRefreshing(false);
@@ -220,6 +295,41 @@ const ChatRoom = () => {
       scrollViewRef.current.scrollToEnd({ animated });
     }
   };
+
+  const handleEmojiSelect = (emoji) => {
+    setMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const handleProfilePress = async () => {
+    if (receiverId) {
+      try {
+        // Get the current user's ID to pass as requestingUserId
+        const token = await AsyncStorage.getItem('token');
+        const decodedToken = jwtDecode(token);
+        const currentUserId = decodedToken.userId;
+        
+        // Fetch user details with requestingUserId parameter
+        const apiInstance = await getApi();
+        const response = await apiInstance.get(`/users/${receiverId}?requestingUserId=${currentUserId}`);
+        const userProfile = response.data.user;
+        
+        console.log('Fetched user profile:', userProfile);
+        
+        navigation.navigate('ProfileDetails', {
+          currentProfile: userProfile,
+          isFromChat: true
+        });
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        // Fallback: navigate with just the ID
+        navigation.navigate('ProfileDetails', {
+          userId: receiverId,
+          isFromChat: true
+        });
+      }
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
       {/* Custom Header */}
@@ -243,10 +353,12 @@ const ChatRoom = () => {
           </Pressable>
           
           <View style={styles.userInfo}>
-            <Image 
-              source={{ uri: route?.params?.image || 'https://via.placeholder.com/40' }} 
-              style={styles.userAvatar}
-            />
+            <Pressable onPress={handleProfilePress} style={styles.profileImageContainer}>
+              <Image 
+                source={{ uri: route?.params?.image || 'https://via.placeholder.com/40' }} 
+                style={styles.userAvatar}
+              />
+            </Pressable>
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{route?.params?.name}</Text>
               <View style={styles.statusIndicator}>
@@ -258,14 +370,15 @@ const ChatRoom = () => {
             </View>
           </View>
           
-          <View style={styles.headerActions}>
+          {/* Temporarily hidden call buttons */}
+          {/* <View style={styles.headerActions}>
             <Pressable style={styles.actionButton}>
               <Ionicons name="videocam-outline" size={24} color={colors.textPrimary} />
             </Pressable>
             <Pressable style={styles.actionButton}>
               <Ionicons name="call-outline" size={24} color={colors.textPrimary} />
             </Pressable>
-          </View>
+          </View> */}
         </View>
       </View>
 
@@ -354,7 +467,10 @@ const ChatRoom = () => {
         {!error && (
           <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
-              <Pressable style={styles.emojiButton}>
+              <Pressable 
+                style={styles.emojiButton}
+                onPress={() => setShowEmojiPicker(!showEmojiPicker)}
+              >
                 <Entypo name="emoji-happy" size={24} color={colors.textSecondary} />
               </Pressable>
               <TextInput
@@ -393,6 +509,46 @@ const ChatRoom = () => {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      {/* Emoji Picker Modal */}
+      <Modal
+        visible={showEmojiPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEmojiPicker(false)}
+      >
+        <Pressable 
+          style={styles.emojiModalOverlay}
+          onPress={() => setShowEmojiPicker(false)}
+        >
+          <View style={styles.emojiPickerContainer}>
+            <View style={styles.emojiPickerHeader}>
+              <Text style={styles.emojiPickerTitle}>Emojis</Text>
+              <Pressable 
+                style={styles.closeEmojiButton}
+                onPress={() => setShowEmojiPicker(false)}
+              >
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </Pressable>
+            </View>
+            <FlatList
+              data={COMMON_EMOJIS}
+              numColumns={8}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.emojiItem}
+                  onPress={() => handleEmojiSelect(item)}
+                >
+                  <Text style={styles.emojiText}>{item}</Text>
+                </Pressable>
+              )}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.emojiList}
+            />
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -705,5 +861,50 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: spacing.xs,
     marginLeft: spacing.sm,
+  },
+  // New styles for profile image and emoji picker
+  profileImageContainer: {
+    // Add any specific styling if needed
+  },
+  emojiModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  emojiPickerContainer: {
+    backgroundColor: colors.cardBackground,
+    borderTopLeftRadius: borderRadius.large,
+    borderTopRightRadius: borderRadius.large,
+    height: 350,
+  },
+  emojiPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  emojiPickerTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textPrimary,
+  },
+  closeEmojiButton: {
+    padding: spacing.xs,
+  },
+  emojiList: {
+    padding: spacing.sm,
+  },
+  emojiItem: {
+    flex: 1,
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xs,
+  },
+  emojiText: {
+    fontSize: 24,
   },
 });

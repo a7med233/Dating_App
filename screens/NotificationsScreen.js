@@ -34,7 +34,7 @@ const NotificationsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       <NotificationCenter 
         isVisible={true}
@@ -49,7 +49,7 @@ const NotificationsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
   },
 });
 

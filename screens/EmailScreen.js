@@ -82,7 +82,7 @@ const EmailScreen = () => {
   };
   
   return (
-    <SafeAreaWrapper backgroundColor="white">
+    <SafeAreaWrapper backgroundColor={colors.background}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}

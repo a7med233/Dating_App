@@ -176,7 +176,7 @@ const BirthScreen = () => {
   const age = getAge();
 
   return (
-    <SafeAreaWrapper backgroundColor="white" edges={['top', 'left', 'right']}>
+    <SafeAreaWrapper backgroundColor={colors.background} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

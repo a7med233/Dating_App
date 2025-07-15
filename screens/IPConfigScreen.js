@@ -161,7 +161,7 @@ const IPConfigScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: 20,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     padding: 20,
     borderRadius: 10,
     marginBottom: 20,
@@ -186,6 +186,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   sectionTitle: {
     fontSize: 18,
@@ -195,12 +197,12 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.cardBorder,
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
     marginBottom: 15,
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
   },
   buttonContainer: {
     flexDirection: 'row',

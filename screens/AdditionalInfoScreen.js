@@ -18,6 +18,7 @@ import {
 } from '../registrationUtils';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const AdditionalInfoScreen = () => {
   const navigation = useNavigation();
@@ -100,6 +101,7 @@ const AdditionalInfoScreen = () => {
         value={value}
         onChangeText={(text) => updateFormData(field, text)}
         placeholder={placeholder}
+        placeholderTextColor={colors.textTertiary}
         multiline={multiline}
         numberOfLines={multiline ? 4 : 1}
         maxLength={multiline ? 500 : undefined}
@@ -156,7 +158,7 @@ const AdditionalInfoScreen = () => {
               style={styles.removeLanguageButton}
               onPress={() => removeLanguage(index)}
             >
-              <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+              <Ionicons name="close-circle" size={16} color="white" />
             </TouchableOpacity>
           </View>
         ))}
@@ -169,17 +171,22 @@ const AdditionalInfoScreen = () => {
   );
 
   return (
-    <SafeAreaWrapper backgroundColor="#fff" style={{flex: 1, backgroundColor: "#fff"}}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+    <SafeAreaWrapper backgroundColor={colors.background} style={{flex: 1, backgroundColor: colors.background}}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerIcon}>
-          <MaterialCommunityIcons
-            name="account-plus-outline"
-            size={26}
-            color={colors.textPrimary}
-          />
+          <LinearGradient
+            colors={['#A142F4', '#FF5F6D']}
+            style={styles.headerIconGradient}
+          >
+            <MaterialCommunityIcons
+              name="account-plus-outline"
+              size={26}
+              color="white"
+            />
+          </LinearGradient>
         </View>
         <Text style={styles.headerTitle}>Tell us more about yourself</Text>
         <Text style={styles.headerSubtitle}>All fields are optional</Text>
@@ -276,12 +283,17 @@ const AdditionalInfoScreen = () => {
           onPress={handleNext}
           activeOpacity={0.8}
           style={styles.nextButton}>
-          <Text style={styles.nextButtonText}>Continue</Text>
-          <MaterialCommunityIcons
-            name="arrow-right"
-            size={24}
-            color="white"
-          />
+          <LinearGradient
+            colors={['#A142F4', '#FF5F6D']}
+            style={styles.nextButtonGradient}
+          >
+            <Text style={styles.nextButtonText}>Continue</Text>
+            <MaterialCommunityIcons
+              name="arrow-right"
+              size={24}
+              color="white"
+            />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaWrapper>
@@ -295,14 +307,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.xlarge,
-    borderColor: colors.textPrimary,
-    borderWidth: 2,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: spacing.md,
+    ...shadows.medium,
+  },
+  headerIconGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
   },
   headerTitle: {
     fontSize: typography.fontSize.xxl,
@@ -324,11 +340,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   section: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: spacing.lg,
+    backgroundColor: colors.cardBackground,
+    borderRadius: borderRadius.large,
+    padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.lg,
     ...shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
@@ -345,10 +363,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   fieldIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F0F0F0',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.sm,
@@ -360,12 +378,13 @@ const styles = StyleSheet.create({
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.cardBorder,
     borderRadius: borderRadius.medium,
     padding: spacing.md,
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.regular,
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
+    color: colors.textPrimary,
   },
   multilineInput: {
     height: 100,
@@ -385,11 +404,11 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.cardBorder,
     borderRadius: borderRadius.medium,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
   },
   optionButtonSelected: {
     backgroundColor: colors.primary,
@@ -435,6 +454,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderStyle: 'dashed',
+    backgroundColor: colors.backgroundSecondary,
   },
   addLanguageText: {
     fontSize: typography.fontSize.sm,
@@ -443,7 +463,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
   errorText: {
-    color: colors.error || '#FF6B6B',
+    color: colors.error,
     marginBottom: spacing.md,
     fontSize: typography.fontSize.sm,
     textAlign: 'center',
@@ -453,15 +473,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: colors.cardBorder,
   },
   nextButton: {
-    backgroundColor: colors.primary,
     borderRadius: borderRadius.medium,
+    overflow: 'hidden',
+    ...shadows.button,
+  },
+  nextButtonGradient: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',

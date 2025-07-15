@@ -246,7 +246,7 @@ const SettingsScreen = (props) => {
   );
 
   return (
-    <SafeAreaWrapper backgroundColor="#fff" style={{ flex: 1, backgroundColor: '#fff' }}>
+          <SafeAreaWrapper backgroundColor={colors.background} style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView style={{ flex: 1 }}>
         <View style={{
           flexDirection: 'row',

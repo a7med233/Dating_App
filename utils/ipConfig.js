@@ -7,10 +7,27 @@ export const IP_CONFIG_KEY = 'API_IP_ADDRESS';
 export const getStoredIPAddress = async () => {
   try {
     const storedIP = await AsyncStorage.getItem(IP_CONFIG_KEY);
-    return storedIP || 'https://lashwa.com/api'; // Updated default fallback
+    if (storedIP) {
+      return storedIP;
+    }
+    
+    // For development, use the computer's IP address
+    if (__DEV__) {
+      return 'http://192.168.0.116:3000/api';
+    }
+    
+    // For production, use the production URL
+    return 'https://lashwa.com/api';
   } catch (error) {
     console.error('Error getting stored IP:', error);
-    return 'https://lashwa.com/api'; // Updated default fallback
+    
+    // For development, use the computer's IP address
+    if (__DEV__) {
+      return 'http://192.168.0.116:3000/api';
+    }
+    
+    // For production, use the production URL
+    return 'https://lashwa.com/api';
   }
 };
 

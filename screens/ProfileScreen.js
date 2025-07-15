@@ -285,7 +285,7 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       {/* Header */}
       <LinearGradient
@@ -551,13 +551,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   statsCard: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 20,
     padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.md,
     ...shadows.medium,
     borderWidth: 1,
-    borderColor: 'rgba(255, 107, 157, 0.1)',
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   featureCard: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: Platform.OS === 'android' ? spacing.md : spacing.lg,
     marginBottom: spacing.sm,
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadows.medium,
     borderWidth: 1,
-    borderColor: 'rgba(255, 107, 157, 0.1)',
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   featureIcon: {
     width: 48,
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 20,
     padding: spacing.xl,
     margin: spacing.lg,

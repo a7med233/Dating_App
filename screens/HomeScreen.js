@@ -993,10 +993,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
   },
   profileCard: {
-    backgroundColor: 'white',
-    borderRadius: borderRadius.large,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 20,
     overflow: 'hidden',
     ...shadows.large,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   imageContainer: {
     position: 'relative',
@@ -1167,7 +1169,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1197,6 +1199,7 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: spacing.lg,
+    backgroundColor: colors.background,
   },
   modalFooter: {
     padding: spacing.lg,

@@ -8,7 +8,8 @@ import {
   ScrollView,
   Alert,
   Platform,
-  StatusBar
+  StatusBar,
+  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
@@ -50,6 +51,8 @@ const EditProfileScreen = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [newLanguage, setNewLanguage] = useState('');
 
   useEffect(() => {
     getCurrentUserId();
@@ -75,23 +78,21 @@ const EditProfileScreen = () => {
   };
 
   const addLanguage = () => {
-    Alert.prompt(
-      'Add Language',
-      'Enter a language you speak:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: (language) => {
-            if (language && language.trim()) {
-              const newLanguages = [...formData.languages, language.trim()];
-              updateFormData('languages', newLanguages);
-            }
-          }
-        }
-      ],
-      'plain-text'
-    );
+    setShowLanguageModal(true);
+  };
+
+  const handleAddLanguage = () => {
+    if (newLanguage && newLanguage.trim()) {
+      const newLanguages = [...formData.languages, newLanguage.trim()];
+      updateFormData('languages', newLanguages);
+      setNewLanguage('');
+      setShowLanguageModal(false);
+    }
+  };
+
+  const handleCancelLanguage = () => {
+    setNewLanguage('');
+    setShowLanguageModal(false);
   };
 
   const removeLanguage = (index) => {
@@ -236,7 +237,7 @@ const EditProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       {/* Header */}
       <LinearGradient
@@ -386,6 +387,47 @@ const EditProfileScreen = () => {
           </>
         ))}
       </ScrollView>
+
+      {/* Language Modal */}
+      <Modal
+        visible={showLanguageModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCancelLanguage}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add Language</Text>
+            <Text style={styles.modalSubtitle}>Enter a language you speak:</Text>
+            
+            <TextInput
+              style={styles.modalInput}
+              value={newLanguage}
+              onChangeText={setNewLanguage}
+              placeholder="e.g., English, Spanish, French..."
+              autoFocus={true}
+              onSubmitEditing={handleAddLanguage}
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={handleCancelLanguage}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButtonAdd, !newLanguage.trim() && styles.modalButtonDisabled]}
+                onPress={handleAddLanguage}
+                disabled={!newLanguage.trim()}
+              >
+                <Text style={styles.modalButtonAddText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -434,11 +476,13 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: spacing.lg,
     marginBottom: spacing.md,
     ...shadows.medium,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 66, 244, 0.1)',
   },
   sectionTitle: {
     fontSize: typography.fontSize.lg,
@@ -488,12 +532,12 @@ const styles = StyleSheet.create({
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.cardBorder,
     borderRadius: borderRadius.medium,
     padding: spacing.md,
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.regular,
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
   },
   multilineInput: {
     height: 100,
@@ -513,11 +557,11 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.cardBorder,
     borderRadius: borderRadius.medium,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
   },
   optionButtonSelected: {
     backgroundColor: colors.primary,
@@ -569,6 +613,79 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
     color: colors.primary,
     marginLeft: spacing.xs,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: borderRadius.large,
+    padding: spacing.xl,
+    margin: spacing.lg,
+    width: '90%',
+    maxWidth: 400,
+    ...shadows.large,
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  modalSubtitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: borderRadius.medium,
+    padding: spacing.md,
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    backgroundColor: colors.cardBackground,
+    marginBottom: spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  modalButtonCancel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  modalButtonCancelText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.textSecondary,
+  },
+  modalButtonAdd: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.medium,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  modalButtonAddText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.medium,
+    color: 'white',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
 });
 

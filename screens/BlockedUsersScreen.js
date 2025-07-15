@@ -161,7 +161,7 @@ const BlockedUsersScreen = () => {
   );
 
   return (
-    <SafeAreaWrapper backgroundColor="#fff" style={{ flex: 1, backgroundColor: '#fff' }}>
+          <SafeAreaWrapper backgroundColor={colors.background} style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
