@@ -772,6 +772,8 @@ const SettingsScreen = (props) => {
                 justifyContent: 'space-between',
                 paddingVertical: spacing.md,
                 paddingHorizontal: spacing.lg,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.backgroundSecondary,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -805,6 +807,8 @@ const SettingsScreen = (props) => {
               </View>
               <AntDesign name="right" size={16} color={colors.textSecondary} />
             </Pressable>
+
+
           </View>
         </View>
 

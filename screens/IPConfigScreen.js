@@ -2,23 +2,34 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
+  ScrollView,
   Alert,
-  ScrollView
+  SafeAreaView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { getStoredIPAddress, setStoredIPAddress, getComputerIPInstructions } from '../utils/ipConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colors, typography, spacing } from '../theme/colors';
 import { testApiConnection } from '../services/api';
+import { 
+  getStoredIPAddress, 
+  setStoredIPAddress, 
+  clearStoredIPAddress,
+  forceProductionAPI,
+  forceDevelopmentAPI,
+  getEnvironmentInfo
+} from '../utils/ipConfig';
 
 const IPConfigScreen = () => {
   const [ipAddress, setIpAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('');
+  const [environmentInfo, setEnvironmentInfo] = useState(null);
 
   useEffect(() => {
     loadCurrentIP();
+    setEnvironmentInfo(getEnvironmentInfo());
   }, []);
 
   const loadCurrentIP = async () => {
@@ -32,43 +43,92 @@ const IPConfigScreen = () => {
 
   const handleSaveIP = async () => {
     if (!ipAddress.trim()) {
-      Alert.alert('Error', 'Please enter a valid IP address');
+      Alert.alert('Error', 'Please enter an IP address first');
       return;
     }
 
     setIsLoading(true);
+    setConnectionStatus('Saving IP address...');
+    
     try {
-      await setStoredIPAddress(ipAddress.trim());
-      Alert.alert('Success', 'IP address saved successfully!');
-      setConnectionStatus('');
+      await setStoredIPAddress(ipAddress);
+      setConnectionStatus('✅ IP address saved successfully!');
+      Alert.alert('Success', 'IP address has been saved!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to save IP address');
+      setConnectionStatus('❌ Failed to save IP address');
+      Alert.alert('Error', 'Failed to save IP address: ' + error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const testConnection = async () => {
-    if (!ipAddress.trim()) {
-      Alert.alert('Error', 'Please enter an IP address first');
-      return;
-    }
-
     setIsLoading(true);
     setConnectionStatus('Testing connection...');
     
     try {
-      const isConnected = await testApiConnection();
-      if (isConnected) {
-        setConnectionStatus('✅ Connection successful!');
-        Alert.alert('Success', 'API connection is working!');
+      const result = await testApiConnection();
+      if (result.success) {
+        setConnectionStatus(`✅ Connection successful!\nURL: ${result.url}\nResponse: ${JSON.stringify(result.data)}`);
+        Alert.alert('Success', `API connection is working!\n\nURL: ${result.url}\n\nResponse: ${JSON.stringify(result.data)}`);
       } else {
-        setConnectionStatus('❌ Connection failed');
-        Alert.alert('Error', 'Could not connect to the API. Please check your IP address and make sure the server is running.');
+        setConnectionStatus(`❌ Connection failed\nURL: ${result.url}\nError: ${result.error}`);
+        Alert.alert('Error', `Could not connect to the API.\n\nURL: ${result.url}\n\nError: ${result.error}`);
       }
     } catch (error) {
-      setConnectionStatus('❌ Connection failed');
+      setConnectionStatus('❌ Connection failed: ' + error.message);
       Alert.alert('Error', 'Connection test failed: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const forceProduction = async () => {
+    setIsLoading(true);
+    setConnectionStatus('Forcing production API...');
+    
+    try {
+      await forceProductionAPI();
+      setIpAddress('https://lashwa.com/api');
+      setConnectionStatus('✅ Production API forced!');
+      Alert.alert('Success', 'Production API URL has been set!');
+    } catch (error) {
+      setConnectionStatus('❌ Failed to force production API');
+      Alert.alert('Error', 'Failed to force production API: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const forceDevelopment = async () => {
+    setIsLoading(true);
+    setConnectionStatus('Forcing development API...');
+    
+    try {
+      await forceDevelopmentAPI();
+      setIpAddress('http://192.168.0.116:3000/api');
+      setConnectionStatus('✅ Development API forced!');
+      Alert.alert('Success', 'Development API URL has been set!');
+    } catch (error) {
+      setConnectionStatus('❌ Failed to force development API');
+      Alert.alert('Error', 'Failed to force development API: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearIP = async () => {
+    setIsLoading(true);
+    setConnectionStatus('Clearing IP address...');
+    
+    try {
+      await clearStoredIPAddress();
+      setIpAddress('');
+      setConnectionStatus('✅ IP address cleared!');
+      Alert.alert('Success', 'IP address has been cleared!');
+    } catch (error) {
+      setConnectionStatus('❌ Failed to clear IP address');
+      Alert.alert('Error', 'Failed to clear IP address: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -83,6 +143,23 @@ const IPConfigScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>API IP Configuration</Text>
+        
+        {/* Environment Info */}
+        {environmentInfo && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Environment Information</Text>
+            <View style={styles.environmentInfo}>
+              <Text style={styles.infoText}>
+                Mode: {environmentInfo.environment}{'\n'}
+                Is Development: {environmentInfo.isDevelopment ? 'Yes' : 'No'}{'\n'}
+                Is Production: {environmentInfo.isProduction ? 'Yes' : 'No'}{'\n'}
+                NODE_ENV: {environmentInfo.nodeEnv}{'\n'}
+                API_BASE_URL: {environmentInfo.apiBaseUrl}{'\n'}
+                Default API: {environmentInfo.defaultAPI}
+              </Text>
+            </View>
+          </View>
+        )}
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Current IP Address</Text>
@@ -123,6 +200,42 @@ const IPConfigScreen = () => {
           ) : null}
         </View>
 
+        {/* Force API URLs */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Force API URLs</Text>
+          <View style={styles.forceButtonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.forceProductionButton]}
+              onPress={forceProduction}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>
+                Force Production API
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.forceDevelopmentButton]}
+              onPress={forceDevelopment}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>
+                Force Development API
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.clearButton]}
+              onPress={clearIP}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>
+                Clear IP Address
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>How to Find Your IP Address</Text>
           <View style={styles.instructionsContainer}>
@@ -150,7 +263,8 @@ const IPConfigScreen = () => {
             • Ensure your API server is running on port 3000{'\n'}
             • Check that your computer's firewall allows connections{'\n'}
             • Make sure both devices are on the same WiFi network{'\n'}
-            • Try using 'localhost' if testing on the same device
+            • Try using 'localhost' if testing on the same device{'\n'}
+            • For production APK, use "Force Production API" button
           </Text>
         </View>
       </ScrollView>
@@ -195,6 +309,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#333',
   },
+  environmentInfo: {
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.cardBorder,
@@ -209,6 +329,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
+  forceButtonContainer: {
+    gap: 10,
+  },
   button: {
     flex: 1,
     padding: 15,
@@ -220,6 +343,15 @@ const styles = StyleSheet.create({
   },
   testButton: {
     backgroundColor: '#34C759',
+  },
+  forceProductionButton: {
+    backgroundColor: '#FF6B9D',
+  },
+  forceDevelopmentButton: {
+    backgroundColor: '#FFB347',
+  },
+  clearButton: {
+    backgroundColor: '#FF3B30',
   },
   buttonText: {
     color: 'white',

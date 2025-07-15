@@ -158,6 +158,8 @@ const HomeScreen = () => {
   };
 
   const filterProfiles = () => {
+    console.log('=== FILTER DEBUG ===');
+    console.log('Current filters:', filters);
     console.log('Filtering profiles with option:', option);
     console.log('Total profiles data:', profilesData?.length || 0);
     
@@ -201,76 +203,126 @@ const HomeScreen = () => {
     }
 
     // Apply advanced filters
-    filtered = applyAdvancedFilters(filtered);
+    const advancedFiltered = applyAdvancedFilters(filtered);
+    console.log('After advanced filters:', advancedFiltered.length);
+    console.log('=== END FILTER DEBUG ===');
     
-    console.log('Final filtered profiles:', filtered.length);
-    return filtered;
+    return advancedFiltered;
   };
 
   const applyAdvancedFilters = (profiles) => {
     return profiles.filter(profile => {
+      console.log('Checking profile:', profile.firstName, 'Age:', profile.age);
+      
       // Age filter
-      if (profile.age) {
-        const age = parseInt(profile.age);
-        if (age < filters.ageRange.min || age > filters.ageRange.max) {
-          return false;
+      if (filters.ageRange.min > 18 || filters.ageRange.max < 99) {
+        if (profile.age) {
+          const age = parseInt(profile.age);
+          if (age < filters.ageRange.min || age > filters.ageRange.max) {
+            console.log('Filtered out by age:', profile.firstName, 'Age:', age, 'Range:', filters.ageRange);
+            return false;
+          }
         }
       }
 
       // Religion filter
-      if (filters.religion && profile.religion) {
-        if (!profile.religion.toLowerCase().includes(filters.religion.toLowerCase())) {
+      if (filters.religion && filters.religion.trim() !== '') {
+        if (profile.religion) {
+          if (!profile.religion.toLowerCase().includes(filters.religion.toLowerCase())) {
+            console.log('Filtered out by religion:', profile.firstName, 'Religion:', profile.religion, 'Filter:', filters.religion);
+            return false;
+          }
+        } else {
+          console.log('Filtered out by religion (no religion data):', profile.firstName);
           return false;
         }
       }
 
-      // Height filter (basic - could be enhanced)
-      if (filters.height && profile.height) {
-        if (!profile.height.toLowerCase().includes(filters.height.toLowerCase())) {
+      // Height filter
+      if (filters.height && filters.height.trim() !== '') {
+        if (profile.height) {
+          if (!profile.height.toLowerCase().includes(filters.height.toLowerCase())) {
+            console.log('Filtered out by height:', profile.firstName, 'Height:', profile.height, 'Filter:', filters.height);
+            return false;
+          }
+        } else {
+          console.log('Filtered out by height (no height data):', profile.firstName);
           return false;
         }
       }
 
       // Children filter
-      if (filters.children && profile.children) {
-        if (!profile.children.toLowerCase().includes(filters.children.toLowerCase())) {
+      if (filters.children && filters.children.trim() !== '') {
+        if (profile.children) {
+          if (!profile.children.toLowerCase().includes(filters.children.toLowerCase())) {
+            console.log('Filtered out by children:', profile.firstName, 'Children:', profile.children, 'Filter:', filters.children);
+            return false;
+          }
+        } else {
+          console.log('Filtered out by children (no children data):', profile.firstName);
           return false;
         }
       }
 
       // Smoking filter
-      if (filters.smoking && profile.smoking) {
-        if (!profile.smoking.toLowerCase().includes(filters.smoking.toLowerCase())) {
+      if (filters.smoking && filters.smoking.trim() !== '') {
+        if (profile.smoking) {
+          if (!profile.smoking.toLowerCase().includes(filters.smoking.toLowerCase())) {
+            console.log('Filtered out by smoking:', profile.firstName, 'Smoking:', profile.smoking, 'Filter:', filters.smoking);
+            return false;
+          }
+        } else {
+          console.log('Filtered out by smoking (no smoking data):', profile.firstName);
           return false;
         }
       }
 
       // Drinking filter
-      if (filters.drinking && profile.drinking) {
-        if (!profile.drinking.toLowerCase().includes(filters.drinking.toLowerCase())) {
+      if (filters.drinking && filters.drinking.trim() !== '') {
+        if (profile.drinking) {
+          if (!profile.drinking.toLowerCase().includes(filters.drinking.toLowerCase())) {
+            console.log('Filtered out by drinking:', profile.firstName, 'Drinking:', profile.drinking, 'Filter:', filters.drinking);
+            return false;
+          }
+        } else {
+          console.log('Filtered out by drinking (no drinking data):', profile.firstName);
           return false;
         }
       }
 
       // Languages filter
-      if (filters.languages.length > 0 && profile.languages) {
-        const hasMatchingLanguage = filters.languages.some(lang => 
-          profile.languages.some(profileLang => 
-            profileLang.toLowerCase().includes(lang.toLowerCase())
-          )
-        );
-        if (!hasMatchingLanguage) {
+      if (filters.languages.length > 0 && filters.languages.some(lang => lang.trim() !== '')) {
+        const validLanguages = filters.languages.filter(lang => lang.trim() !== '');
+        if (profile.languages && profile.languages.length > 0) {
+          const hasMatchingLanguage = validLanguages.some(lang => 
+            profile.languages.some(profileLang => 
+              profileLang.toLowerCase().includes(lang.toLowerCase())
+            )
+          );
+          if (!hasMatchingLanguage) {
+            console.log('Filtered out by languages:', profile.firstName, 'Languages:', profile.languages, 'Filter:', validLanguages);
+            return false;
+          }
+        } else {
+          console.log('Filtered out by languages (no languages data):', profile.firstName);
           return false;
         }
       }
 
       // Location filter
-      if (filters.location && profile.location) {
-        if (!profile.location.toLowerCase().includes(filters.location.toLowerCase())) {
+      if (filters.location && filters.location.trim() !== '') {
+        if (profile.location) {
+          if (!profile.location.toLowerCase().includes(filters.location.toLowerCase())) {
+            console.log('Filtered out by location:', profile.firstName, 'Location:', profile.location, 'Filter:', filters.location);
+            return false;
+          }
+        } else {
+          console.log('Filtered out by location (no location data):', profile.firstName);
           return false;
         }
       }
 
+      console.log('Profile passed all filters:', profile.firstName);
       return true;
     });
   };
@@ -325,6 +377,7 @@ const HomeScreen = () => {
 
   useEffect(() => {
     setActiveFilters(countActiveFilters());
+    console.log('Filters changed, active filters count:', countActiveFilters());
   }, [filters]);
 
   const isToday = (date) => {
@@ -413,7 +466,7 @@ const HomeScreen = () => {
           }
         ]}
       >
-        {/* Profile Image with Navigation */}
+        {/* Profile Image Container */}
         <View style={styles.imageContainer}>
           {profile?.imageUrls?.length > 0 && (
             <Image
@@ -457,7 +510,7 @@ const HomeScreen = () => {
 
           {/* Profile Info Overlay */}
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)']}
             style={styles.profileInfoOverlay}
           >
             <View style={styles.profileInfo}>
@@ -483,33 +536,33 @@ const HomeScreen = () => {
               )}
             </View>
           </LinearGradient>
+        </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              onPress={handleCross}
-              style={styles.passButton}
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            onPress={handleCross}
+            style={styles.passButton}
+          >
+            <LinearGradient
+              colors={['#FF6B6B', '#FF8E53']}
+              style={styles.actionButtonGradient}
             >
-              <LinearGradient
-                colors={['#FF6B6B', '#FF8E53']}
-                style={styles.actionButtonGradient}
-              >
-                <Entypo name="cross" size={28} color="white" />
-              </LinearGradient>
-            </TouchableOpacity>
+              <Entypo name="cross" size={28} color="white" />
+            </LinearGradient>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleLike}
-              style={styles.likeButton}
+          <TouchableOpacity
+            onPress={handleLike}
+            style={styles.likeButton}
+          >
+            <LinearGradient
+              colors={['#FF6B9D', '#FF8E53']}
+              style={styles.actionButtonGradient}
             >
-              <LinearGradient
-                colors={['#FF6B9D', '#FF8E53']}
-                style={styles.actionButtonGradient}
-              >
-                <AntDesign name="heart" size={28} color="white" />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+              <AntDesign name="heart" size={28} color="white" />
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         {/* Profile Details */}
@@ -575,8 +628,11 @@ const HomeScreen = () => {
           </View>
           
           <View style={styles.headerRight}>
-            <TouchableOpacity 
-              style={styles.filterButton}
+            {/* <TouchableOpacity 
+              style={[
+                styles.filterButton,
+                activeFilters > 0 && styles.filterButtonActive
+              ]}
               onPress={() => setShowFilters(true)}
             >
               <Ionicons name="filter" size={20} color="white" />
@@ -585,7 +641,7 @@ const HomeScreen = () => {
                   <Text style={styles.filterBadgeText}>{activeFilters}</Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
@@ -624,8 +680,8 @@ const HomeScreen = () => {
         )}
       </ScrollView>
 
-      {/* Filter Modal */}
-      <Modal
+      {/* Filter Modal - Commented out for now */}
+      {/* <Modal
         visible={showFilters}
         animationType="slide"
         presentationStyle="pageSheet"
@@ -649,186 +705,7 @@ const HomeScreen = () => {
           </View>
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-            {/* Age Range */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Age Range</Text>
-              <View style={styles.ageRangeContainer}>
-                <Text style={styles.ageRangeText}>
-                  {filters.ageRange.min} - {filters.ageRange.max} years
-                </Text>
-                <View style={styles.ageRangeSlider}>
-                  <TouchableOpacity
-                    style={styles.ageButton}
-                    onPress={() => {
-                      if (filters.ageRange.min > 18) {
-                        updateFilter('ageRange', { ...filters.ageRange, min: filters.ageRange.min - 1 });
-                      }
-                    }}
-                  >
-                    <Ionicons name="remove" size={16} color="white" />
-                  </TouchableOpacity>
-                  <View style={styles.ageRangeBar}>
-                    <View style={styles.ageRangeFill} />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.ageButton}
-                    onPress={() => {
-                      if (filters.ageRange.max < 99) {
-                        updateFilter('ageRange', { ...filters.ageRange, max: filters.ageRange.max + 1 });
-                      }
-                    }}
-                  >
-                    <Ionicons name="add" size={16} color="white" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-
-            {/* Religion */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Religion</Text>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.filterInput}
-                  placeholder="Enter religion preference"
-                  value={filters.religion}
-                  onChangeText={(text) => updateFilter('religion', text)}
-                />
-              </View>
-            </View>
-
-            {/* Height */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Height</Text>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.filterInput}
-                  placeholder="Enter height preference"
-                  value={filters.height}
-                  onChangeText={(text) => updateFilter('height', text)}
-                />
-              </View>
-            </View>
-
-            {/* Children */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Children</Text>
-              <View style={styles.optionsContainer}>
-                {['Has children', 'No children', 'Open to children'].map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.optionButton,
-                      filters.children === option && styles.optionButtonSelected
-                    ]}
-                    onPress={() => updateFilter('children', filters.children === option ? '' : option)}
-                  >
-                    <Text style={[
-                      styles.optionText,
-                      filters.children === option && styles.optionTextSelected
-                    ]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Smoking */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Smoking</Text>
-              <View style={styles.optionsContainer}>
-                {['Smoker', 'Non-smoker', 'Occasionally'].map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.optionButton,
-                      filters.smoking === option && styles.optionButtonSelected
-                    ]}
-                    onPress={() => updateFilter('smoking', filters.smoking === option ? '' : option)}
-                  >
-                    <Text style={[
-                      styles.optionText,
-                      filters.smoking === option && styles.optionTextSelected
-                    ]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Drinking */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Drinking</Text>
-              <View style={styles.optionsContainer}>
-                {['Drinker', 'Non-drinker', 'Socially'].map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.optionButton,
-                      filters.drinking === option && styles.optionButtonSelected
-                    ]}
-                    onPress={() => updateFilter('drinking', filters.drinking === option ? '' : option)}
-                  >
-                    <Text style={[
-                      styles.optionText,
-                      filters.drinking === option && styles.optionTextSelected
-                    ]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Languages */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Languages</Text>
-              <View style={styles.languagesContainer}>
-                {filters.languages.map((language, index) => (
-                  <View key={index} style={styles.languageTag}>
-                    <TextInput
-                      style={styles.languageInput}
-                      placeholder="Language"
-                      value={language}
-                      onChangeText={(text) => {
-                        const newLanguages = [...filters.languages];
-                        newLanguages[index] = text;
-                        updateFilter('languages', newLanguages);
-                      }}
-                    />
-                    <TouchableOpacity
-                      onPress={() => removeLanguageFilter(index)}
-                      style={styles.removeLanguageButton}
-                    >
-                      <Ionicons name="close" size={16} color={colors.error} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {filters.languages.length < 5 && (
-                  <TouchableOpacity
-                    onPress={addLanguageFilter}
-                    style={styles.addLanguageButton}
-                  >
-                    <Ionicons name="add" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            {/* Location */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Location</Text>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.filterInput}
-                  placeholder="Enter location preference"
-                  value={filters.location}
-                  onChangeText={(text) => updateFilter('location', text)}
-                />
-              </View>
-            </View>
+            <Text style={styles.debugText}>Filters temporarily disabled</Text>
           </ScrollView>
 
           <View style={styles.modalFooter}>
@@ -836,11 +713,11 @@ const HomeScreen = () => {
               style={styles.applyButton}
               onPress={() => setShowFilters(false)}
             >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
+              <Text style={styles.applyButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </Modal>
+      </Modal> */}
     </SafeAreaView>
   );
 };
@@ -912,6 +789,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  filterButtonActive: {
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
   filterBadge: {
     position: 'absolute',
     top: -5,
@@ -933,6 +815,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   loadingContainer: {
     flex: 1,
@@ -999,10 +882,11 @@ const styles = StyleSheet.create({
     ...shadows.large,
     borderWidth: 1,
     borderColor: 'rgba(161, 66, 244, 0.1)',
+    marginBottom: spacing.lg,
   },
   imageContainer: {
     position: 'relative',
-    height: screenHeight * 0.6,
+    height: screenHeight * 0.55, // Reduced height for better proportions
   },
   profileImage: {
     width: '100%',
@@ -1050,6 +934,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   profileInfo: {
     gap: spacing.sm,
@@ -1090,25 +975,33 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   actionButtons: {
-    position: 'absolute',
-    bottom: spacing.lg,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.cardBackground,
   },
   passButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   likeButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   actionButtonGradient: {
     width: '100%',
@@ -1118,6 +1011,7 @@ const styles = StyleSheet.create({
   },
   profileDetails: {
     padding: spacing.lg,
+    backgroundColor: colors.cardBackground,
   },
   promptCard: {
     backgroundColor: '#F8F9FA',
@@ -1169,7 +1063,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.cardBackground,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1178,10 +1072,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: colors.cardBorder,
+    backgroundColor: colors.cardBackground,
   },
   closeButton: {
     padding: spacing.xs,
+    borderRadius: borderRadius.small,
+    backgroundColor: colors.backgroundSecondary,
   },
   modalTitle: {
     fontSize: typography.fontSize.lg,
@@ -1190,6 +1087,8 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: spacing.xs,
+    borderRadius: borderRadius.small,
+    backgroundColor: colors.backgroundSecondary,
   },
   clearButtonText: {
     fontSize: typography.fontSize.md,
@@ -1199,12 +1098,13 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: spacing.lg,
-    backgroundColor: colors.background,
+    backgroundColor: colors.cardBackground,
   },
   modalFooter: {
     padding: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: colors.cardBorder,
+    backgroundColor: colors.cardBackground,
   },
   applyButton: {
     backgroundColor: colors.primary,
@@ -1227,9 +1127,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   ageRangeContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.backgroundSecondary,
     padding: spacing.lg,
     borderRadius: borderRadius.medium,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   ageRangeText: {
     fontSize: typography.fontSize.md,
@@ -1253,21 +1155,23 @@ const styles = StyleSheet.create({
   },
   ageRangeBar: {
     flex: 1,
-    height: 4,
-    backgroundColor: '#E8E8E8',
-    borderRadius: 2,
+    height: 6,
+    backgroundColor: colors.cardBorder,
+    borderRadius: 3,
     marginHorizontal: spacing.md,
   },
   ageRangeFill: {
     height: '100%',
     backgroundColor: colors.primary,
-    borderRadius: 2,
+    borderRadius: 3,
     width: '60%',
   },
   inputContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: borderRadius.medium,
     paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   filterInput: {
     paddingVertical: spacing.md,
@@ -1282,15 +1186,17 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.cardBorder,
     borderRadius: borderRadius.medium,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: 'white',
+    backgroundColor: colors.cardBackground,
+    ...shadows.small,
   },
   optionButtonSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    ...shadows.medium,
   },
   optionText: {
     fontSize: typography.fontSize.sm,
@@ -1309,9 +1215,11 @@ const styles = StyleSheet.create({
   languageTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: borderRadius.medium,
     paddingRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   languageInput: {
     paddingHorizontal: spacing.md,

@@ -8,25 +8,42 @@ export const getStoredIPAddress = async () => {
   try {
     const storedIP = await AsyncStorage.getItem(IP_CONFIG_KEY);
     if (storedIP) {
+      console.log('Found stored IP address:', storedIP);
       return storedIP;
+    }
+    
+    // Check for environment variable from EAS build
+    if (process.env.API_BASE_URL) {
+      console.log('Using environment API URL:', process.env.API_BASE_URL);
+      return process.env.API_BASE_URL;
     }
     
     // For development, use the computer's IP address
     if (__DEV__) {
+      console.log('Development mode detected, using local IP');
       return 'http://192.168.0.116:3000/api';
     }
     
     // For production, use the production URL
+    console.log('Production mode detected, using production API');
     return 'https://lashwa.com/api';
   } catch (error) {
     console.error('Error getting stored IP:', error);
     
+    // Check for environment variable from EAS build
+    if (process.env.API_BASE_URL) {
+      console.log('Using environment API URL (fallback):', process.env.API_BASE_URL);
+      return process.env.API_BASE_URL;
+    }
+    
     // For development, use the computer's IP address
     if (__DEV__) {
+      console.log('Development mode detected (fallback), using local IP');
       return 'http://192.168.0.116:3000/api';
     }
     
     // For production, use the production URL
+    console.log('Production mode detected (fallback), using production API');
     return 'https://lashwa.com/api';
   }
 };
@@ -53,6 +70,42 @@ export const clearStoredIPAddress = async () => {
     console.error('Error clearing IP address:', error);
     return false;
   }
+};
+
+// Force production API URL (for testing)
+export const forceProductionAPI = async () => {
+  try {
+    await AsyncStorage.setItem(IP_CONFIG_KEY, 'https://lashwa.com/api');
+    console.log('Forced production API URL');
+    return true;
+  } catch (error) {
+    console.error('Error forcing production API:', error);
+    return false;
+  }
+};
+
+// Force development API URL (for testing)
+export const forceDevelopmentAPI = async () => {
+  try {
+    await AsyncStorage.setItem(IP_CONFIG_KEY, 'http://192.168.0.116:3000/api');
+    console.log('Forced development API URL');
+    return true;
+  } catch (error) {
+    console.error('Error forcing development API:', error);
+    return false;
+  }
+};
+
+// Get current environment info
+export const getEnvironmentInfo = () => {
+  return {
+    isDevelopment: __DEV__,
+    isProduction: !__DEV__,
+    environment: __DEV__ ? 'Development' : 'Production',
+    nodeEnv: process.env.NODE_ENV || 'not set',
+    apiBaseUrl: process.env.API_BASE_URL || 'not set',
+    defaultAPI: __DEV__ ? 'http://192.168.0.116:3000/api' : 'https://lashwa.com/api'
+  };
 };
 
 // Helper function to get your computer's IP address

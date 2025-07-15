@@ -39,6 +39,7 @@ import AdditionalInfoScreen from '../screens/AdditionalInfoScreen';
 import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import TermsOfUseScreen from '../screens/TermsOfUseScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, shadows } from '../theme/colors';
 import { AuthContext } from '../AuthContext';
@@ -139,6 +140,7 @@ const StackNavigator = () => {
         <Stack.Screen name="HandleLike" component={HandleLikeScreen} />
         <Stack.Screen name="ChatRoom" component={ChatRoom} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+
         <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
         <Stack.Screen name="TermsOfUse" component={TermsOfUseScreen} />
         <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />

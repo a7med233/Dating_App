@@ -2112,7 +2112,7 @@ io.on('connection', socket => {
 });
 
 // Notification endpoints
-apiRouter.get('/api/notifications/:userId', (req, res) => {
+apiRouter.get('/notifications/:userId', (req, res) => {
   try {
     const { userId } = req.params;
     const userNotifications = getUserNotifications(userId);
@@ -2123,7 +2123,7 @@ apiRouter.get('/api/notifications/:userId', (req, res) => {
   }
 });
 
-apiRouter.post('/api/notifications/:userId/read/:notificationId', (req, res) => {
+apiRouter.post('/notifications/:userId/read/:notificationId', (req, res) => {
   try {
     const { userId, notificationId } = req.params;
     markNotificationAsRead(userId, notificationId);
@@ -2134,7 +2134,7 @@ apiRouter.post('/api/notifications/:userId/read/:notificationId', (req, res) => 
   }
 });
 
-apiRouter.post('/api/notifications/:userId/read-all', (req, res) => {
+apiRouter.post('/notifications/:userId/read-all', (req, res) => {
   try {
     const { userId } = req.params;
     markAllNotificationsAsRead(userId);
@@ -2145,7 +2145,7 @@ apiRouter.post('/api/notifications/:userId/read-all', (req, res) => {
   }
 });
 
-apiRouter.delete('/api/notifications/:userId/:notificationId', (req, res) => {
+apiRouter.delete('/notifications/:userId/:notificationId', (req, res) => {
   try {
     const { userId, notificationId } = req.params;
     deleteNotification(userId, notificationId);

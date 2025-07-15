@@ -8,26 +8,51 @@ const getCurrentIPAddress = async () => {
   // Try to get from AsyncStorage first
   const storedIP = await getStoredIPAddress();
   if (storedIP) {
+    console.log('Using stored IP address:', storedIP);
     return storedIP;
+  }
+  
+  // Check for environment variable from EAS build
+  if (process.env.API_BASE_URL) {
+    console.log('Using environment API URL:', process.env.API_BASE_URL);
+    return process.env.API_BASE_URL;
   }
   
   // For development, use the computer's IP address
   if (__DEV__) {
+    console.log('Development mode detected, using local IP');
     return 'http://192.168.0.116:3000/api';
   }
   
   // For production, use the production URL
+  console.log('Production mode detected, using production API');
   return 'https://lashwa.com/api';
 };
 
 // Function to get the correct API base URL
 const getApiBaseUrl = async () => {
-  // For local development, use the computer's IP address
-  if (__DEV__) {
-    return 'http://192.168.0.116:3000/api';
+  // Check for environment variable from EAS build
+  if (process.env.API_BASE_URL) {
+    console.log('Using environment API URL:', process.env.API_BASE_URL);
+    return process.env.API_BASE_URL;
   }
   
-  // For production, use the production URL
+  // Check NODE_ENV for production builds
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Production NODE_ENV detected, using production API');
+    return 'https://lashwa.com/api';
+  }
+  
+  // For local development, use the computer's IP address
+  if (__DEV__) {
+    console.log('Development mode detected, using local IP');
+    // Temporarily force production URL for testing in Expo Go
+    return 'https://lashwa.com/api';
+    // return 'http://192.168.0.116:3000/api';
+  }
+  
+  // Fallback to production URL for any other case
+  console.log('Fallback to production API');
   return 'https://lashwa.com/api';
 };
 
@@ -38,7 +63,10 @@ const createApiInstance = async () => {
   const API_BASE_URL = await getApiBaseUrl();
   
   console.log('Platform:', Platform.OS);
-  console.log('API Base URL:', API_BASE_URL);
+  console.log('Environment:', __DEV__ ? 'Development' : 'Production');
+  console.log('NODE_ENV:', process.env.NODE_ENV || 'not set');
+  console.log('API_BASE_URL:', process.env.API_BASE_URL || 'not set');
+  console.log('Final API Base URL:', API_BASE_URL);
   
   return axios.create({
     baseURL: API_BASE_URL,
@@ -60,16 +88,21 @@ const initializeApi = async () => {
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      console.log('API Request:', config.method?.toUpperCase(), config.url);
       return config;
     });
 
     // Add response interceptor for better error handling
     api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log('API Response:', response.status, response.config.url);
+        return response;
+      },
       (error) => {
         console.error('API Error:', error);
         console.error('Error config:', error.config);
         console.error('Error response:', error.response);
+        console.error('API Base URL used:', error.config?.baseURL);
         
         // Handle specific HTTP status codes
         if (error.response) {
@@ -198,127 +231,117 @@ export const checkEmailExists = async (email) => {
     });
     
     if (err.response && err.response.status === 409) {
-      return true; // Email exists
+      return true; // Email already exists
     }
-    
-    // Re-throw the error with a more user-friendly message
-    if (err.message.includes('Network error') || err.message.includes('timeout')) {
-      throw new Error('Network error. Please check your internet connection and try again.');
-    }
-    if (err.message.includes('Invalid request')) {
-      throw new Error('Invalid email format. Please check your input and try again.');
-    }
-    throw new Error('Error checking email. Please try again.');
+    throw err;
   }
 };
 
 // Test API connection
 export const testApiConnection = async () => {
   try {
-    console.log('Testing API connection to:', await getApiBaseUrl());
     const apiInstance = await getApi();
-    const response = await apiInstance.post('/check-email', { email: 'test@example.com' });
-    console.log('API test successful:', response.data);
-    return true;
-  } catch (err) {
-    console.error('API test failed:', err);
-    return false;
+    const response = await apiInstance.get('/');
+    console.log('API connection test successful:', response.data);
+    return {
+      success: true,
+      data: response.data,
+      url: apiInstance.defaults.baseURL
+    };
+  } catch (error) {
+    console.error('API connection test failed:', error);
+    return {
+      success: false,
+      error: error.message,
+      url: error.config?.baseURL || 'unknown'
+    };
   }
 };
 
-// Notification API endpoints
+// Notification functions
 export const getNotifications = async (userId) => {
   const apiInstance = await getApi();
-  return apiInstance.get(`/api/notifications/${userId}`);
+  return apiInstance.get(`/notifications/${userId}`);
 };
 export const markNotificationAsRead = async (userId, notificationId) => {
   const apiInstance = await getApi();
-  return apiInstance.post(`/api/notifications/${userId}/read/${notificationId}`);
+  return apiInstance.put(`/notifications/${userId}/${notificationId}/read`);
 };
 export const markAllNotificationsAsRead = async (userId) => {
   const apiInstance = await getApi();
-  return apiInstance.post(`/api/notifications/${userId}/read-all`);
+  return apiInstance.put(`/notifications/${userId}/read-all`);
 };
 export const deleteNotification = async (userId, notificationId) => {
   const apiInstance = await getApi();
-  return apiInstance.delete(`/api/notifications/${userId}/${notificationId}`);
+  return apiInstance.delete(`/notifications/${userId}/${notificationId}`);
 };
 
-// Block and Report functions
+// Block/Unblock functions
 export const blockUser = async (userId, blockedUserId) => {
   const apiInstance = await getApi();
   return apiInstance.post('/block-user', { userId, blockedUserId });
 };
-
 export const unblockUser = async (userId, blockedUserId) => {
   const apiInstance = await getApi();
-  return apiInstance.post('/unblock-user', { userId, blockedUserId });
+  return apiInstance.delete('/block-user', { data: { userId, blockedUserId } });
 };
-
 export const getBlockedUsers = async (userId) => {
   const apiInstance = await getApi();
   return apiInstance.get(`/blocked-users/${userId}`);
 };
 
+// Report functions
 export const reportUser = async (reporterId, reportedUserId, reason, description) => {
   const apiInstance = await getApi();
   return apiInstance.post('/report-user', { reporterId, reportedUserId, reason, description });
 };
-
 export const checkBlockedStatus = async (userId, otherUserId) => {
   const apiInstance = await getApi();
-  return apiInstance.get(`/check-blocked/${userId}/${otherUserId}`);
+  return apiInstance.get(`/check-blocked-status/${userId}/${otherUserId}`);
 };
 
+// Reject functions
 export const rejectProfile = async (userId, rejectedUserId) => {
   const apiInstance = await getApi();
   return apiInstance.post('/reject-profile', { userId, rejectedUserId });
 };
-
 export const unrejectProfile = async (userId, rejectedUserId) => {
   const apiInstance = await getApi();
-  return apiInstance.post('/unreject-profile', { userId, rejectedUserId });
+  return apiInstance.delete('/reject-profile', { data: { userId, rejectedUserId } });
 };
-
 export const getRejectedProfiles = async (userId) => {
   const apiInstance = await getApi();
   return apiInstance.get(`/rejected-profiles/${userId}`);
 };
 
+// Debug functions
 export const debugRejectionStatus = async (userId, otherUserId) => {
   const apiInstance = await getApi();
-  return apiInstance.get(`/debug-rejection/${userId}/${otherUserId}`);
+  return apiInstance.get(`/debug-rejection-status/${userId}/${otherUserId}`);
 };
-
 export const debugRejectedProfiles = async (userId) => {
   const apiInstance = await getApi();
   return apiInstance.get(`/debug-rejected-profiles/${userId}`);
 };
 
-// Account Management Functions
+// Account management functions
 export const deactivateAccount = async (userId, password) => {
   const apiInstance = await getApi();
-  return apiInstance.put(`/users/${userId}/deactivate`, { password });
+  return apiInstance.post('/deactivate-account', { userId, password });
 };
-
 export const reactivateAccount = async (userId) => {
   const apiInstance = await getApi();
-  return apiInstance.put(`/users/${userId}/reactivate`);
+  return apiInstance.post('/reactivate-account', { userId });
 };
-
 export const deleteAccount = async (userId, password) => {
   const apiInstance = await getApi();
-  return apiInstance.delete(`/users/${userId}/delete`, { data: { password } });
+  return apiInstance.post('/delete-account', { userId, password });
 };
-
 export const getAccountStatus = async (userId) => {
   const apiInstance = await getApi();
-  return apiInstance.get(`/users/${userId}/account-status`);
+  return apiInstance.get(`/account-status/${userId}`);
 };
-
 export const getUserStatus = async (userId) => {
   const apiInstance = await getApi();
   return apiInstance.get(`/user-status/${userId}`);
-};
-
-export default getApi; 
+}; 
