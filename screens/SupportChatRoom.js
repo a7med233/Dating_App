@@ -7,7 +7,29 @@ import ThemedCard from '../components/ThemedCard';
 import { io } from 'socket.io-client';
 import { useRoute } from '@react-navigation/native';
 
-const SOCKET_URL = __DEV__ ? 'http://192.168.0.116:3000' : 'https://lashwa.com'; // Use computer IP for development
+// Function to get the correct Socket URL dynamically
+const getSocketUrl = async () => {
+  // Check for environment variable from EAS build
+  if (process.env.API_BASE_URL) {
+    const baseUrl = process.env.API_BASE_URL.replace('/api', '');
+    return baseUrl;
+  }
+  
+  // Check NODE_ENV for production builds
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://lashwa.com';
+  }
+  
+  // For local development, use the computer's IP address
+  if (__DEV__) {
+    const { getCurrentIPAddress } = require('../utils/ipConfig');
+    const localIP = await getCurrentIPAddress();
+    return `http://${localIP}:3000`;
+  }
+  
+  // Fallback to production URL for any other case
+  return 'https://lashwa.com';
+};
 
 const SupportChatRoom = () => {
   const route = useRoute();
@@ -23,43 +45,68 @@ const SupportChatRoom = () => {
   // Only fetch/create chat if we have a userId or identifier
   useEffect(() => {
     if (!userId && !identifierSubmitted) return;
-    // Get or create support chat
-    fetch(`${SOCKET_URL}/api/support/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userId ? { userId } : { identifier }),
-    })
-      .then(res => res.json())
-      .then(data => {
+    
+    const fetchChat = async () => {
+      try {
+        const socketUrl = await getSocketUrl();
+        // Get or create support chat
+        const response = await fetch(`${socketUrl}/api/support/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userId ? { userId } : { identifier }),
+        });
+        const data = await response.json();
         setChatId(data.chat._id);
         setMessages(data.chat.messages || []);
-      });
+      } catch (error) {
+        console.error('Error fetching support chat:', error);
+      }
+    };
+    
+    fetchChat();
   }, [userId, identifierSubmitted]);
 
   useEffect(() => {
     if (!chatId) return;
-    // Connect to socket and join room
-    const s = io(SOCKET_URL);
-    s.emit('join_support_chat', chatId);
-    s.on('support_message', ({ chatId: msgChatId, message: msg }) => {
-      if (msgChatId === chatId) {
-        setMessages(prev => [...prev, msg]);
+    
+    const connectSocket = async () => {
+      try {
+        const socketUrl = await getSocketUrl();
+        // Connect to socket and join room
+        const s = io(socketUrl);
+        s.emit('join_support_chat', chatId);
+        s.on('support_message', ({ chatId: msgChatId, message: msg }) => {
+          if (msgChatId === chatId) {
+            setMessages(prev => [...prev, msg]);
+          }
+        });
+        socketRef.current = s;
+        // Clean up on unmount
+        return () => {
+          if (s) s.disconnect();
+        };
+      } catch (error) {
+        console.error('Error connecting to support socket:', error);
       }
-    });
-    // Clean up on unmount
-    return () => {
-      s.disconnect();
     };
+    
+    connectSocket();
   }, [chatId]);
 
   const sendMessage = async () => {
     if (!message.trim() || !chatId) return;
-    await fetch(`${SOCKET_URL}/api/support/message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId, text: message }),
-    });
-    setMessage('');
+    
+    try {
+      const socketUrl = await getSocketUrl();
+      await fetch(`${socketUrl}/api/support/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId, text: message }),
+      });
+      setMessage('');
+    } catch (error) {
+      console.error('Error sending support message:', error);
+    }
   };
 
   const formatTime = time => {

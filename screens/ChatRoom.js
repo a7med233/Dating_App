@@ -75,12 +75,25 @@ const COMMON_EMOJIS = [
 
 // Function to get the correct Socket URL dynamically
 const getSocketUrl = async () => {
-  // For local development, use the computer's IP address
-  if (__DEV__) {
-    return 'http://192.168.0.116:3000';
+  // Check for environment variable from EAS build
+  if (process.env.API_BASE_URL) {
+    const baseUrl = process.env.API_BASE_URL.replace('/api', '');
+    return baseUrl;
   }
   
-  // For production, use the production URL
+  // Check NODE_ENV for production builds
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://lashwa.com';
+  }
+  
+  // For local development, use the computer's IP address
+  if (__DEV__) {
+    const { getCurrentIPAddress } = require('../utils/ipConfig');
+    const localIP = await getCurrentIPAddress();
+    return `http://${localIP}:3000`;
+  }
+  
+  // Fallback to production URL for any other case
   return 'https://lashwa.com';
 };
 
@@ -138,6 +151,13 @@ const ChatRoom = () => {
         
         s.on('connect_error', (error) => {
           console.error('Socket connection error:', error);
+          console.error('Socket URL used:', socketUrl);
+          console.error('Error details:', {
+            message: error.message,
+            description: error.description,
+            context: error.context,
+            type: error.type
+          });
           setSocketConnected(false);
         });
         

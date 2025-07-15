@@ -72,6 +72,7 @@ const createApiInstance = async () => {
     baseURL: API_BASE_URL,
     headers: {
       'Content-Type': 'application/json',
+      'User-Agent': 'LashwaApp/1.0',
     },
     timeout: 30000, // 30 second timeout for slower database queries
   });
@@ -89,6 +90,8 @@ const initializeApi = async () => {
         config.headers.Authorization = `Bearer ${token}`;
       }
       console.log('API Request:', config.method?.toUpperCase(), config.url);
+      console.log('Request Headers:', config.headers);
+      console.log('Request Data:', config.data);
       return config;
     });
 
@@ -258,22 +261,26 @@ export const testApiConnection = async () => {
   }
 };
 
-// Notification functions
+// Notification functions - DISABLED: Endpoints not implemented on server
 export const getNotifications = async (userId) => {
-  const apiInstance = await getApi();
-  return apiInstance.get(`/notifications/${userId}`);
+  // const apiInstance = await getApi();
+  // return apiInstance.get(`/notifications/${userId}`);
+  return { data: [] }; // Return empty array until backend implements notifications
 };
 export const markNotificationAsRead = async (userId, notificationId) => {
-  const apiInstance = await getApi();
-  return apiInstance.put(`/notifications/${userId}/${notificationId}/read`);
+  // const apiInstance = await getApi();
+  // return apiInstance.put(`/notifications/${userId}/${notificationId}/read`);
+  return { data: { success: true } }; // Mock response
 };
 export const markAllNotificationsAsRead = async (userId) => {
-  const apiInstance = await getApi();
-  return apiInstance.put(`/notifications/${userId}/read-all`);
+  // const apiInstance = await getApi();
+  // return apiInstance.put(`/notifications/${userId}/read-all`);
+  return { data: { success: true } }; // Mock response
 };
 export const deleteNotification = async (userId, notificationId) => {
-  const apiInstance = await getApi();
-  return apiInstance.delete(`/notifications/${userId}/${notificationId}`);
+  // const apiInstance = await getApi();
+  // return apiInstance.delete(`/notifications/${userId}/${notificationId}`);
+  return { data: { success: true } }; // Mock response
 };
 
 // Block/Unblock functions
