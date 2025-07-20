@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import SafeAreaWrapper from '../components/SafeAreaWrapper';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import {

@@ -13,7 +13,7 @@ import {
   Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, {useCallback, useEffect, useState, useRef} from 'react';
+import React, {useCallback, useEffect, useState, useRef, useContext} from 'react';
 import { Ionicons, Entypo, AntDesign, MaterialIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
@@ -26,6 +26,7 @@ import ThemedCard from '../components/ThemedCard';
 import GradientButton from '../components/GradientButton';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTabBar } from '../context/TabBarContext';
+import { AuthContext } from '../AuthContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,6 +40,7 @@ if (typeof global.btoa === 'undefined') {
 const ChatScreen = () => {
   const navigation = useNavigation();
   const { updateCounts } = useTabBar();
+  const { extendSession } = useContext(AuthContext);
   const [matches, setMatches] = useState([]);
   const [userId, setUserId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -50,9 +52,13 @@ const ChatScreen = () => {
     const fetchUser = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const decodedToken = jwtDecode(token);
-        const userId = decodedToken.userId;
-        setUserId(userId);
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          const userId = decodedToken.userId;
+          setUserId(userId);
+        } else {
+          console.log('No token found, user not logged in');
+        }
       } catch (error) {
         console.error('Error fetching user:', error);
       }
@@ -136,11 +142,14 @@ const ChatScreen = () => {
     }
   }, [isLoading, matches.length]);
 
-  const handleMatchPress = (match) => {
+  const handleMatchPress = async (match) => {
     if (!match || !match._id) {
       console.warn('Invalid match for chat:', match);
       return;
     }
+    
+    // Extend session on user activity
+    await extendSession();
     
     navigation.navigate('ChatRoom', {
       senderId: userId,

@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Switch,
 } from 'react-native';
 import React, {useState,useEffect,useContext} from 'react';
 import { Entypo, AntDesign, MaterialIcons } from '@expo/vector-icons';
@@ -29,8 +30,9 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
   const [option, setOption] = useState('Create account');
-  const { token, isLoading,setToken } = useContext(AuthContext);
+  const { token, isLoading, setToken, extendSession } = useContext(AuthContext);
   const [loginError, setLoginError] = useState('');
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true);
 
   console.log(token)
 
@@ -71,8 +73,26 @@ const LoginScreen = () => {
       };
       const response = await loginUser(user);
       const token = response.data.token;
+      
+      // Store token in AsyncStorage
       await AsyncStorage.setItem('token', token);
+      
+      // Store keep logged in preference
+      await AsyncStorage.setItem('keepLoggedIn', keepLoggedIn.toString());
+      
+      // If keep logged in is false, set a session expiry (24 hours)
+      if (!keepLoggedIn) {
+        const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await AsyncStorage.setItem('sessionExpiry', sessionExpiry);
+      } else {
+        // Clear any existing session expiry
+        await AsyncStorage.removeItem('sessionExpiry');
+      }
+      
       setToken(token);
+      
+      // Extend session if needed
+      await extendSession();
       
       // Clear any previous errors on successful login
       setLoginError('');
@@ -229,7 +249,16 @@ const LoginScreen = () => {
 
                   {/* Remember Me & Forgot Password */}
                   <View style={styles.rememberForgotContainer}>
-                    <Text style={styles.rememberText}>Keep me logged in</Text>
+                    <View style={styles.rememberMeContainer}>
+                      <Switch
+                        value={keepLoggedIn}
+                        onValueChange={setKeepLoggedIn}
+                        trackColor={{ false: colors.border, true: colors.primary }}
+                        thumbColor={keepLoggedIn ? colors.white : colors.textSecondary}
+                        ios_backgroundColor={colors.border}
+                      />
+                      <Text style={styles.rememberText}>Keep me logged in</Text>
+                    </View>
                     <Text style={styles.forgotPasswordText}>Forgot Password</Text>
                   </View>
 
@@ -367,6 +396,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: spacing.sm,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   rememberText: {
     color: colors.textSecondary,

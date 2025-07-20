@@ -14,8 +14,8 @@ import {
   Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, {useContext, useEffect, useState, useRef} from 'react';
-import {AuthContext} from '../AuthContext';
+import React, {useEffect, useState, useRef, useContext} from 'react';
+import { AuthContext } from '../AuthContext';
 import { Feather, AntDesign, Ionicons, MaterialIcons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
@@ -51,10 +51,18 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = await AsyncStorage.getItem('token');
-      const decodedToken = jwtDecode(token);
-      const userId = decodedToken.userId;
-      setUserId(userId);
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          const userId = decodedToken.userId;
+          setUserId(userId);
+        } else {
+          console.log('No token found, user not logged in');
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
     };
 
     fetchUser();

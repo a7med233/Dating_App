@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { AntDesign } from '@expo/vector-icons';
 import { getUserDetails, updateProfileVisibility, getRejectedProfiles, unrejectProfile, deactivateAccount, deleteAccount, getAccountStatus } from '../services/api';
-import { useContext } from 'react';
+
 import { AuthContext } from '../AuthContext';
 
 const SettingsScreen = (props) => {

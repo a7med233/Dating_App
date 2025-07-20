@@ -15,7 +15,7 @@ import {
   Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, {useEffect, useState, useCallback, useRef} from 'react';
+import React, {useEffect, useState, useCallback, useRef, useContext} from 'react';
 import { Ionicons, Entypo, AntDesign, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
@@ -23,11 +23,13 @@ import {jwtDecode} from 'jwt-decode';
 import { fetchMatches, deduplicateUser, rejectProfile } from '../services/api';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AuthContext } from '../AuthContext';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const { extendSession } = useContext(AuthContext);
   const [option, setOption] = useState('Compatible');
   const [profilesData, setProfilesData] = useState([]);
   const [userId, setUserId] = useState('');
@@ -52,9 +54,13 @@ const HomeScreen = () => {
     const fetchUser = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const decodedToken = jwtDecode(token);
-        const userId = decodedToken.userId;
-        setUserId(userId);
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          const userId = decodedToken.userId;
+          setUserId(userId);
+        } else {
+          console.log('No token found, user not logged in');
+        }
       } catch (error) {
         console.error('Error fetching user:', error);
       }
@@ -103,7 +109,10 @@ const HomeScreen = () => {
     }, [userId]),
   );
 
-  const handleLike = () => {
+  const handleLike = async () => {
+    // Extend session on user activity
+    await extendSession();
+    
     navigation.navigate('SendLike', {
       image: filteredProfiles[0]?.imageUrls?.[0],
       name: filteredProfiles[0]?.firstName,
@@ -114,6 +123,9 @@ const HomeScreen = () => {
 
   const handleCross = async () => {
     try {
+      // Extend session on user activity
+      await extendSession();
+      
       const currentProfile = filteredProfiles[0];
       if (currentProfile && currentProfile._id) {
         // Animate the card out

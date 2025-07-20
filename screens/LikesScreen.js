@@ -50,9 +50,13 @@ const LikesScreen = () => {
     const fetchUser = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const decodedToken = jwtDecode(token);
-        const userId = decodedToken.userId;
-        setUserId(userId);
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          const userId = decodedToken.userId;
+          setUserId(userId);
+        } else {
+          console.log('No token found, user not logged in');
+        }
       } catch (error) {
         console.error('Error fetching user:', error);
       }
