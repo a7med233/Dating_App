@@ -12,7 +12,7 @@ import {
   FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, {useState, useLayoutEffect, useEffect, useRef} from 'react';
+import React, {useState, useLayoutEffect, useEffect, useRef, useCallback} from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Entypo, Feather, Ionicons } from '@expo/vector-icons';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -87,8 +87,14 @@ const ChatRoom = () => {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isScreenFocused, setIsScreenFocused] = useState(true);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
+  const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
+  const [chatKey, setChatKey] = useState(Date.now()); // Force remount when chat changes
   const scrollViewRef = useRef(null);
   const lastFetchRef = useRef(0);
+  const pollingIntervalRef = useRef(null);
+  const initialLoadCompletedRef = useRef(false);
   
   const senderId = route?.params?.senderId;
   const receiverId = route?.params?.receiverId;
@@ -98,36 +104,172 @@ const ChatRoom = () => {
 
   useEffect(() => {
     if (!senderId || !receiverId) {
-      console.log('Cannot start polling - missing senderId or receiverId:', { senderId, receiverId });
+      console.log('Cannot start - missing senderId or receiverId:', { senderId, receiverId });
       return;
     }
     
-    console.log('Starting HTTP polling for messages');
-    setIsConnected(true);
+    // Generate new chat key to force proper remounting
+    const newChatKey = Date.now();
+    setChatKey(newChatKey);
+    console.log('ChatRoom mounted with:', { senderId, receiverId, chatKey: newChatKey });
     
-    // Start background polling for new messages every 3 seconds (silent and smooth)
-    const interval = setInterval(async () => {
+    // Reset state for new chat
+    setMessages([]);
+    setLastMessageCount(0);
+    setLastMessageTimestamp(null);
+    initialLoadCompletedRef.current = false;
+    setLoading(true);
+    setError(null);
+    
+    // First, load initial messages immediately
+    const loadInitialMessages = async () => {
+      console.log('Loading initial messages...');
+      
+      // Test API connection first
       try {
-        // Don't poll if we're currently sending a message
-        if (!isSending) {
-          console.log('Silent background polling for new messages...');
-          await fetchMessagesHandler(false, true); // true = background fetch
+        const apiInstance = await getApi();
+        console.log('API instance created successfully');
+        
+        // Test a simple endpoint to verify connection
+        const testResponse = await apiInstance.get('/');
+        console.log('API connection test successful:', testResponse.status);
+      } catch (apiError) {
+        console.error('API connection test failed:', apiError);
+        setError('Cannot connect to server. Please check your internet connection.');
+        setLoading(false);
+        return;
+      }
+      
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Message load timeout')), 10000); // 10 second timeout
+      });
+      
+      try {
+        // Force initial load by calling fetchMessagesHandler directly with bypass
+        console.log('Starting initial message fetch...');
+        const response = await fetchMessages({ senderId, receiverId });
+        console.log('Initial fetch response:', response?.data?.length, 'messages');
+        
+        if (response?.data && Array.isArray(response.data)) {
+          console.log('Setting initial messages:', response.data.length);
+          setMessages(response.data);
+          setLastMessageCount(response.data.length);
+          if (response.data.length > 0) {
+            setLastMessageTimestamp(response.data[response.data.length - 1].timestamp);
+          }
+          setLoading(false);
+          setError(null);
+          initialLoadCompletedRef.current = true;
+          console.log('Initial messages loaded successfully');
         } else {
-          console.log('Skipping poll - currently sending message');
+          throw new Error('Invalid response format');
         }
       } catch (error) {
-        console.log('Background polling error:', error);
+        console.error('Initial message load failed:', error);
+        // Try one more time after a short delay
+        setTimeout(async () => {
+          try {
+            console.log('Retrying initial message load...');
+            const retryResponse = await fetchMessages({ senderId, receiverId });
+            if (retryResponse?.data && Array.isArray(retryResponse.data)) {
+              setMessages(retryResponse.data);
+              setLastMessageCount(retryResponse.data.length);
+              if (retryResponse.data.length > 0) {
+                setLastMessageTimestamp(retryResponse.data[retryResponse.data.length - 1].timestamp);
+              }
+              setLoading(false);
+              setError(null);
+              initialLoadCompletedRef.current = true;
+              console.log('Retry successful:', retryResponse.data.length, 'messages');
+            } else {
+              throw new Error('Invalid retry response');
+            }
+          } catch (retryError) {
+            console.error('Retry failed:', retryError);
+            setError('Failed to load messages. Please check your connection and try again.');
+            setLoading(false);
+          }
+        }, 2000);
       }
-    }, 3000); // 3 seconds - very responsive but silent
+    };
     
-    setPollingInterval(interval);
+    // Start initial load immediately
+    loadInitialMessages();
+    
+    // Fallback: If initial load doesn't complete within 3 seconds, try again
+    const fallbackLoad = setTimeout(async () => {
+      if (!initialLoadCompletedRef.current && messages.length === 0) {
+        console.log('Fallback: Initial load taking too long, trying again...');
+        try {
+          const fallbackResponse = await fetchMessages({ senderId, receiverId });
+          if (fallbackResponse?.data && Array.isArray(fallbackResponse.data)) {
+            setMessages(fallbackResponse.data);
+            setLastMessageCount(fallbackResponse.data.length);
+            if (fallbackResponse.data.length > 0) {
+              setLastMessageTimestamp(fallbackResponse.data[fallbackResponse.data.length - 1].timestamp);
+            }
+            setLoading(false);
+            setError(null);
+            initialLoadCompletedRef.current = true;
+            console.log('Fallback successful:', fallbackResponse.data.length, 'messages');
+          }
+        } catch (error) {
+          console.error('Fallback load failed:', error);
+        }
+      }
+    }, 3000);
+    
+    // Start polling after a short delay to allow initial load to complete
+    const startPollingAfterDelay = setTimeout(() => {
+      console.log('Starting smart polling for messages');
+      setIsConnected(true);
+      
+      // Start background polling with smart intervals
+      const startPolling = () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+        
+        pollingIntervalRef.current = setInterval(async () => {
+          try {
+            // Don't poll if we're currently sending a message, if there's an error, or if screen is not focused
+            if (!isSending && !error && isScreenFocused) {
+              console.log('Smart background polling for new messages...');
+              await fetchMessagesHandler(false, true); // true = background fetch
+            } else {
+              console.log('Skipping poll - currently sending message, has error, or screen not focused');
+            }
+          } catch (error) {
+            console.log('Background polling error:', error);
+          }
+        }, 8000); // 8 seconds - reduced frequency for better performance
+      };
+      
+      startPolling();
+    }, 1000); // Start polling after 1 second
     
     return () => {
-      console.log('Cleaning up polling');
-      clearInterval(interval);
+      console.log('Cleaning up ChatRoom');
+      clearTimeout(fallbackLoad);
+      clearTimeout(startPollingAfterDelay);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
       setIsConnected(false);
+      setIsScreenFocused(false);
+      
+      // Reset all state when unmounting to ensure clean state on remount
+      setMessages([]);
+      setLastMessageCount(0);
+      setLastMessageTimestamp(null);
+      initialLoadCompletedRef.current = false;
+      setLoading(false);
+      setError(null);
+      setRefreshing(false);
     };
-  }, [senderId, receiverId]);
+  }, [senderId, receiverId]); // Remove fetchMessagesHandler from dependencies to avoid circular dependency
 
   const sendMessage = async () => {
     if (!message.trim()) return;
@@ -192,15 +334,24 @@ const ChatRoom = () => {
   }, []);
 
   const fetchMessagesHandler = async (isRefresh = false, isBackground = false) => {
-    // Prevent rapid successive calls (minimum 1 second between calls for background, 2 for refresh)
+    // Prevent rapid successive calls (minimum 3 seconds between calls)
     const now = Date.now();
-    const minInterval = isBackground ? 1000 : 2000;
-    if (now - lastFetchRef.current < minInterval && !isRefresh) {
+    const minInterval = 3000;
+    if (now - lastFetchRef.current < minInterval && !isRefresh && messages.length > 0) {
       console.log('Skipping fetch - too soon since last fetch');
       return;
     }
     
-    // For background fetches, don't show loading state or block UI
+    // For background fetches, check if we need to fetch at all
+    if (isBackground && !isRefresh) {
+      // Skip if we have messages and it's been less than 10 seconds since last fetch
+      if (messages.length > 0 && now - lastFetchRef.current < 10000) {
+        console.log('Skipping background fetch - too soon and have messages');
+        return;
+      }
+    }
+    
+    // Don't show loading for background fetches
     if (loading && !isRefresh && !isBackground) {
       console.log('Skipping fetch - already loading');
       return;
@@ -228,24 +379,61 @@ const ChatRoom = () => {
       }
       
       console.log(`${isBackground ? 'Background' : 'Foreground'} fetching messages for:`, { senderId, receiverId });
+      
+      // Test the API call
+      console.log('Making API call to fetchMessages...');
       const response = await fetchMessages({ senderId, receiverId });
       console.log('Messages response:', response);
+      console.log('Response type:', typeof response);
+      console.log('Response data:', response?.data);
+      console.log('Response keys:', Object.keys(response || {}));
       
-      // The API returns messages directly, not wrapped in a data property
-      const newMessages = response.data || response;
-      console.log('Setting messages:', newMessages.length, 'messages');
+      // The API returns messages in response.data
+      const newMessages = response?.data || [];
+      console.log('Received messages:', newMessages.length, 'messages');
+      console.log('First message:', newMessages[0]);
+      console.log('Last message:', newMessages[newMessages.length - 1]);
       
-      // Only update if we have new messages or it's a refresh
-      if (newMessages.length !== messages.length || isRefresh) {
-        setMessages(newMessages);
+      // Validate that we got an array
+      if (!Array.isArray(newMessages)) {
+        console.error('Error: Expected array of messages, got:', typeof newMessages);
+        throw new Error('Invalid response format: expected array of messages');
       }
       
+      // Smart change detection for background fetches only
+      if (isBackground && !isRefresh && messages.length > 0) {
+        const hasNewMessages = newMessages.length !== lastMessageCount;
+        const hasNewerMessages = newMessages.length > 0 && 
+          (!lastMessageTimestamp || 
+           new Date(newMessages[newMessages.length - 1].timestamp) > new Date(lastMessageTimestamp));
+        
+        if (!hasNewMessages && !hasNewerMessages) {
+          console.log('No new messages detected, skipping update');
+          return;
+        }
+        
+        console.log('New messages detected, updating...');
+      }
+      
+      // Always update messages for foreground fetches or when no messages exist
+      console.log('Setting messages in state:', newMessages.length, 'messages');
+      setMessages(newMessages);
+      setLastMessageCount(newMessages.length);
+      if (newMessages.length > 0) {
+        setLastMessageTimestamp(newMessages[newMessages.length - 1].timestamp);
+      }
+      
+      // Always clear loading states
       if (!isBackground) {
+        console.log('Clearing loading states - background:', isBackground, 'refresh:', isRefresh);
         setLoading(false);
         setRefreshing(false);
+      } else {
+        console.log('Keeping loading states for background fetch');
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
+      // Always clear loading states on error
       if (!isBackground) {
         setError('Failed to load messages. Please try again.');
         setLoading(false);
@@ -254,32 +442,75 @@ const ChatRoom = () => {
     }
   };
 
-  useEffect(() => {
-    if (senderId && receiverId) {
-      console.log('Initial load of messages');
-      // Initial load - fetch messages immediately
-      fetchMessagesHandler();
-    }
-  }, [senderId, receiverId]);
+
 
   // Auto-scroll to bottom when messages are loaded
   useEffect(() => {
+    console.log('Messages state changed:', messages.length, 'messages, loading:', loading);
     if (messages.length > 0 && !loading) {
+      console.log('Auto-scrolling to bottom with', messages.length, 'messages');
       setTimeout(() => {
         scrollToBottom(false);
       }, 100);
     }
   }, [messages.length, loading]);
 
-  // Refresh messages when screen comes into focus (background fetch for smooth UX)
+  // Refresh messages when screen comes into focus (smart background fetch)
   useFocusEffect(
     React.useCallback(() => {
       if (senderId && receiverId) {
-        console.log('Screen focused - background refreshing messages');
-        fetchMessagesHandler(true, true); // Background refresh
+        console.log('Screen focused - setting focus state');
+        setIsScreenFocused(true);
+        
+        // Always reload messages when screen comes into focus if we don't have any
+        if (messages.length === 0) {
+          console.log('Screen focused - no messages, loading initial messages');
+          setLoading(true);
+          setError(null);
+          
+          // Force immediate load
+          setTimeout(async () => {
+            try {
+              await fetchMessagesHandler(false, false); // Foreground fetch to show loading
+            } catch (error) {
+              console.error('Focus-triggered load failed:', error);
+              setError('Failed to load messages. Pull to refresh.');
+            }
+          }, 100);
+        } else {
+          // Only refresh if it's been a while since last fetch
+          const timeSinceLastFetch = Date.now() - lastFetchRef.current;
+          if (timeSinceLastFetch > 30000) { // 30 seconds
+            console.log('Screen focused - refreshing messages (been a while)');
+            fetchMessagesHandler(true, true); // Background refresh
+          } else {
+            console.log('Screen focused - skipping refresh, recent fetch detected');
+          }
+        }
       }
-    }, [senderId, receiverId])
+      
+      return () => {
+        console.log('Screen unfocused - stopping polling');
+        setIsScreenFocused(false);
+      };
+    }, [senderId, receiverId, messages.length]) // Remove fetchMessagesHandler dependency
   );
+  const handleManualRefresh = async () => {
+    console.log('Manual refresh triggered');
+    setRefreshing(true);
+    setError(null);
+    
+    try {
+      await fetchMessagesHandler(true, false); // Foreground refresh
+      console.log('Manual refresh completed successfully');
+    } catch (error) {
+      console.error('Manual refresh failed:', error);
+      setError('Failed to refresh messages. Please try again.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const formatTime = time => {
     const options = {hour: 'numeric', minute: 'numeric'};
     return new Date(time).toLocaleString('en-US', options);
@@ -389,7 +620,7 @@ const ChatRoom = () => {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => fetchMessagesHandler(true)}
+              onRefresh={handleManualRefresh}
               colors={[colors.primary]}
               tintColor={colors.primary}
             />
@@ -422,41 +653,45 @@ const ChatRoom = () => {
             </View>
           )}
           
-          {!loading && !error && messages?.map((item, index) => (
-            <View
-              key={index}
-              style={[
-                styles.messageContainer,
-                (item?.senderId?._id || item?.senderId) === senderId
-                  ? styles.sentMessage
-                  : styles.receivedMessage
-              ]}
-            >
-              <View style={[
-                styles.messageBubble,
-                (item?.senderId?._id || item?.senderId) === senderId
-                  ? styles.sentBubble
-                  : styles.receivedBubble
-              ]}>
-                <Text style={[
-                  styles.messageText,
-                  (item?.senderId?._id || item?.senderId) === senderId
-                    ? styles.sentText
-                    : styles.receivedText
-                ]}>
-                  {item?.message}
-                </Text>
-                <Text style={[
-                  styles.messageTime,
-                  (item?.senderId?._id || item?.senderId) === senderId
-                    ? styles.sentTime
-                    : styles.receivedTime
-                ]}>
-                  {formatTime(item?.timestamp)}
-                </Text>
-              </View>
-            </View>
-          ))}
+          {!loading && !error && messages?.length > 0 && (
+            <>
+              {messages?.map((item, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.messageContainer,
+                    (item?.senderId?._id || item?.senderId) === senderId
+                      ? styles.sentMessage
+                      : styles.receivedMessage
+                  ]}
+                >
+                  <View style={[
+                    styles.messageBubble,
+                    (item?.senderId?._id || item?.senderId) === senderId
+                      ? styles.sentBubble
+                      : styles.receivedBubble
+                  ]}>
+                    <Text style={[
+                      styles.messageText,
+                      (item?.senderId?._id || item?.senderId) === senderId
+                        ? styles.sentText
+                        : styles.receivedText
+                    ]}>
+                      {item?.message}
+                    </Text>
+                    <Text style={[
+                      styles.messageTime,
+                      (item?.senderId?._id || item?.senderId) === senderId
+                        ? styles.sentTime
+                        : styles.receivedTime
+                    ]}>
+                      {formatTime(item?.timestamp)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
         </ScrollView>
         
         {!error && (

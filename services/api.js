@@ -30,7 +30,7 @@ const getCurrentIPAddress = async () => {
 };
 
 // Function to get the correct API base URL
-const getApiBaseUrl = async () => {
+export const getApiBaseUrl = async () => {
   // Check for environment variable from EAS build
   if (process.env.API_BASE_URL) {
     console.log('Using environment API URL:', process.env.API_BASE_URL);
@@ -290,7 +290,7 @@ export const blockUser = async (userId, blockedUserId) => {
 };
 export const unblockUser = async (userId, blockedUserId) => {
   const apiInstance = await getApi();
-  return apiInstance.delete('/block-user', { data: { userId, blockedUserId } });
+  return apiInstance.post('/unblock-user', { userId, blockedUserId });
 };
 export const getBlockedUsers = async (userId) => {
   const apiInstance = await getApi();
@@ -314,7 +314,7 @@ export const rejectProfile = async (userId, rejectedUserId) => {
 };
 export const unrejectProfile = async (userId, rejectedUserId) => {
   const apiInstance = await getApi();
-  return apiInstance.delete('/reject-profile', { data: { userId, rejectedUserId } });
+  return apiInstance.post('/unreject-profile', { userId, rejectedUserId });
 };
 export const getRejectedProfiles = async (userId) => {
   const apiInstance = await getApi();
@@ -346,7 +346,7 @@ export const deleteAccount = async (userId, password) => {
 };
 export const getAccountStatus = async (userId) => {
   const apiInstance = await getApi();
-  return apiInstance.get(`/account-status/${userId}`);
+  return apiInstance.get(`/users/${userId}/account-status`);
 };
 export const getUserStatus = async (userId) => {
   const apiInstance = await getApi();

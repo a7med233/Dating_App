@@ -1198,10 +1198,20 @@ apiRouter.get('/get-matches/:userId', async (req, res) => {
   try {
     const {userId} = req.params;
 
-    // Find the user by ID and populate the matches field
+    // Check cache first
+    const cacheKey = `matches_${userId}`;
+    const cachedData = matchesCache.get(cacheKey);
+    
+    if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_DURATION) {
+      console.log('Returning cached matches for user:', userId);
+      return res.status(200).json({matches: cachedData.matches});
+    }
+
+    // Find the user by ID and populate only essential fields for chat
     const user = await User.findById(userId)
-      .populate('matches', 'firstName imageUrls age location occupation prompts bio hometown height languages children smoking drinking religion type lookingFor dateOfBirth')
-      .populate('blockedUsers', '_id');
+      .populate('matches', 'firstName imageUrls age location _id isOnline lastActive')
+      .populate('blockedUsers', '_id')
+      .select('matches blockedUsers');
 
     if (!user) {
       return res.status(404).json({message: 'User not found'});
@@ -1241,6 +1251,12 @@ apiRouter.get('/get-matches/:userId', async (req, res) => {
         matchObj.age = calculateAge(matchObj.dateOfBirth);
       }
       return matchObj;
+    });
+
+    // Cache the results
+    matchesCache.set(cacheKey, {
+      matches: matches,
+      timestamp: Date.now()
     });
 
     res.status(200).json({matches});
@@ -2851,6 +2867,41 @@ apiRouter.put('/users/:userId/deactivate', async (req, res) => {
   }
 });
 
+// Deactivate user account
+apiRouter.post('/deactivate-account', async (req, res) => {
+  try {
+    const { userId, password } = req.body;
+
+    if (!userId || !password) {
+      return res.status(400).json({ message: 'User ID and password are required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    // Deactivate account
+    user.isActive = false;
+    user.deactivatedAt = new Date();
+    await user.save();
+
+    res.status(200).json({ 
+      message: 'Account deactivated successfully',
+      deactivatedAt: user.deactivatedAt
+    });
+  } catch (error) {
+    console.error('Error deactivating account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Reactivate user account
 apiRouter.put('/users/:userId/reactivate', async (req, res) => {
   try {
@@ -2876,6 +2927,42 @@ apiRouter.put('/users/:userId/reactivate', async (req, res) => {
 });
 
 // Delete user account permanently
+apiRouter.post('/delete-account', async (req, res) => {
+  try {
+    const { userId, password } = req.body;
+
+    if (!userId || !password) {
+      return res.status(400).json({ message: 'User ID and password are required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    // Mark account as deleted (soft delete)
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    user.isActive = false; // Also deactivate
+    await user.save();
+
+    res.status(200).json({ 
+      message: 'Account deleted successfully',
+      deletedAt: user.deletedAt
+    });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete user account permanently (alternative endpoint)
 apiRouter.delete('/users/:userId/delete', async (req, res) => {
   try {
     const { userId } = req.params;

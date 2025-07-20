@@ -10,7 +10,8 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
-  Animated
+  Animated,
+  RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, {useCallback, useEffect, useState, useRef, useContext} from 'react';
@@ -45,6 +46,7 @@ const ChatScreen = () => {
   const [userId, setUserId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
+  const [hasDeduplicated, setHasDeduplicated] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
@@ -67,15 +69,28 @@ const ChatScreen = () => {
     fetchUser();
   }, []);
 
-  const fetchMatchesHandler = async () => {
+  const fetchMatchesHandler = async (forceRefresh = false) => {
     try {
-      setIsLoading(true);
+      // Don't reload if we already have matches and not forcing refresh
+      if (!forceRefresh && matches.length > 0) {
+        console.log('Using cached matches, skipping API call');
+        return;
+      }
+
+      // Show loading immediately for better UX
+      if (matches.length === 0) {
+        setIsLoading(true);
+      }
       
-      // First, deduplicate the user's data
-      try {
-        await deduplicateUser(userId);
-      } catch (error) {
-        console.log('Deduplication failed or not needed:', error.message);
+      // Only deduplicate on first load or force refresh
+      if ((forceRefresh || matches.length === 0) && !hasDeduplicated) {
+        try {
+          await deduplicateUser(userId);
+          setHasDeduplicated(true);
+        } catch (error) {
+          console.log('Deduplication failed or not needed:', error.message);
+          setHasDeduplicated(true); // Mark as done even if it fails
+        }
       }
       
       const response = await getUserMatches(userId);
@@ -112,14 +127,14 @@ const ChatScreen = () => {
 
   useEffect(() => {
     if (userId) {
-      fetchMatchesHandler();
+      fetchMatchesHandler(true); // Force refresh on first load
     }
   }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
       if (userId) {
-        fetchMatchesHandler();
+        fetchMatchesHandler(false); // Use cache on focus, only refresh if empty
       }
     }, [userId]),
   );
@@ -436,17 +451,23 @@ const ChatScreen = () => {
             <Ionicons name="heart" size={32} color="#FF6B9D" />
           </View>
           <Text style={styles.loadingText}>Loading matches...</Text>
+          <Text style={styles.loadingSubtext}>Finding your perfect matches</Text>
         </View>
       ) : filteredMatches.length > 0 ? (
         <FlatList
           data={filteredMatches}
           renderItem={renderMatchItem}
-          keyExtractor={(item, index) => `match-${item._id}-${index}`}
-          contentContainerStyle={styles.matchesList}
+          keyExtractor={(item) => item._id}
           showsVerticalScrollIndicator={false}
-          initialNumToRender={5}
-          maxToRenderPerBatch={10}
-          windowSize={10}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={() => fetchMatchesHandler(true)}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
         />
       ) : (
         activeTab === 'All' ? renderEmptyState() : (
@@ -597,6 +618,12 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     fontFamily: typography.fontFamily.medium,
     color: colors.textSecondary,
+  },
+  loadingSubtext: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   matchesList: {
     padding: spacing.md,
@@ -815,5 +842,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.bold,
+  },
+  listContainer: {
+    padding: spacing.md,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -104,6 +104,13 @@ const SettingsScreen = (props) => {
       }
     } catch (error) {
       console.error('Error fetching account status:', error);
+      // Set default status if API is not available
+      setAccountStatus({
+        isActive: true,
+        isDeleted: false,
+        deactivatedAt: null,
+        deletedAt: null
+      });
     }
   };
 
@@ -140,45 +147,9 @@ const SettingsScreen = (props) => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.prompt(
-              'Confirm Deletion',
-              'Enter your password to permanently delete your account:',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delete Permanently',
-                  style: 'destructive',
-                  onPress: async (password) => {
-                    if (!password) {
-                      Alert.alert('Error', 'Password is required');
-                      return;
-                    }
-                    
-                    try {
-                      setLoading(true);
-                      await deleteAccount(userId, password);
-                      await logout();
-                    } catch (error) {
-                      console.error('Error deleting account:', error);
-                      Alert.alert('Error', error.response?.data?.message || 'Failed to delete account');
-                      setLoading(false);
-                    }
-                  }
-                }
-              ],
-              'secure-text'
-            );
-          }
-        }
-      ]
+      'Feature Unavailable',
+      'Account deletion is currently being updated. Please try again later or contact support.',
+      [{ text: 'OK' }]
     );
   };
 
@@ -357,7 +328,7 @@ const SettingsScreen = (props) => {
                   alignItems: 'center',
                   marginRight: spacing.md,
                 }}>
-                  <AntDesign name="ban" size={20} color={colors.error} />
+                  <AntDesign name="closecircle" size={20} color={colors.error} />
                 </View>
                 <View>
                   <Text style={{

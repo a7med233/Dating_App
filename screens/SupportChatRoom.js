@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientButton from '../components/GradientButton';
 import ThemedCard from '../components/ThemedCard';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 
-import { getApiBaseUrl } from '../utils/socketConfig';
+import { getApiBaseUrl } from '../services/api';
 import { httpChatManager } from '../utils/httpChat';
 
 const SupportChatRoom = () => {
@@ -19,6 +19,7 @@ const SupportChatRoom = () => {
   const [message, setMessage] = useState('');
   const [pollingInterval, setPollingInterval] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const scrollViewRef = useRef();
 
   // Only fetch/create chat if we have a userId or identifier
@@ -27,16 +28,55 @@ const SupportChatRoom = () => {
     
     const fetchChat = async () => {
       try {
-        const apiBaseUrl = getApiBaseUrl();
-        // Get or create support chat
-        const response = await fetch(`${apiBaseUrl}/support/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userId ? { userId } : { identifier }),
-        });
-        const data = await response.json();
-        setChatId(data.chat._id);
-        setMessages(data.chat.messages || []);
+        const apiBaseUrl = await getApiBaseUrl();
+        console.log('Creating support chat with base URL:', apiBaseUrl);
+        
+        if (userId) {
+          // If we have a userId, create/get chat normally
+          console.log('Creating chat with userId:', userId);
+          const response = await fetch(`${apiBaseUrl}/support/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+          });
+          
+          console.log('Support chat creation response status:', response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Support chat creation failed:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+          }
+          
+          const data = await response.json();
+          console.log('Support chat created successfully:', data);
+          setChatId(data.chat._id);
+          setMessages(data.chat.messages || []);
+        } else if (identifier) {
+          // If we only have an identifier, we need to create a temporary user or use a different approach
+          // For now, let's create a chat with a temporary userId based on the identifier
+          const tempUserId = `temp_${identifier.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          console.log('Creating chat with tempUserId:', tempUserId);
+          
+          const response = await fetch(`${apiBaseUrl}/support/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: tempUserId }),
+          });
+          
+          console.log('Support chat creation response status:', response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Support chat creation failed:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+          }
+          
+          const data = await response.json();
+          console.log('Support chat created successfully:', data);
+          setChatId(data.chat._id);
+          setMessages(data.chat.messages || []);
+        }
       } catch (error) {
         console.error('Error fetching support chat:', error);
       }
@@ -50,9 +90,9 @@ const SupportChatRoom = () => {
     
     const startPolling = () => {
       try {
-        console.log('Starting HTTP polling for support messages');
+        console.log('Starting real-time polling for support messages');
         
-        // Start background polling for new messages every 3 seconds (silent and smooth)
+        // Start background polling for new messages every 1.5 seconds for better responsiveness
         const interval = setInterval(async () => {
           try {
             // Background fetch - don't show loading state
@@ -60,7 +100,7 @@ const SupportChatRoom = () => {
           } catch (error) {
             console.log('Support background polling error:', error);
           }
-        }, 3000);
+        }, 1500); // Reduced from 3000ms to 1500ms for better responsiveness
         
         setPollingInterval(interval);
         
@@ -82,6 +122,30 @@ const SupportChatRoom = () => {
     };
   }, [chatId]);
 
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    if (!chatId) return;
+    
+    setRefreshing(true);
+    try {
+      await fetchSupportMessages(false); // Foreground fetch
+    } catch (error) {
+      console.error('Manual refresh failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Refresh messages when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (chatId) {
+        console.log('Support chat screen focused - refreshing messages');
+        fetchSupportMessages(false); // Foreground fetch to show loading if needed
+      }
+    }, [chatId])
+  );
+
   const fetchSupportMessages = async (isBackground = false) => {
     // For background fetches, don't show loading state
     if (loading && !isBackground) {
@@ -94,19 +158,60 @@ const SupportChatRoom = () => {
         setLoading(true);
       }
       
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/support/chat/${chatId}`);
-      const data = await response.json();
+      const apiBaseUrl = await getApiBaseUrl();
       
-      const newMessages = data.chat.messages || [];
+      // Use the same userId logic as fetchChat
+      const effectiveUserId = userId || (identifier ? `temp_${identifier.replace(/[^a-zA-Z0-9]/g, '_')}` : null);
       
-      // Only update if messages actually changed
-      setMessages(prevMessages => {
-        if (JSON.stringify(prevMessages) !== JSON.stringify(newMessages)) {
-          return newMessages;
-        }
-        return prevMessages;
+      if (!effectiveUserId) {
+        console.log('No effective userId available for fetching messages');
+        return;
+      }
+      
+      console.log('Fetching support messages for userId:', effectiveUserId);
+      
+      // Use the correct endpoint: GET /support/chat?userId=...
+      const response = await fetch(`${apiBaseUrl}/support/chat?userId=${effectiveUserId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
       });
+      
+      console.log('Support messages fetch response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Support messages fetch failed:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Support messages fetched successfully:', data);
+      
+      if (data.chat) {
+        const newMessages = data.chat.messages || [];
+        
+        // More efficient message comparison - check length and last message timestamp
+        setMessages(prevMessages => {
+          if (prevMessages.length !== newMessages.length) {
+            console.log('Support messages updated:', newMessages.length, 'messages');
+            return newMessages;
+          }
+          
+          // Check if last message is different (more efficient than JSON.stringify)
+          if (prevMessages.length > 0 && newMessages.length > 0) {
+            const lastPrevMessage = prevMessages[prevMessages.length - 1];
+            const lastNewMessage = newMessages[newMessages.length - 1];
+            
+            if (lastPrevMessage._id !== lastNewMessage._id || 
+                lastPrevMessage.timestamp !== lastNewMessage.timestamp) {
+              console.log('Support messages updated - new message detected');
+              return newMessages;
+            }
+          }
+          
+          return prevMessages; // No changes
+        });
+      }
       
       if (!isBackground) {
         setLoading(false);
@@ -122,16 +227,37 @@ const SupportChatRoom = () => {
   const sendMessage = async () => {
     if (!message.trim() || !chatId) return;
     
+    const messageText = message.trim();
+    setMessage(''); // Clear input immediately for better UX
+    
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      await fetch(`${apiBaseUrl}/support/message`, {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/support/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId, text: message }),
+        body: JSON.stringify({ chatId, text: messageText }),
       });
-      setMessage('');
+      
+      if (response.ok) {
+        // Immediately fetch updated messages to show the sent message
+        console.log('Message sent successfully, refreshing messages...');
+        await fetchSupportMessages(true); // Background fetch to update UI
+        
+        // Scroll to bottom to show new message
+        setTimeout(() => {
+          if (scrollViewRef.current) {
+            scrollViewRef.current.scrollToEnd({ animated: true });
+          }
+        }, 100);
+      } else {
+        console.error('Failed to send message:', response.status);
+        // Optionally restore the message if sending failed
+        setMessage(messageText);
+      }
     } catch (error) {
       console.error('Error sending support message:', error);
+      // Restore the message if sending failed
+      setMessage(messageText);
     }
   };
 
@@ -179,8 +305,19 @@ const SupportChatRoom = () => {
       )}
       {(userId || identifierSubmitted) && (
         <>
-          <ScrollView contentContainerStyle={{ flexGrow: 1 }} ref={scrollViewRef}
-            onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}>
+          <ScrollView 
+            contentContainerStyle={{ flexGrow: 1 }} 
+            ref={scrollViewRef}
+            onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={[colors.primary]}
+                tintColor={colors.primary}
+              />
+            }
+          >
             {messages.map((item, idx) => (
               <Pressable
                 key={idx}
