@@ -4,32 +4,10 @@ import { colors, typography, shadows, borderRadius, spacing } from '../theme/col
 import { LinearGradient } from 'expo-linear-gradient';
 import GradientButton from '../components/GradientButton';
 import ThemedCard from '../components/ThemedCard';
-import { io } from 'socket.io-client';
 import { useRoute } from '@react-navigation/native';
 
-// Function to get the correct Socket URL dynamically
-const getSocketUrl = async () => {
-  // Check for environment variable from EAS build
-  if (process.env.API_BASE_URL) {
-    const baseUrl = process.env.API_BASE_URL.replace('/api', '');
-    return baseUrl;
-  }
-  
-  // Check NODE_ENV for production builds
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://lashwa.com';
-  }
-  
-  // For local development, use the computer's IP address
-  if (__DEV__) {
-    const { getCurrentIPAddress } = require('../utils/ipConfig');
-    const localIP = await getCurrentIPAddress();
-    return `http://${localIP}:3000`;
-  }
-  
-  // Fallback to production URL for any other case
-  return 'https://lashwa.com';
-};
+import { getApiBaseUrl } from '../utils/socketConfig';
+import { httpChatManager } from '../utils/httpChat';
 
 const SupportChatRoom = () => {
   const route = useRoute();
@@ -39,7 +17,8 @@ const SupportChatRoom = () => {
   const [chatId, setChatId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
-  const socketRef = useRef(null);
+  const [pollingInterval, setPollingInterval] = useState(null);
+  const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef();
 
   // Only fetch/create chat if we have a userId or identifier
@@ -48,9 +27,9 @@ const SupportChatRoom = () => {
     
     const fetchChat = async () => {
       try {
-        const socketUrl = await getSocketUrl();
+        const apiBaseUrl = getApiBaseUrl();
         // Get or create support chat
-        const response = await fetch(`${socketUrl}/api/support/chat`, {
+        const response = await fetch(`${apiBaseUrl}/support/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userId ? { userId } : { identifier }),
@@ -69,36 +48,83 @@ const SupportChatRoom = () => {
   useEffect(() => {
     if (!chatId) return;
     
-    const connectSocket = async () => {
+    const startPolling = () => {
       try {
-        const socketUrl = await getSocketUrl();
-        // Connect to socket and join room
-        const s = io(socketUrl);
-        s.emit('join_support_chat', chatId);
-        s.on('support_message', ({ chatId: msgChatId, message: msg }) => {
-          if (msgChatId === chatId) {
-            setMessages(prev => [...prev, msg]);
+        console.log('Starting HTTP polling for support messages');
+        
+        // Start background polling for new messages every 3 seconds (silent and smooth)
+        const interval = setInterval(async () => {
+          try {
+            // Background fetch - don't show loading state
+            await fetchSupportMessages(true); // true = background fetch
+          } catch (error) {
+            console.log('Support background polling error:', error);
           }
-        });
-        socketRef.current = s;
-        // Clean up on unmount
+        }, 3000);
+        
+        setPollingInterval(interval);
+        
         return () => {
-          if (s) s.disconnect();
+          clearInterval(interval);
         };
       } catch (error) {
-        console.error('Error connecting to support socket:', error);
+        console.error('Error starting support polling:', error);
       }
     };
     
-    connectSocket();
+    const cleanup = startPolling();
+    
+    return () => {
+      if (cleanup) cleanup();
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
   }, [chatId]);
+
+  const fetchSupportMessages = async (isBackground = false) => {
+    // For background fetches, don't show loading state
+    if (loading && !isBackground) {
+      console.log('Skipping support fetch - already loading');
+      return;
+    }
+    
+    try {
+      if (!isBackground) {
+        setLoading(true);
+      }
+      
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/support/chat/${chatId}`);
+      const data = await response.json();
+      
+      const newMessages = data.chat.messages || [];
+      
+      // Only update if messages actually changed
+      setMessages(prevMessages => {
+        if (JSON.stringify(prevMessages) !== JSON.stringify(newMessages)) {
+          return newMessages;
+        }
+        return prevMessages;
+      });
+      
+      if (!isBackground) {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error fetching support messages:', error);
+      if (!isBackground) {
+        setLoading(false);
+      }
+    }
+  };
 
   const sendMessage = async () => {
     if (!message.trim() || !chatId) return;
     
     try {
-      const socketUrl = await getSocketUrl();
-      await fetch(`${socketUrl}/api/support/message`, {
+      const apiBaseUrl = getApiBaseUrl();
+      await fetch(`${apiBaseUrl}/support/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chatId, text: message }),

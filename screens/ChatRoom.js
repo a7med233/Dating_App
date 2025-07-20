@@ -16,13 +16,13 @@ import React, {useState, useLayoutEffect, useEffect, useRef} from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Entypo, Feather, Ionicons } from '@expo/vector-icons';
 import {useNavigation, useRoute} from '@react-navigation/native';
-import {io} from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { fetchMessages, getUserDetails, getApi } from '../services/api';
 import { colors, typography, shadows, borderRadius, spacing } from '../theme/colors';
 import { Platform } from 'react-native';
 import { getStoredIPAddress } from '../utils/ipConfig';
+import { httpChatManager } from '../utils/httpChat';
 // Custom emoji picker with common emojis
 const COMMON_EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -73,29 +73,7 @@ const COMMON_EMOJIS = [
   '🕡', '🕢', '🕣', '🕤', '🕥', '🕦', '🕧'
 ];
 
-// Function to get the correct Socket URL dynamically
-const getSocketUrl = async () => {
-  // Check for environment variable from EAS build
-  if (process.env.API_BASE_URL) {
-    const baseUrl = process.env.API_BASE_URL.replace('/api', '');
-    return baseUrl;
-  }
-  
-  // Check NODE_ENV for production builds
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://lashwa.com';
-  }
-  
-  // For local development, use the computer's IP address
-  if (__DEV__) {
-    const { getCurrentIPAddress } = require('../utils/ipConfig');
-    const localIP = await getCurrentIPAddress();
-    return `http://${localIP}:3000`;
-  }
-  
-  // Fallback to production URL for any other case
-  return 'https://lashwa.com';
-};
+
 
 const ChatRoom = () => {
   const [message, setMessage] = useState('');
@@ -105,124 +83,71 @@ const ChatRoom = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [socketConnected, setSocketConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const scrollViewRef = useRef(null);
+  const lastFetchRef = useRef(0);
   
   const senderId = route?.params?.senderId;
   const receiverId = route?.params?.receiverId;
-  const [socket, setSocket] = useState(null);
+  const [pollingInterval, setPollingInterval] = useState(null);
 
 
 
   useEffect(() => {
     if (!senderId || !receiverId) {
-      console.log('Cannot connect to socket - missing senderId or receiverId:', { senderId, receiverId });
+      console.log('Cannot start polling - missing senderId or receiverId:', { senderId, receiverId });
       return;
     }
     
-    const connectToSocket = async () => {
-      try {
-        const socketUrl = await getSocketUrl();
-        console.log('Connecting to socket URL:', socketUrl);
-        
-        const s = io(socketUrl, {
-          transports: Platform.OS === 'android' ? ['polling', 'websocket'] : ['websocket', 'polling'], // Android prefers polling
-          timeout: 30000, // 30 second timeout for Android
-          forceNew: true, // Force new connection
-          reconnection: true, // Enable reconnection
-          reconnectionAttempts: 5, // Try to reconnect 5 times
-          reconnectionDelay: 1000, // Wait 1 second between attempts
-          reconnectionDelayMax: 5000, // Max 5 seconds between attempts
-        });
-        setSocket(s);
-        
-        // Join the sender's room
-        if (senderId) {
-          console.log('Joining room for sender:', senderId);
-          s.emit('join', senderId);
-        }
-        
-        s.on('connect', () => {
-          console.log('Socket connected successfully');
-          setSocketConnected(true);
-        });
-        
-        s.on('connect_error', (error) => {
-          console.error('Socket connection error:', error);
-          console.error('Socket URL used:', socketUrl);
-          console.error('Error details:', {
-            message: error.message,
-            description: error.description,
-            context: error.context,
-            type: error.type
-          });
-          setSocketConnected(false);
-        });
-        
-        s.on('disconnect', () => {
-          setSocketConnected(false);
-        });
-        
-        s.on('reconnect', () => {
-          setSocketConnected(true);
-        });
-        
-        s.on('reconnect_error', () => {
-          setSocketConnected(false);
-        });
-        
-        s.on('receiveMessage', newMessage => {
-          setMessages(prevMessages => {
-            const messageExists = prevMessages.some(msg => 
-              msg._id === newMessage._id || 
-              (msg.message === newMessage.message && 
-               msg.timestamp === newMessage.timestamp)
-            );
-            
-            if (!messageExists) {
-                          // Auto-scroll to bottom if user is not manually scrolling
-            setTimeout(() => {
-              scrollToBottom(true);
-            }, 100);
-              return [...prevMessages, newMessage];
-            }
-            return prevMessages;
-          });
-        });
-        
-        // Handle online/offline status updates
-        s.on('userOnline', (userId) => {
-          console.log('User came online:', userId);
-          // You can add UI updates here if needed
-        });
-        
-        s.on('userOffline', (userId) => {
-          console.log('User went offline:', userId);
-          // You can add UI updates here if needed
-        });
-        
-        return () => {
-          setSocketConnected(false);
-          s.disconnect();
-        };
-      } catch (error) {
-        setSocketConnected(false);
-      }
-    };
+    console.log('Starting HTTP polling for messages');
+    setIsConnected(true);
     
-    connectToSocket();
+    // Start background polling for new messages every 3 seconds (silent and smooth)
+    const interval = setInterval(async () => {
+      try {
+        // Don't poll if we're currently sending a message
+        if (!isSending) {
+          console.log('Silent background polling for new messages...');
+          await fetchMessagesHandler(false, true); // true = background fetch
+        } else {
+          console.log('Skipping poll - currently sending message');
+        }
+      } catch (error) {
+        console.log('Background polling error:', error);
+      }
+    }, 3000); // 3 seconds - very responsive but silent
+    
+    setPollingInterval(interval);
+    
+    return () => {
+      console.log('Cleaning up polling');
+      clearInterval(interval);
+      setIsConnected(false);
+    };
   }, [senderId, receiverId]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
     if (!senderId || !receiverId) return;
+    if (isSending) return; // Prevent multiple sends
     
     console.log('Sending message:', { senderId, receiverId, message });
+    setIsSending(true);
     
-    if (socket && senderId && receiverId) {
-      socket.emit('sendMessage', { senderId, receiverId, message });
+    try {
+      // Use the existing API service instead of HTTP chat manager
+      const apiInstance = await getApi();
+      const response = await apiInstance.post('/messages/send', {
+        senderId,
+        receiverId,
+        message,
+      });
+      
+      console.log('Message sent successfully:', response.data);
+      
       setMessage('');
       
       // Auto-scroll to bottom when sending message
@@ -230,15 +155,33 @@ const ChatRoom = () => {
         scrollToBottom(true);
       }, 100);
       
+      // Refresh messages to show the new message (background fetch)
       setTimeout(() => {
-        fetchMessagesHandler();
-      }, 200);
-    } else {
-      console.log('Cannot send message - missing socket or user IDs:', { 
-        hasSocket: !!socket, 
-        senderId, 
-        receiverId 
-      });
+        fetchMessagesHandler(false, true); // Background fetch
+        setIsSending(false);
+      }, 500); // Wait 500ms before allowing new sends
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setIsSending(false);
+      
+      // Fallback: try to send via HTTP chat manager
+      try {
+        console.log('Trying HTTP chat manager fallback...');
+        const result = await httpChatManager.sendMessage(senderId, receiverId, message);
+        if (result.success) {
+          setMessage('');
+          setTimeout(() => {
+            scrollToBottom(true);
+          }, 100);
+          setTimeout(() => {
+            fetchMessagesHandler(false, true); // Background fetch
+          }, 500);
+        } else {
+          console.error('HTTP fallback also failed:', result.error);
+        }
+      } catch (fallbackError) {
+        console.error('All send methods failed:', fallbackError);
+      }
     }
   };
 
@@ -248,43 +191,74 @@ const ChatRoom = () => {
     });
   }, []);
 
-  const fetchMessagesHandler = async (isRefresh = false) => {
+  const fetchMessagesHandler = async (isRefresh = false, isBackground = false) => {
+    // Prevent rapid successive calls (minimum 1 second between calls for background, 2 for refresh)
+    const now = Date.now();
+    const minInterval = isBackground ? 1000 : 2000;
+    if (now - lastFetchRef.current < minInterval && !isRefresh) {
+      console.log('Skipping fetch - too soon since last fetch');
+      return;
+    }
+    
+    // For background fetches, don't show loading state or block UI
+    if (loading && !isRefresh && !isBackground) {
+      console.log('Skipping fetch - already loading');
+      return;
+    }
+    
     try {
-      if (isRefresh) {
+      lastFetchRef.current = now;
+      
+      // Only show loading states for non-background fetches
+      if (isRefresh && !isBackground) {
         setRefreshing(true);
-      } else {
+      } else if (!isBackground) {
         setLoading(true);
       }
       setError(null);
       
       if (!senderId || !receiverId) {
         console.log('Missing senderId or receiverId:', { senderId, receiverId });
-        setError('Missing user information. Please try again.');
-        setLoading(false);
-        setRefreshing(false);
+        if (!isBackground) {
+          setError('Missing user information. Please try again.');
+          setLoading(false);
+          setRefreshing(false);
+        }
         return;
       }
       
-      console.log('Fetching messages for:', { senderId, receiverId });
+      console.log(`${isBackground ? 'Background' : 'Foreground'} fetching messages for:`, { senderId, receiverId });
       const response = await fetchMessages({ senderId, receiverId });
       console.log('Messages response:', response);
+      
       // The API returns messages directly, not wrapped in a data property
-      setMessages(response.data || response);
-      setLoading(false);
-      setRefreshing(false);
+      const newMessages = response.data || response;
+      console.log('Setting messages:', newMessages.length, 'messages');
+      
+      // Only update if we have new messages or it's a refresh
+      if (newMessages.length !== messages.length || isRefresh) {
+        setMessages(newMessages);
+      }
+      
+      if (!isBackground) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
-      setError('Failed to load messages. Please try again.');
-      setLoading(false);
-      setRefreshing(false);
+      if (!isBackground) {
+        setError('Failed to load messages. Please try again.');
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
   useEffect(() => {
     if (senderId && receiverId) {
-      setTimeout(() => {
-        fetchMessagesHandler();
-      }, 100);
+      console.log('Initial load of messages');
+      // Initial load - fetch messages immediately
+      fetchMessagesHandler();
     }
   }, [senderId, receiverId]);
 
@@ -297,11 +271,12 @@ const ChatRoom = () => {
     }
   }, [messages.length, loading]);
 
-  // Refresh messages when screen comes into focus
+  // Refresh messages when screen comes into focus (background fetch for smooth UX)
   useFocusEffect(
     React.useCallback(() => {
-      if (!loading && senderId && receiverId) {
-        fetchMessagesHandler(true);
+      if (senderId && receiverId) {
+        console.log('Screen focused - background refreshing messages');
+        fetchMessagesHandler(true, true); // Background refresh
       }
     }, [senderId, receiverId])
   );
@@ -382,9 +357,9 @@ const ChatRoom = () => {
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{route?.params?.name}</Text>
               <View style={styles.statusIndicator}>
-                <View style={[styles.statusDot, { backgroundColor: socketConnected ? colors.success : colors.textSecondary }]} />
+                <View style={[styles.statusDot, { backgroundColor: isConnected ? colors.success : colors.textSecondary }]} />
                 <Text style={styles.statusText}>
-                  {socketConnected ? 'Online' : 'Offline'}
+                  {isConnected ? 'Online' : 'Offline'}
                 </Text>
               </View>
             </View>

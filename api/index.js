@@ -1384,6 +1384,65 @@ apiRouter.get('/messages', async (req, res) => {
   }
 });
 
+// Send a message via HTTP (alternative to Socket.IO)
+apiRouter.post('/messages/send', async (req, res) => {
+  try {
+    const {senderId, receiverId, message} = req.body;
+    console.log('Received HTTP message request:', { senderId, receiverId, message });
+    
+    if (!senderId || !receiverId || !message) {
+      return res.status(400).json({ 
+        message: 'senderId, receiverId, and message are required' 
+      });
+    }
+    
+    const newMessage = new Chat({senderId, receiverId, message});
+    await newMessage.save();
+    console.log('Message saved to database via HTTP:', newMessage);
+    
+    // Get sender details for notification
+    const sender = await User.findById(senderId).select('firstName');
+    console.log('Sender details:', sender);
+    
+    if (sender) {
+      // Send notification to receiver
+      createNotification(
+        receiverId,
+        'message',
+        'New Message 💬',
+        `${sender.firstName} sent you a message`,
+        {
+          fromUserId: senderId,
+          fromUserName: sender.firstName,
+          message: message.substring(0, 50) + (message.length > 50 ? '...' : '')
+        }
+      );
+    }
+    
+    // Emit the message via Socket.IO if available (for real-time updates)
+    try {
+      io.to(receiverId).emit('receiveMessage', newMessage);
+      io.to(senderId).emit('receiveMessage', newMessage);
+      console.log('Message emitted via Socket.IO');
+    } catch (socketError) {
+      console.log('Socket.IO not available, message sent via HTTP only');
+    }
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Message sent successfully',
+      data: newMessage
+    });
+  } catch (error) {
+    console.log('Error sending message via HTTP:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error sending message', 
+      error: error.message 
+    });
+  }
+});
+
 // Get user online status
 apiRouter.get('/user-status/:userId', async (req, res) => {
   try {
